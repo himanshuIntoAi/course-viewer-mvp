@@ -1,0 +1,33 @@
+
+.speech-bubble {
+  background-color: teal;
+  color: white;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 15px 20px;
+  border-radius: 10px;
+  position: relative;
+  display: inline-block;
+  max-width: 80%; /* Limits the bubble width */
+  word-wrap: break-word; /* Ensures text wraps properly */
+}
+ 
+/* Speech bubble tail */
+.speech-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 20px;
+  border-width: 10px;
+  border-style: solid;
+  border-color: teal transparent transparent transparent;
+}
+ 
+/* Background styling */
+.bg {
+  border-radius: 5px;
+  background-color: teal;
+  padding: 10px;
+}
+ 

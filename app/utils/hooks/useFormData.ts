@@ -23,6 +23,7 @@ export function useFormData() {
         // Only set active categories
         setCategories(data.filter(cat => cat.active));
       } catch (error) {
+        console.error('Error fetching categories:', error);
         setCategories([]);
       } finally {
         setLoading(prev => ({ ...prev, categories: false }));
@@ -43,6 +44,7 @@ export function useFormData() {
         sub.active && sub.category_id.toString() === categoryId
       ));
     } catch (error) {
+      console.error('Error fetching subcategories:', error);
       setSubcategories([]);
     } finally {
       setLoading(prev => ({ ...prev, subcategories: false }));
@@ -57,6 +59,7 @@ export function useFormData() {
       // Only set active skills
       setSkills(data.filter(skill => skill.active));
     } catch (error) {
+      console.error('Error fetching skills:', error);
       setSkills([]);
     } finally {
       setLoading(prev => ({ ...prev, skills: false }));
@@ -71,6 +74,7 @@ export function useFormData() {
       // Only set active job roles
       setJobRoles(data.filter(role => role.active));
     } catch (error) {
+      console.error('Error fetching job roles:', error);
       setJobRoles([]);
     } finally {
       setLoading(prev => ({ ...prev, jobRoles: false }));

@@ -37,6 +37,7 @@ class IndexedDBStore implements OnboardingStore {
         request.onsuccess = () => resolve(request.result || null);
       });
     } catch (error) {
+      console.error('Error getting progress:', error);
       return null;
     }
   }
@@ -64,6 +65,7 @@ class IndexedDBStore implements OnboardingStore {
 
       return progress;
     } catch (error) {
+      console.error('Error saving progress:', error);
       throw error;
     }
   }
@@ -90,6 +92,7 @@ class IndexedDBStore implements OnboardingStore {
         })
       ]);
     } catch (error) {
+      console.error('Error clearing progress:', error);
       throw error;
     }
   }
@@ -106,6 +109,7 @@ class IndexedDBStore implements OnboardingStore {
         request.onsuccess = () => resolve(request.result || null);
       });
     } catch (error) {
+      console.error('Error getting session ID:', error);
       return null;
     }
   }
@@ -126,6 +130,7 @@ class IndexedDBStore implements OnboardingStore {
         request.onsuccess = () => resolve();
       });
     } catch (error) {
+      console.error('Error saving session ID:', error);
       throw error;
     }
   }

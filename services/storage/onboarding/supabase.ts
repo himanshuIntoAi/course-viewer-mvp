@@ -77,6 +77,7 @@ class SupabaseStore implements OnboardingStore {
         updated_at: response.updated_at
       };
     } catch (error) {
+      console.error('Error getting progress:', error);
       return null;
     }
   }
@@ -117,6 +118,7 @@ class SupabaseStore implements OnboardingStore {
         updated_at: result.updated_at
       };
     } catch (error) {
+      console.error('Error saving progress:', error);
       throw error;
     }
   }
@@ -129,6 +131,7 @@ class SupabaseStore implements OnboardingStore {
       await onboardingApiClient.deleteOnboardingProgress(sessionId);
       await this.removeSessionId();
     } catch (error) {
+      console.error('Error clearing progress:', error);
       throw error;
     }
   }
@@ -150,6 +153,7 @@ class SupabaseStore implements OnboardingStore {
         data: {}
       });
     } catch (error) {
+      console.error('Failed to initialize session:', error);
       throw error;
     }
   }

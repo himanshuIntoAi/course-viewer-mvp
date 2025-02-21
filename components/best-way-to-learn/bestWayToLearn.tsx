@@ -49,7 +49,7 @@ export default function BestWayToLearn() {
     };
 
     return (
-        <div className="bg-gray-100 py-8 px-4 md:px-16 relative w-full overflow-hidden">
+        <div className=" py-8 px-4 md:px-16 relative w-full overflow-hidden">
             {/* Top heading area */}
             <div className="flex flex-col md:flex-row items-center mb-6">
                 <div className="hidden md:block w-72 h-52">

@@ -1,8 +1,4 @@
-if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
-  throw new Error('NEXT_PUBLIC_BACKEND_URL environment variable is not set');
-}
-
-export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 // Types
 export interface JobRole {
@@ -178,6 +174,11 @@ const API_ENDPOINTS = {
 class OnboardingApiClient {
   private async fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
+    console.log('Making API request to:', url, {
+      method: options?.method || 'GET',
+      headers: options?.headers,
+      body: options?.body ? JSON.parse(options.body as string) : undefined
+    });
 
     const response = await fetch(url, {
       ...options,
@@ -192,9 +193,17 @@ class OnboardingApiClient {
     const responseData = responseText ? JSON.parse(responseText) : null;
 
     if (!response.ok) {
+      console.error('API request failed:', {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        error: responseData,
+        requestBody: options?.body ? JSON.parse(options.body as string) : undefined
+      });
       throw new Error(responseData?.detail || 'API request failed');
     }
 
+    console.log('API response:', responseData);
     return responseData;
   }
 
@@ -312,6 +321,7 @@ class OnboardingApiClient {
 
   // Create onboarding progress
   async createOnboardingProgress(data: CreateOnboardingProgressRequest): Promise<OnboardingProgressResponse> {
+    console.log('Creating onboarding progress with data:', data);
     return this.fetchApi<OnboardingProgressResponse>(API_ENDPOINTS.onboarding.create, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -324,9 +334,12 @@ class OnboardingApiClient {
       throw new Error('sessionId is required for updating onboarding progress');
     }
 
+    console.log('Updating onboarding progress:', { sessionId, data });
+
     // First verify session exists
     const sessionExists = await this.verifySession(sessionId);
     if (!sessionExists) {
+      console.log('Session not found, creating new session');
       // Session doesn't exist, create it
       await this.createOnboardingProgress({
         session_id: sessionId,
@@ -349,6 +362,7 @@ class OnboardingApiClient {
     } catch (error) {
       if (error instanceof Error && error.message.includes('not found')) {
         // Session was lost, try to recreate and retry update
+        console.log('Session lost during update, recreating');
         await this.createOnboardingProgress({
           session_id: sessionId,
           step_number: data.step_number,
@@ -368,11 +382,13 @@ class OnboardingApiClient {
       throw new Error('sessionId is required for getting onboarding progress');
     }
 
+    console.log('Getting onboarding progress for session:', sessionId);
     return this.fetchApi<OnboardingProgressResponse>(API_ENDPOINTS.onboarding.getBySessionId(sessionId));
   }
 
   // Get all onboarding progress
   async getAllOnboardingProgress(): Promise<OnboardingProgressResponse[]> {
+    console.log('Getting all onboarding progress');
     return this.fetchApi<OnboardingProgressResponse[]>(API_ENDPOINTS.onboarding.getAll);
   }
 
@@ -382,6 +398,7 @@ class OnboardingApiClient {
       throw new Error('userId is required for getting onboarding progress');
     }
 
+    console.log('Getting onboarding progress for user:', userId);
     return this.fetchApi<OnboardingProgressResponse[]>(API_ENDPOINTS.onboarding.getByUserId(userId));
   }
 
@@ -391,6 +408,7 @@ class OnboardingApiClient {
       throw new Error('sessionId is required for deleting onboarding progress');
     }
 
+    console.log('Deleting onboarding progress for session:', sessionId);
     return this.fetchApi<void>(API_ENDPOINTS.onboarding.delete(sessionId), {
       method: 'DELETE',
     });

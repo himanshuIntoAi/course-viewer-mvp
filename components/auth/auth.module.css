@@ -25,18 +25,18 @@
 }
 
 .form-container {
-  @apply w-full flex flex-col gap-2 px-6 py-[10px];
+  @apply w-full flex flex-col gap-2 px-6;
 }
 
 /* Card Styles */
 .main-card {
-  @apply bg-white rounded-3xl shadow-lg py-[14px] px-8 w-full max-w-[520px] mx-auto flex flex-col items-center;
+  @apply bg-white shadow-lg py-4 px-8 w-full flex flex-col rounded-tr-[50px] rounded-br-[50px] items-center h-full;
   box-shadow: 0 0 50px -12px rgba(0, 0, 0, 0.1);
 }
 
 /* Toggle Button Container */
 .toggle-container {
-  @apply bg-[#e9e9e9] rounded-xl p-1.5 flex mb-4 mt-0 w-[360px] mx-auto;
+  @apply bg-[#e9e9e9] rounded-xl p-1.5 flex mb-4 mt-0 w-[360px];
 }
 
 /* Logo Container */
@@ -60,26 +60,12 @@
 
 /* Social Login Container */
 .social-login-container {
-  @apply flex justify-center gap-10;
+  @apply flex justify-center gap-10 ;
 }
 
 .social-button {
-  @apply relative p-2 border border-gray-200 rounded-xl flex items-center justify-center cursor-pointer bg-white w-[60px] h-[60px]
-  transition-all duration-200;
-}
-
-.social-button:hover {
-  @apply border-[#02baba] shadow-md transform scale-110;
-}
-
-.social-button::after {
-  content: attr(aria-label);
-  @apply absolute -bottom-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded
-  opacity-0 invisible transition-all duration-200 whitespace-nowrap;
-}
-
-.social-button:hover::after {
-  @apply opacity-100 visible;
+  @apply p-2 border border-gray-200 rounded-xl flex items-center justify-center cursor-pointer bg-white w-[60px] h-[60px] 
+  hover:bg-gray-50 transition-colors hover:border-[#02baba];
 }
 
 /* Divider */

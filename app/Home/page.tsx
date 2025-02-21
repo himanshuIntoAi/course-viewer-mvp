@@ -10,7 +10,7 @@ const Home = () => {
         <div>
 
 
-            <div className="h-screen w-full bg-gray-100 " style={{ backgroundImage: "url('/home-hero.svg')" }} >
+            <div className="h-screen w-full bg-gray-100 from-[#E4F7F7] to-white " style={{ backgroundImage: "url('/home-hero.svg')" }} >
                 {/* Navbar */}
                 <Navbar />
 
@@ -88,7 +88,6 @@ const Home = () => {
                     </button>
                 </div>
             </section>
-            <img src="/skate-line.svg" alt="" className='absolute bottom-0 left-0 w-full z-[1]' />
             <Footer />
         </div>
     )

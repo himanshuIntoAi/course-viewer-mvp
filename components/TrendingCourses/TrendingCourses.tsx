@@ -68,10 +68,10 @@ const TrendingCourses = () => {
   const coursesToRender = displayedCourses.slice(startIndex, endIndex);
 
   return (
-    <div className="relative w-full bg-gray-100 py-12 px-4 md:px-16">
+    <div className="relative w-full py-12 px-4 md:px-16">
       {/* Top header / hero area */}
       <div className="flex items-center justify-between mb-8 relative">
-        <div className="w-full flex flex-col gap-4 items-center">
+        <div className="w-full flex flex-col gap-4 items-center justify-center">
           <div className="flex items-center justify-center gap-2 text-indigo-500 mb-2">
             {/* Star icon or emoji */}
             <span className="text-xl text-center">⭐</span>
@@ -85,7 +85,7 @@ const TrendingCourses = () => {
         <img
           src="/Astronout-logo.svg" // replace with your actual asset
           alt="Astronaut"
-          className="hidden md:block w-48 h-48 object-contain "
+          className="hidden md:block w-60 h-60 scale-150 object-contain "
         />
       </div>
 
@@ -98,7 +98,7 @@ const TrendingCourses = () => {
               setActiveTab(index);
               setCurrentSlide(0); // reset slider when switching tabs
             }}
-            className={`px-4 py-2 text-sm font-semibold 
+            className={`px-4 py-2 w-1/4 mb-1 text-sm font-semibold 
               ${
                 activeTab === index
                   ? "bg-indigo-800 text-white rounded-md"

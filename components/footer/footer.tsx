@@ -3,7 +3,7 @@ import React from 'react'
 const 
 footer = () => {
     return (
-        <footer className="bg-white shadow-lg rounded-t-3xl p-10 mt-24" >
+        <footer className="bg-transparent shadow-lg rounded-t-3xl p-10 mt-24" >
             {/* Curved Top Design (Placeholder for styling) */}
             {/* <div className="w-full h-10 bg-teal-500 rounded-t-full"></div> */}
 

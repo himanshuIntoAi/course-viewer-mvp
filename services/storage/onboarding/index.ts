@@ -15,7 +15,7 @@ class CombinedStore implements OnboardingStore {
         await supabaseStore.verifySession(localSessionId);
         return localSessionId;
       } catch (error) {
-        // Session not found in API, will create new session
+        console.warn('Local session not found in API, will create new session');
       }
     }
 
@@ -27,7 +27,7 @@ class CombinedStore implements OnboardingStore {
         return remoteProgress.session_id;
       }
     } catch (error) {
-      // Failed to get remote progress, will create new session
+      console.warn('Failed to get remote progress:', error);
     }
 
     // Create new session

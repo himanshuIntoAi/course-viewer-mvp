@@ -42,6 +42,7 @@ export async function saveFormData(formData: FormData) {
       client.release();
     }
   } catch (error) {
+    console.error('Error saving form data:', error);
     return { data: null, error };
   }
 } 
