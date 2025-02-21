@@ -1,4 +1,6 @@
+import LoginForm from "@/components/auth/LoginForm";
 import { ChatWindow } from "@/components/chat/chat";
+import MultiStepForm from "@/components/form/MultiStepForm";
 import { Sidebar } from "@/components/sidebar/sidebar";
 import { TutorCard } from "@/components/tutor/tutor";
 import { FiSearch } from "react-icons/fi";
@@ -26,6 +28,8 @@ export default function Home() {
         </div>
       </main>
       <ChatWindow />
+      <LoginForm/>
+      <MultiStepForm/>
     </div>
   );
 }
