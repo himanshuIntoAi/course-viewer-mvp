@@ -1,4 +1,49 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+// Validate and format API URL
+function normalizeApiUrl(url: string): string {
+  try {
+    console.log('Normalizing API URL:', url);
+    const parsedUrl = new URL(url);
+    
+    // Clean up the URL - handle various Vercel preview URL patterns
+    let cleanOrigin = parsedUrl.origin;
+    
+    // Handle all possible Vercel preview URL patterns
+    cleanOrigin = cleanOrigin
+      // Handle .app.1, .app.2 etc patterns
+      .replace(/\.app\.\d+/, '.app')
+      // Handle -123.vercel.app patterns
+      .replace(/-\d+\.vercel\.app/, '.vercel.app')
+      // Handle .1, .2 etc at the end of any domain
+      .replace(/\.\d+$/, '');
+    
+    const cleanUrl = cleanOrigin + parsedUrl.pathname.replace(/\/+$/, '');
+    console.log('Normalized API URL:', {
+      original: url,
+      cleaned: cleanUrl,
+      origin: cleanOrigin,
+      pathname: parsedUrl.pathname
+    });
+    
+    return cleanUrl;
+  } catch (error) {
+    console.error('Failed to normalize API URL:', {
+      url,
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack
+      } : 'Unknown error'
+    });
+    throw new Error(`Invalid API URL: ${url}`);
+  }
+}
+
+if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
+  throw new Error('NEXT_PUBLIC_BACKEND_URL environment variable is not set');
+}
+
+// Normalize and validate the API URL
+export const API_BASE_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_BACKEND_URL);
+console.log('Initialized API_BASE_URL:', API_BASE_URL);
 
 // Types
 export interface JobRole {
@@ -130,6 +175,9 @@ export interface UpdateOnboardingProgressRequest {
 export interface OnboardingProgressResponse extends OnboardingProgress {}
 
 const API_ENDPOINTS = {
+  health: {
+    check: '/health'
+  },
   courseCategories: {
     base: '/api/v1/coursecategories',
     getAll: '/api/v1/coursecategories',
@@ -172,74 +220,325 @@ const API_ENDPOINTS = {
 
 // API Client
 class OnboardingApiClient {
-  private async fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    console.log('Making API request to:', url, {
-      method: options?.method || 'GET',
-      headers: options?.headers,
-      body: options?.body ? JSON.parse(options.body as string) : undefined
-    });
+  private readonly DEFAULT_TIMEOUT = 15000; // 15 seconds
+  private readonly MAX_RETRIES = 3;
+  private readonly RETRY_DELAY = 2000; // 2 seconds
+  private isHealthy: boolean = false;
+  private lastHealthCheck: number = 0;
+  private readonly HEALTH_CHECK_INTERVAL = 60000; // 1 minute
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...options?.headers,
-      },
-    });
+  private async fetchWithTimeout<T>(
+    url: string, 
+    options: RequestInit, 
+    timeout: number = this.DEFAULT_TIMEOUT
+  ): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const responseText = await response.text();
-    const responseData = responseText ? JSON.parse(responseText) : null;
+    try {
+      const defaultOptions = {
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
+      };
 
-    if (!response.ok) {
-      console.error('API request failed:', {
-        url,
+      const mergedOptions = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+          ...defaultOptions.headers,
+          ...(options.headers || {})
+        },
+        signal: controller.signal,
+      };
+
+      console.log(`Making request to: ${url}`, {
+        method: mergedOptions.method,
+        headers: mergedOptions.headers,
+        mode: mergedOptions.mode,
+        credentials: mergedOptions.credentials
+      });
+
+      const response = await fetch(url, mergedOptions);
+      
+      // Log response status and headers
+      console.log(`Response from ${url}:`, {
         status: response.status,
         statusText: response.statusText,
-        error: responseData,
-        requestBody: options?.body ? JSON.parse(options.body as string) : undefined
+        headers: Object.fromEntries(response.headers.entries())
       });
-      throw new Error(responseData?.detail || 'API request failed');
+
+      return response;
+    } catch (error) {
+      if (error instanceof Error) {
+        // Enhance error message with request details
+        const enhancedError = new Error(
+          `Failed to fetch: ${error.message}\nURL: ${url}\nMethod: ${options.method}`
+        );
+        enhancedError.stack = error.stack;
+        throw enhancedError;
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  // Add health check method
+  async checkHealth(): Promise<boolean> {
+    try {
+      const now = Date.now();
+      // Only check health if we haven't checked in the last minute
+      if (now - this.lastHealthCheck < this.HEALTH_CHECK_INTERVAL && this.isHealthy) {
+        return this.isHealthy;
+      }
+
+      console.log('Performing API health check...');
+      const response = await this.fetchWithTimeout(
+        `${API_BASE_URL}${API_ENDPOINTS.health.check}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          mode: 'cors'
+        },
+        5000 // Shorter timeout for health check
+      );
+
+      this.isHealthy = response.ok;
+      this.lastHealthCheck = now;
+
+      if (!this.isHealthy) {
+        console.error('API health check failed:', {
+          status: response.status,
+          statusText: response.statusText
+        });
+      } else {
+        console.log('API health check passed');
+      }
+
+      return this.isHealthy;
+    } catch (error) {
+      this.isHealthy = false;
+      if (error instanceof Error) {
+        console.error('Health check failed:', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
+      return false;
+    }
+  }
+
+  // Modify fetchApi to handle 404s better
+  private async fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T | null> {
+    // Skip health check for health endpoint to avoid infinite loop
+    if (!endpoint.includes('/health')) {
+      const isHealthy = await this.checkHealth();
+      if (!isHealthy) {
+        throw new Error('API is not healthy. Please try again later.');
+      }
     }
 
-    console.log('API response:', responseData);
-    return responseData;
+    let url = `${API_BASE_URL}${endpoint}`;
+    
+    // Always normalize URL before making request
+    url = normalizeApiUrl(url);
+    
+    for (let attempt = 0; attempt <= this.MAX_RETRIES; attempt++) {
+      try {
+        console.log(`Attempting request to ${url}`, {
+          attempt: attempt + 1,
+          maxAttempts: this.MAX_RETRIES + 1,
+          method: options?.method,
+          endpoint,
+          normalizedUrl: url
+        });
+        
+        const response = await this.fetchWithTimeout(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...options?.headers,
+          },
+          credentials: 'include',
+          mode: 'cors'
+        });
+
+        if (!response.ok) {
+          const responseText = await response.text();
+          let responseData;
+          try {
+            responseData = responseText ? JSON.parse(responseText) : null;
+          } catch (e) {
+            responseData = responseText;
+          }
+          
+          // Special handling for 404s
+          if (response.status === 404) {
+            console.log('Resource not found:', {
+              url,
+              method: options?.method,
+              endpoint,
+              responseData
+            });
+            return null;
+          }
+          
+          console.error(`Request failed with status ${response.status}:`, {
+            url,
+            method: options?.method,
+            status: response.status,
+            statusText: response.statusText,
+            responseData,
+            attempt: attempt + 1
+          });
+          
+          // Only retry on 5xx errors or network issues
+          if (response.status >= 500 && attempt < this.MAX_RETRIES) {
+            console.warn(`Server error (${response.status}), retrying...`);
+            const delay = this.RETRY_DELAY * Math.pow(2, attempt);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          
+          throw new Error(responseData?.detail || `API request failed: ${response.status}`);
+        }
+
+        const responseText = await response.text();
+        if (!responseText) {
+          console.log('Empty response received');
+          return null;
+        }
+
+        try {
+          const parsedResponse = JSON.parse(responseText) as T;
+          console.log('Successfully parsed response:', {
+            url,
+            method: options?.method,
+            hasData: !!parsedResponse
+          });
+          return parsedResponse;
+        } catch (e) {
+          console.error('Failed to parse response:', {
+            text: responseText,
+            error: e instanceof Error ? e.message : 'Unknown error'
+          });
+          throw new Error('Invalid JSON response from server');
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error('Request failed:', {
+            url,
+            attempt: attempt + 1,
+            error: {
+              message: error.message,
+              name: error.name,
+              stack: error.stack
+            }
+          });
+
+          // Handle specific error types
+          if (error.name === 'AbortError') {
+            if (attempt < this.MAX_RETRIES) {
+              console.warn('Request timeout, retrying...');
+              const delay = this.RETRY_DELAY * Math.pow(2, attempt);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+            throw new Error(`Request timeout after ${this.MAX_RETRIES} retries`);
+          }
+
+          if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
+            console.error('CORS error detected:', {
+              url,
+              origin: window.location.origin,
+              apiBaseUrl: API_BASE_URL
+            });
+            this.isHealthy = false;
+            throw new Error(`CORS error: Unable to access ${API_BASE_URL}. Please check CORS configuration.`);
+          }
+
+          // Don't retry 404s
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            return null;
+          }
+
+          if (attempt < this.MAX_RETRIES) {
+            console.warn('Request failed, retrying...');
+            const delay = this.RETRY_DELAY * Math.pow(2, attempt);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Request failed after all retries');
+  }
+
+  // Add method to get API health status
+  async getApiStatus(): Promise<{ 
+    healthy: boolean; 
+    lastCheck: Date | null;
+    message: string;
+  }> {
+    const isHealthy = await this.checkHealth();
+    return {
+      healthy: isHealthy,
+      lastCheck: this.lastHealthCheck ? new Date(this.lastHealthCheck) : null,
+      message: isHealthy ? 'API is healthy' : 'API is not responding correctly'
+    };
   }
 
   // Course Categories
   async getAllCourseCategories(): Promise<CourseCategory[]> {
-    return this.fetchApi<CourseCategory[]>(API_ENDPOINTS.courseCategories.getAll);
+    const response = await this.fetchApi<CourseCategory[]>(API_ENDPOINTS.courseCategories.getAll);
+    if (!response) {
+      return [];
+    }
+    return response;
   }
 
-  async getCourseCategoryById(id: number): Promise<CourseCategory> {
+  async getCourseCategoryById(id: number): Promise<CourseCategory | null> {
     return this.fetchApi<CourseCategory>(API_ENDPOINTS.courseCategories.getById(id));
   }
 
   // Job Roles
   async getAllJobRoles(): Promise<JobRole[]> {
-    return this.fetchApi<JobRole[]>(API_ENDPOINTS.jobRoles.getAll);
+    const response = await this.fetchApi<JobRole[]>(API_ENDPOINTS.jobRoles.getAll);
+    if (!response) {
+      return [];
+    }
+    return response;
   }
 
-  async getJobRoleById(id: number): Promise<JobRole> {
+  async getJobRoleById(id: number): Promise<JobRole | null> {
     return this.fetchApi<JobRole>(API_ENDPOINTS.jobRoles.getById(id));
   }
 
-  async createJobRole(data: CreateJobRoleRequest): Promise<JobRole> {
+  async createJobRole(data: CreateJobRoleRequest): Promise<JobRole | null> {
     return this.fetchApi<JobRole>(API_ENDPOINTS.jobRoles.create, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateJobRole(id: number, data: UpdateJobRoleRequest): Promise<JobRole> {
+  async updateJobRole(id: number, data: UpdateJobRoleRequest): Promise<JobRole | null> {
     return this.fetchApi<JobRole>(API_ENDPOINTS.jobRoles.update(id), {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteJobRole(id: number): Promise<JobRole> {
+  async deleteJobRole(id: number): Promise<JobRole | null> {
     return this.fetchApi<JobRole>(API_ENDPOINTS.jobRoles.delete(id), {
       method: 'DELETE',
     });
@@ -247,28 +546,32 @@ class OnboardingApiClient {
 
   // Skills
   async getAllSkills(): Promise<Skill[]> {
-    return this.fetchApi<Skill[]>(API_ENDPOINTS.skills.getAll);
+    const response = await this.fetchApi<Skill[]>(API_ENDPOINTS.skills.getAll);
+    if (!response) {
+      return [];
+    }
+    return response;
   }
 
-  async getSkillById(id: number): Promise<Skill> {
+  async getSkillById(id: number): Promise<Skill | null> {
     return this.fetchApi<Skill>(API_ENDPOINTS.skills.getById(id));
   }
 
-  async createSkill(data: CreateSkillRequest): Promise<Skill> {
+  async createSkill(data: CreateSkillRequest): Promise<Skill | null> {
     return this.fetchApi<Skill>(API_ENDPOINTS.skills.create, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateSkill(id: number, data: UpdateSkillRequest): Promise<Skill> {
+  async updateSkill(id: number, data: UpdateSkillRequest): Promise<Skill | null> {
     return this.fetchApi<Skill>(API_ENDPOINTS.skills.update(id), {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteSkill(id: number): Promise<Skill> {
+  async deleteSkill(id: number): Promise<Skill | null> {
     return this.fetchApi<Skill>(API_ENDPOINTS.skills.delete(id), {
       method: 'DELETE',
     });
@@ -276,14 +579,18 @@ class OnboardingApiClient {
 
   // Course Subcategories
   async getAllCourseSubcategories(): Promise<CourseSubcategory[]> {
-    return this.fetchApi<CourseSubcategory[]>(API_ENDPOINTS.courseSubcategories.getAll);
+    const response = await this.fetchApi<CourseSubcategory[]>(API_ENDPOINTS.courseSubcategories.getAll);
+    if (!response) {
+      return [];
+    }
+    return response;
   }
 
-  async getCourseSubcategoryById(id: number): Promise<CourseSubcategory> {
+  async getCourseSubcategoryById(id: number): Promise<CourseSubcategory | null> {
     return this.fetchApi<CourseSubcategory>(API_ENDPOINTS.courseSubcategories.getById(id));
   }
 
-  async createCourseSubcategory(data: CreateCourseSubcategoryRequest): Promise<CourseSubcategory> {
+  async createCourseSubcategory(data: CreateCourseSubcategoryRequest): Promise<CourseSubcategory | null> {
     return this.fetchApi<CourseSubcategory>(API_ENDPOINTS.courseSubcategories.create, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -293,14 +600,14 @@ class OnboardingApiClient {
   async updateCourseSubcategory(
     id: number,
     data: UpdateCourseSubcategoryRequest
-  ): Promise<CourseSubcategory> {
+  ): Promise<CourseSubcategory | null> {
     return this.fetchApi<CourseSubcategory>(API_ENDPOINTS.courseSubcategories.update(id), {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteCourseSubcategory(id: number): Promise<CourseSubcategory> {
+  async deleteCourseSubcategory(id: number): Promise<CourseSubcategory | null> {
     return this.fetchApi<CourseSubcategory>(API_ENDPOINTS.courseSubcategories.delete(id), {
       method: 'DELETE',
     });
@@ -319,77 +626,202 @@ class OnboardingApiClient {
     }
   }
 
-  // Create onboarding progress
-  async createOnboardingProgress(data: CreateOnboardingProgressRequest): Promise<OnboardingProgressResponse> {
-    console.log('Creating onboarding progress with data:', data);
-    return this.fetchApi<OnboardingProgressResponse>(API_ENDPOINTS.onboarding.create, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
   // Update onboarding progress with verification and retry
-  async updateOnboardingProgress(sessionId: string, data: UpdateOnboardingProgressRequest): Promise<OnboardingProgressResponse> {
+  async updateOnboardingProgress(sessionId: string, data: UpdateOnboardingProgressRequest): Promise<OnboardingProgressResponse | null> {
     if (!sessionId) {
       throw new Error('sessionId is required for updating onboarding progress');
     }
 
-    console.log('Updating onboarding progress:', { sessionId, data });
-
-    // First verify session exists
-    const sessionExists = await this.verifySession(sessionId);
-    if (!sessionExists) {
-      console.log('Session not found, creating new session');
-      // Session doesn't exist, create it
-      await this.createOnboardingProgress({
-        session_id: sessionId,
-        step_number: data.step_number,
-        data: data.data,
-        user_id: data.user_id
-      });
-    }
+    console.log('Starting onboarding progress update for session:', sessionId);
 
     try {
-      return await this.fetchApi<OnboardingProgressResponse>(API_ENDPOINTS.onboarding.update(sessionId), {
-        method: 'PUT',
-        body: JSON.stringify({
-          session_id: sessionId, // Must match URL parameter
-          step_number: data.step_number,
-          data: data.data,
-          user_id: data.user_id
-        }),
+      // First, try to get existing session
+      const existingSession = await this.getOnboardingProgress(sessionId).catch(error => {
+        console.log('Error checking existing session:', {
+          sessionId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        return null;
       });
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('not found')) {
-        // Session was lost, try to recreate and retry update
-        console.log('Session lost during update, recreating');
-        await this.createOnboardingProgress({
+
+      if (!existingSession) {
+        // No session exists, create new one
+        console.log('No existing session found, creating new:', sessionId);
+        return await this.createOnboardingProgress({
           session_id: sessionId,
-          step_number: data.step_number,
-          data: data.data,
+          step_number: data.step_number || 1,
+          data: data.data || {},
           user_id: data.user_id
         });
-        // Retry the update
-        return this.updateOnboardingProgress(sessionId, data);
       }
+
+      // Session exists, update it
+      console.log('Updating existing session:', {
+        sessionId,
+        currentStep: existingSession.step_number,
+        newStep: data.step_number
+      });
+
+      return await this.fetchApi<OnboardingProgressResponse>(
+        API_ENDPOINTS.onboarding.update(sessionId),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            step_number: data.step_number,
+            data: data.data,
+            user_id: data.user_id
+          })
+        }
+      );
+    } catch (error) {
+      console.error('Failed to handle onboarding progress:', {
+        sessionId,
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        } : 'Unknown error'
+      });
+      throw error;
+    }
+  }
+
+  // Create onboarding progress
+  async createOnboardingProgress(data: CreateOnboardingProgressRequest): Promise<OnboardingProgressResponse | null> {
+    if (!data.session_id) {
+      throw new Error('session_id is required for creating onboarding progress');
+    }
+
+    console.log('Creating onboarding progress:', {
+      sessionId: data.session_id,
+      step: data.step_number || 1,
+      hasData: !!data.data,
+      hasUserId: !!data.user_id
+    });
+
+    try {
+      const response = await this.fetchApi<OnboardingProgressResponse>(
+        API_ENDPOINTS.onboarding.create,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            session_id: data.session_id,
+            step_number: data.step_number || 1,
+            data: data.data || {},
+            user_id: data.user_id
+          })
+        }
+      );
+
+      if (response) {
+        console.log('Successfully created onboarding progress:', {
+          sessionId: data.session_id,
+          responseStep: response.step_number,
+          responseUserId: response.user_id
+        });
+      }
+
+      return response;
+    } catch (error) {
+      // Check if error is due to duplicate session
+      if (error instanceof Error && 
+          (error.message.includes('duplicate') || 
+           error.message.includes('already exists'))) {
+        console.log('Session already exists, fetching current state:', data.session_id);
+        return await this.getOnboardingProgress(data.session_id);
+      }
+
+      console.error('Failed to create onboarding progress:', {
+        sessionId: data.session_id,
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        } : 'Unknown error'
+      });
       throw error;
     }
   }
 
   // Get onboarding progress by session ID
-  async getOnboardingProgress(sessionId: string): Promise<OnboardingProgressResponse> {
+  async getOnboardingProgress(sessionId: string): Promise<OnboardingProgressResponse | null> {
     if (!sessionId) {
       throw new Error('sessionId is required for getting onboarding progress');
     }
 
-    console.log('Getting onboarding progress for session:', sessionId);
-    return this.fetchApi<OnboardingProgressResponse>(API_ENDPOINTS.onboarding.getBySessionId(sessionId));
+    try {
+      console.log('Fetching onboarding progress:', sessionId);
+      const response = await this.fetchApi<OnboardingProgressResponse>(
+        API_ENDPOINTS.onboarding.getBySessionId(sessionId),
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      if (!response) {
+        console.log('No session found, attempting to create:', sessionId);
+        // Instead of returning null, create a new session
+        const newSession = await this.createOnboardingProgress({
+          session_id: sessionId,
+          step_number: 1,
+          data: {}
+        });
+        return newSession;
+      }
+
+      console.log('Successfully fetched onboarding progress:', {
+        sessionId,
+        step: response.step_number,
+        hasData: !!response.data,
+        hasUserId: !!response.user_id,
+        createdAt: response.created_at,
+        updatedAt: response.updated_at
+      });
+
+      return response;
+    } catch (error) {
+      if (error instanceof Error && 
+          (error.message.includes('not found') || 
+           error.message.includes('404'))) {
+        console.log('Session not found (404), creating new session:', sessionId);
+        // Create new session on 404
+        const newSession = await this.createOnboardingProgress({
+          session_id: sessionId,
+          step_number: 1,
+          data: {}
+        });
+        return newSession;
+      }
+
+      console.error('Failed to fetch onboarding progress:', {
+        sessionId,
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        } : 'Unknown error'
+      });
+      throw error;
+    }
   }
 
   // Get all onboarding progress
   async getAllOnboardingProgress(): Promise<OnboardingProgressResponse[]> {
-    console.log('Getting all onboarding progress');
-    return this.fetchApi<OnboardingProgressResponse[]>(API_ENDPOINTS.onboarding.getAll);
+    const response = await this.fetchApi<OnboardingProgressResponse[]>(API_ENDPOINTS.onboarding.getAll);
+    if (!response) {
+      return [];
+    }
+    return response;
   }
 
   // Get onboarding progress by user ID
@@ -398,8 +830,11 @@ class OnboardingApiClient {
       throw new Error('userId is required for getting onboarding progress');
     }
 
-    console.log('Getting onboarding progress for user:', userId);
-    return this.fetchApi<OnboardingProgressResponse[]>(API_ENDPOINTS.onboarding.getByUserId(userId));
+    const response = await this.fetchApi<OnboardingProgressResponse[]>(API_ENDPOINTS.onboarding.getByUserId(userId));
+    if (!response) {
+      return [];
+    }
+    return response;
   }
 
   // Delete onboarding progress
@@ -408,8 +843,7 @@ class OnboardingApiClient {
       throw new Error('sessionId is required for deleting onboarding progress');
     }
 
-    console.log('Deleting onboarding progress for session:', sessionId);
-    return this.fetchApi<void>(API_ENDPOINTS.onboarding.delete(sessionId), {
+    await this.fetchApi<void>(API_ENDPOINTS.onboarding.delete(sessionId), {
       method: 'DELETE',
     });
   }

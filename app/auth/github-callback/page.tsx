@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useOnboarding } from '../../../../../state/context/login/OnboardingContext';
+import { useOnboarding } from '@/state/context/login/OnboardingContext';
 
 interface StateData {
   redirectPath?: string;
@@ -13,7 +13,7 @@ interface GitHubCallbackResponse {
   detail?: string;
 }
 
-export default function GitHubCallback(): JSX.Element | null {
+const GitHubCallbackPage: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const onboarding = useOnboarding();
@@ -64,9 +64,10 @@ export default function GitHubCallback(): JSX.Element | null {
           },
           body: JSON.stringify({
             code,
-            redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`,
+            redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/auth/github-callback`, // Updated redirect URI
             state
-          })
+          }),
+          credentials: 'include' // Added to ensure cookies are sent
         });
 
         if (!isMounted.current) return;
@@ -105,7 +106,7 @@ export default function GitHubCallback(): JSX.Element | null {
         }
 
         console.log('Redirecting to:', redirectPath);
-        window.location.href = redirectPath;
+        router.push(redirectPath); // Using Next.js router instead of window.location
 
       } catch (error) {
         console.error('Authentication error:', error);
@@ -114,7 +115,7 @@ export default function GitHubCallback(): JSX.Element | null {
           setError(errorMessage);
           setToken(null);
           setIsAuthenticated(false);
-          window.location.href = '/?error=' + encodeURIComponent(errorMessage);
+          router.push(`/?error=${encodeURIComponent(errorMessage)}`);
         }
       } finally {
         if (isMounted.current) {
@@ -124,7 +125,7 @@ export default function GitHubCallback(): JSX.Element | null {
     };
 
     processGithubCallback();
-  }, [searchParams, setToken, setIsAuthenticated, fetchUserData]);
+  }, [searchParams, setToken, setIsAuthenticated, fetchUserData, router]);
 
   if (error) {
     return (
@@ -135,9 +136,9 @@ export default function GitHubCallback(): JSX.Element | null {
           <button 
             onClick={() => {
               processedCodeRef.current = null;
-              window.location.href = '/';
+              router.push('/');
             }}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             Return to Login
           </button>
@@ -150,8 +151,8 @@ export default function GitHubCallback(): JSX.Element | null {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-4">Authenticating...</h1>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <h1 className="text-2xl font-semibold mb-4">Authenticating with GitHub</h1>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500 mx-auto"></div>
           <p className="mt-4 text-gray-600">Please wait while we complete your authentication...</p>
         </div>
       </div>
@@ -159,4 +160,6 @@ export default function GitHubCallback(): JSX.Element | null {
   }
 
   return null;
-} 
+};
+
+export default GitHubCallbackPage; 

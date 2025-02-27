@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Navbar from "@/components/navbar/navbar";
 import Footer from "@/components/footer/footer";
 import { fetchData } from "@/services/api";
-import { getCartItems } from "@/services/api/cart_api";
+import { getCartItems } from "@/services/api/cart/api";
 
 
 export default function CartPage() {

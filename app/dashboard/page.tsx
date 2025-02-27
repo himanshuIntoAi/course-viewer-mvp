@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useOnboarding } from '../../state/context/login/OnboardingContext';
-
+import Navbar from '@/components/navbar/navbar';
 interface UserData {
   user_id: string;
   display_name: string;
@@ -115,6 +115,8 @@ export default function DashboardPage(): JSX.Element {
     if (!user) return null;
 
     return (
+      <>
+      <Navbar/>
       <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
         <div className="flex items-center gap-6">
           {user.profile_image && (
@@ -130,6 +132,7 @@ export default function DashboardPage(): JSX.Element {
           </div>
         </div>
       </div>
+      </>
     );
   };
 

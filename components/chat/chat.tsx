@@ -2,7 +2,7 @@
 
 import React, {useState} from 'react';
 
-export const ChatWindow: React.FC = () => {
+export const ˘: React.FC = () => {
     const [messages, setMessages] = useState<string[]>([]);
     const suggestions = [
       'How can you help in my project?',

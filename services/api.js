@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://backendcou-r4846xwah-projectcou.vercel.app/";
+const API_BASE_URL = "https://cou-ip-bkend-dev.vercel.app";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

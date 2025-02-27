@@ -3,17 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '../../../services/login/auth';
-
-interface User {
-  id: string;
-  display_name: string;
-  email: string;
-  profile_image: string;
-  is_student: boolean;
-  is_instructor: boolean;
-  full_name?: string;
-  username?: string;
-}
+import { User } from '../../../services/login/auth';
+import { AuthResponse } from '../../../services/login/auth';
 
 interface OnboardingData {
   step: number;
@@ -22,17 +13,6 @@ interface OnboardingData {
   preferences: Record<string, any>;
   profileId: string | null;
   userType: 'student' | 'instructor';
-}
-
-interface AuthResponse {
-  access_token: string;
-  expires_in?: number;
-  user_id: string;
-  email: string;
-  display_name: string;
-  profile_image: string;
-  is_student: boolean;
-  is_instructor: boolean;
 }
 
 interface OnboardingContextType {
@@ -281,7 +261,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       setError(null);
       clearAuthState(); // Clear existing state first
       
-      const data = await auth.login(email, password);
+      const data: AuthResponse = await auth.login(email, password);
       
       if (data.access_token) {
         setToken(data.access_token);
@@ -292,7 +272,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         
         // Set authentication and user data atomically
         const userData = {
-          id: data.user_id,
+          id: data.user_id, // Now correctly handling as string from API
           email: data.email,
           display_name: data.display_name,
           profile_image: data.profile_image,
@@ -303,7 +283,24 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         setIsAuthenticated(true);
         setUser(userData);
         
-        window.location.replace('/dashboard');
+        // Store user type based on API response
+        if (data.is_student) {
+          sessionStorage.setItem('user_type', 'student');
+          document.cookie = `temp_is_student=true; path=/; domain=${process.env.COOKIE_DOMAIN || window.location.hostname}`;
+          document.cookie = `temp_is_instructor=false; path=/; domain=${process.env.COOKIE_DOMAIN || window.location.hostname}`;
+        } else if (data.is_instructor) {
+          sessionStorage.setItem('user_type', 'instructor');
+          document.cookie = `temp_is_student=false; path=/; domain=${process.env.COOKIE_DOMAIN || window.location.hostname}`;
+          document.cookie = `temp_is_instructor=true; path=/; domain=${process.env.COOKIE_DOMAIN || window.location.hostname}`;
+        }
+
+        // Use the redirect_path from the API response if available, otherwise default to dashboard
+        const redirectPath = data.redirect_path || '/dashboard';
+        if (router) {
+          router.push(redirectPath);
+        } else {
+          window.location.href = redirectPath;
+        }
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');

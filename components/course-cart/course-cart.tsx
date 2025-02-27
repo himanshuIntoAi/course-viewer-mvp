@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCartItems } from '@/services/api/cart_api';
+import { getCartItems } from '@/services/api/cart/api';
 
 const CourseCart = ({showCart , setShowCart}) => {
   

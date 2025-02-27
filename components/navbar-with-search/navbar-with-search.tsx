@@ -1,11 +1,12 @@
 import Image from 'next/image';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const NavbarWithSearch = () => {
+    const router = useRouter();
     return (
         <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-lg rounded-lg w-[90vw] m-auto z-[2]">
             {/* Logo Section */}
-            <div className="flex items-center">
+            <div className="flex items-center cursor-pointer" onClick={() => router.push("/home")}>
                 <Image src="/app-logo.svg" alt="CloudOU Logo" width={150} height={50} />
             </div>
 

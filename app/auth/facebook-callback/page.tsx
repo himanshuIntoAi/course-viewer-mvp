@@ -19,7 +19,7 @@ interface StateData {
   redirectPath?: string;
 }
 
-export default function FacebookCallbackPage(): JSX.Element {
+const FacebookCallbackPage: React.FC = () => {
   const router = useRouter();
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function FacebookCallbackPage(): JSX.Element {
           },
           body: JSON.stringify({
             code,
-            redirect_uri: `${window.location.origin}/api/auth/callback/facebook`,
+            redirect_uri: `${window.location.origin}/auth/facebook-callback`, // Updated redirect URI
             state
           }),
           credentials: 'include'
@@ -99,4 +99,6 @@ export default function FacebookCallbackPage(): JSX.Element {
       </div>
     </div>
   );
-} 
+};
+
+export default FacebookCallbackPage; 
