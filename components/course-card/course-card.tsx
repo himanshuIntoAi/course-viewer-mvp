@@ -1,26 +1,40 @@
 import React from "react";
-import { postData } from "../../services/api"; // Adjust the path as necessary
+import { postData } from "../../services/api/cart/api"; // Adjust the path as necessary
 import Link from "next/link";
+import axios from "axios";
 
 const CourseCard = ({ course, setShowCart }: { course: any, setShowCart: any } ) => {
+    const userString = localStorage.getItem("user");
+    let user_id;
+
+    if (userString) {
+        try {
+            const user = JSON.parse(userString);
+            user_id = user.id;
+        } catch (error) {
+            console.error("Error parsing user data from localStorage:", error);
+        }
+    }
+
+    console.log("user_id", user_id);
 
     const handleAddToCart = async () => {   
         setShowCart(true);
         const data = {
-            user_id: 201,
-            course_id: 20,
+            user_id: user_id,
+            course_id: course?.id,
             transaction_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
             is_enrolled: false,
-            enrollment_date: "2025-02-12T16:33:23.665Z",
+            enrollment_date: new Date().toISOString(),
             course_completion_status: "string",
-            created_by: 0,
-            updated_by: 0,
+            created_by: user_id,
+            updated_by: user_id,
             active: true,
             price: course?.price || 0
         };
 
         try {
-            const response = await postData("usercourse/", data);
+            const response = await axios.post(`https://cou-ip-bkend-dev.vercel.app/api/v1/usercourse/`, data);
             console.log("Add to Cart Response:", response);
             alert("Course successfully added to cart!");
 

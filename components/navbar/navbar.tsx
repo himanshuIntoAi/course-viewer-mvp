@@ -19,7 +19,7 @@ const Navbar = () => {
         <Link href="/home" className="relative after:content-[''] after:absolute after:w-full after:h-0.5 after:bg-teal-500 after:bottom-0 after:left-0 after:scale-x-100 after:transition-transform after:duration-300">
           Home
         </Link>
-        <Link href="/course">Courses</Link>
+        <Link href="/all-courses">Courses</Link>
         <Link href="#">Earn Now</Link>
         <Link href="/mentor-dashboard">Mentors</Link>
       </div>

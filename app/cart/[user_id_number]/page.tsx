@@ -4,19 +4,21 @@ import Navbar from "@/components/navbar/navbar";
 import Footer from "@/components/footer/footer";
 import { fetchData } from "@/services/api";
 import { getCartItems } from "@/services/api/cart/api";
-
-
+import { useParams } from "next/navigation";
+import axios from "axios";
 export default function CartPage() {
   const [cartItems, setCartItems] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const params = useParams();
+  const user_id = params.user_id_number;
 
   useEffect(() => {
     const fetchCartItems = async () => {
       try {
-        const data = await getCartItems(201);
-        console.log(data);
-        setCartItems(data);
-        const total = data.reduce((acc: number, item: any) => acc + item.course_price, 0);
+        const data = await axios.get(`https://cou-ip-bkend-dev.vercel.app/api/v1/usercourse/?user_id=${user_id}`);
+        console.log(data.data);
+        setCartItems(data.data);
+        const total = data.data.reduce((acc: number, item: any) => acc + item.course_price, 0);
         setTotalPrice(total);
       } catch (error) {
         console.error("Error fetching cart items:", error);
@@ -24,7 +26,7 @@ export default function CartPage() {
     };
 
     fetchCartItems();
-  }, []);
+  }, [user_id]);
 
   return (
     <main className="bg-[#F8FDFB] min-h-screen">

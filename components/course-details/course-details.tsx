@@ -5,12 +5,13 @@ import CourseTabs from "../course-details-tabs/course-details-tabs";
 import AboutInstructor from "../about-instructor/AboutInstructor";
 import ReviewSection from "../review-section/review-section";
 import MoreCoursesPage from "../more-courses/more-courses";
-import { postData } from "@/services/api";
+import { postData } from "@/services/api/cart/api";  
 import CourseCard from "../course-card/course-card";
 import CourseCart from "../course-cart/course-cart";
+import axios from "axios";
 
 
-const CourseDetails = ({course} ) => {
+const CourseDetails = ({course}: {course: object}  ) => {
   const [openSections, setOpenSections] = useState({});
   const [showCart, setShowCart] = useState(false);
   // For toggling "Show More"/"Show Less" in the small section at the bottom
@@ -50,31 +51,6 @@ const CourseDetails = ({course} ) => {
   ];
 
 
-  const handleAddToCart = async () => {
-
-    try {
-      const cartData = {
-        user_id: 201,
-        course_id: course?.id,
-        transaction_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        cart_date: new Date().toISOString(), // Add cart_date explicitly
-        is_enrolled: false,
-        enrollment_date: new Date().toISOString(), // Ensure correct format
-        course_completion_status: "not started",
-        created_by: 201,
-        updated_by: 201,
-        active: true,
-        price: course?.price || 0, // Ensure price is valid
-      };
-  
-      console.log("Sending Data:", cartData);
-      await postData("usercourse/", cartData);
-      console.log("Course successfully added to cart!");
-    } catch (error) {
-      console.error("Failed to add to cart:", error?.response?.data || error.message);
-    }
-  };
-  
   return (
     <div>
       <div className="flex justify-between mx-auto p-16">
@@ -237,9 +213,9 @@ const CourseDetails = ({course} ) => {
           <ReviewSection />
 
         </div>
-
         {/* RIGHT SECTION (SIDEBARS) */}
         <CourseCard course={course} setShowCart={setShowCart} />
+        
       </div>
       <img src="/certificate.png" alt="Course Details" className="w-[90%] mx-auto h-auto" />
       <MoreCoursesPage />

@@ -295,7 +295,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         }
 
         // Use the redirect_path from the API response if available, otherwise default to dashboard
-        const redirectPath = data.redirect_path || '/dashboard';
+        const redirectPath = data.redirect_path || data.is_student ? '/student-dashboard' : '/mentor-dashboard';
         if (router) {
           router.push(redirectPath);
         } else {

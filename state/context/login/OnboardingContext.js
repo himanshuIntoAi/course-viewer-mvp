@@ -137,7 +137,7 @@ export function OnboardingProvider({ children }) {
   // Enhanced fetchUserData with validation
   const fetchUserData = async () => {
     try {
-      const response = await authenticatedFetch('http://localhost:8000/api/v1/auth/user');
+      const response = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/user`);
       const userData = await response.json();
       
       // Validate user data
@@ -255,7 +255,7 @@ export function OnboardingProvider({ children }) {
         setIsAuthenticated(true);
         setUser(userData);
         
-        window.location.replace('/dashboard');
+        window.location.replace(userData.is_student ? '/student-dashboard' : '/mentor-dashboard');
       }
     } catch (error) {
       setError(error.message);

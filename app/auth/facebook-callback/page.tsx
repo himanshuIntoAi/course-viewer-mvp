@@ -69,11 +69,11 @@ const FacebookCallbackPage: React.FC = () => {
         }
 
         // Get redirect path from state or use default
-        let redirectPath = '/dashboard';
+        let redirectPath = data.is_student ? '/student-dashboard' : '/mentor-dashboard';
         if (state) {
           try {
             const stateData: StateData = JSON.parse(decodeURIComponent(state));
-            redirectPath = stateData.redirectPath || '/dashboard';
+            redirectPath = stateData.redirectPath || data.is_student ? '/student-dashboard' : '/mentor-dashboard';
           } catch (error) {
             console.error('Failed to parse state:', error);
           }

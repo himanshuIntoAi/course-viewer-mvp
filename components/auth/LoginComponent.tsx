@@ -91,7 +91,7 @@ export default function LoginComponent(): JSX.Element {
           window.history.replaceState({}, '', newUrl.toString());
           
           // Redirect to dashboard
-          router.replace('/dashboard');
+          router.replace(userData.is_student ? '/student-dashboard' : '/mentor-dashboard');
         } catch (error) {
           console.error('Error processing authentication data:', error);
         }
@@ -128,7 +128,7 @@ export default function LoginComponent(): JSX.Element {
 
   useEffect(() => {
     if (!loading && user && !isSigningOut) {
-      router.replace('/dashboard');
+      router.replace(user.is_student ? '/student-dashboard' : '/mentor-dashboard');
     }
   }, [user, router, loading, isSigningOut]);
 

@@ -805,7 +805,7 @@ export function getAuthUrl(provider: 'github' | 'facebook' | 'google', state: st
   return url.toString();
 }
 
-export function initiateOAuthLogin(provider: 'github' | 'facebook' | 'google', redirectPath = '/dashboard'): void {
+export function initiateOAuthLogin(provider: 'github' | 'facebook' | 'google', redirectPath = '/student-dashboard'): void {
   if (!isBrowser) {
     throw new Error('OAuth login can only be initiated in browser environment');
   }

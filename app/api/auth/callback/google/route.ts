@@ -88,7 +88,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (data.access_token) {
       // Use redirect_path from backend response if available
-      const redirectPath = data.redirect_path || '/dashboard';
+      const redirectPath = data.redirect_path || data.is_student ? '/student-dashboard' : '/mentor-dashboard';
       const redirectUrl = new URL(redirectPath, request.nextUrl.origin);
       
       // Set token and user data

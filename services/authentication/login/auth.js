@@ -624,8 +624,7 @@ export const auth = {
       }
 
       if (data.access_token) {
-        const redirectPath = sessionStorage.getItem('redirect_path') || '/dashboard';
-        
+        const redirectPath = sessionStorage.getItem('redirect_path') || data.is_student ? '/student-dashboard' : '/mentor-dashboard';
         // Clean up all storage
         sessionStorage.removeItem('oauth_state');
         sessionStorage.removeItem('redirect_path');
@@ -669,7 +668,7 @@ const getCookie = (name) => {
 
 import { nanoid } from 'nanoid';
 
-export function generateOAuthState(redirectPath = '/dashboard') {
+export function generateOAuthState(redirectPath = '/') {
   const state = {
     stateId: nanoid(),
     redirectPath,
@@ -719,7 +718,7 @@ export function getAuthUrl(provider, state) {
   return url.toString();
 }
 
-export function initiateOAuthLogin(provider, redirectPath = '/dashboard') {
+export function initiateOAuthLogin(provider, redirectPath = '/') {
   if (!isBrowser) {
     throw new Error('OAuth login can only be initiated in browser environment');
   }

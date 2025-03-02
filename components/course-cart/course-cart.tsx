@@ -1,20 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { getCartItems } from '@/services/api/cart/api';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 const CourseCart = ({showCart , setShowCart}) => {
-  
+  const router = useRouter();
   const [cartItems, setCartItems] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const user_id = localStorage.getItem("user");
+
+  let user_id_number;
+  if (user_id) {
+    try {
+      const user = JSON.parse(user_id);
+      user_id_number = user.id;
+    } catch (error) {
+      console.error("Error parsing user data from localStorage:", error);
+    }
+  }
+
 
   useEffect(() => {
     const fetchCartItems = async () => {
-      const data = await getCartItems(201);
-      setCartItems(data);
-      const total = data.reduce((acc: number, item: any) => acc + item.course_price, 0);
+      const data = await axios.get(`https://cou-ip-bkend-dev.vercel.app/api/v1/usercourse/?user_id=${user_id_number}`);
+      console.log("data of cart courses",data.data);
+      setCartItems(data.data);
+      const total = data.data.reduce((acc: number, item: any) => acc + item.course_price, 0);
       setTotalPrice(total);
     };
     fetchCartItems();
-  }, []);
+  }, [showCart]);
 
   return (
     showCart && ( 
@@ -71,7 +86,7 @@ const CourseCart = ({showCart , setShowCart}) => {
 
       {/* Buttons */}
       <div className="flex space-x-3">
-        <button className="w-1/2 border border-teal-600 text-teal-600 font-medium py-2 rounded hover:bg-teal-50">
+        <button className="w-1/2 border border-teal-600 text-teal-600 font-medium py-2 rounded hover:bg-teal-50" onClick={() => router.push(`/cart/${user_id_number}`)}>
           View Cart
         </button>
         <button className="w-1/2 bg-teal-600 text-white font-medium py-2 rounded hover:bg-teal-700">

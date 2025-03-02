@@ -3,23 +3,24 @@ import Navbar from "@/components/navbar/navbar";
 import CourseDetails from "@/components/course-details/course-details";
 import React, { useEffect, useState } from 'react'
 import Footer from "@/components/footer/footer";
-import { fetchData } from "@/services/api";
-
+import { useParams } from "next/navigation";
+import axios from "axios";
+import { fetchCourseData } from "@/services/api/course/api";
 const page = () => {
   const [course, setCourse] = useState({});
+  const params = useParams();
+  const courseId = String(params.id); 
 
-  useEffect(() => {
-    const fetchCourseData = async () => {
-      try {
-        const courseData = await fetchData("courses/1");
-        setCourse(courseData);
-      } catch (error) {
-        console.error("Failed to fetch course data:", error);
-      }
-    };
 
+  const fetchCourseData = async () => {   
+    const courseData = await axios.get(`https://cou-ip-bkend-dev.vercel.app/api/v1/courses/${courseId}`);
+    setCourse(courseData.data);
+  }
+
+  useEffect( () => {
     fetchCourseData();
-  }, []);
+  }, [courseId]);
+  console.log(course);
 
   return (
     <div className="relative from-[#E4F7F7] to-white">
