@@ -5,7 +5,21 @@ import HomeSignupComponent from '@/components/home-signup/home-signup'
 import TrendingCourses from '@/components/TrendingCourses/TrendingCourses'
 import BestWayToLearn from '@/components/best-way-to-learn/bestWayToLearn'
 import Footer from '@/components/footer/footer'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 const Home = () => {
+
+    const [user, setUser] = useState<boolean>(false);
+
+    useEffect(() => {
+        let user = localStorage.getItem("user");
+        console.log("User at home ",user);
+        if (user) {
+            console.log("User at home ",user);
+            setUser(JSON.parse(user));
+        }
+    }, [])
     return (
         <div>
 
@@ -54,7 +68,9 @@ const Home = () => {
             </div>
 
             {/* Footer */}
-            <HomeSignupComponent />
+            {
+                (user == false) && <HomeSignupComponent />
+            }
             <TrendingCourses />
             <BestWayToLearn />
 
@@ -84,7 +100,7 @@ const Home = () => {
                         Use our course helpers for doubts too...
                     </p>
                     <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition">
-                        Let’s Do It
+                        Let's Do It
                     </button>
                 </div>
             </section>

@@ -5,13 +5,16 @@ import CourseTabs from "../course-details-tabs/course-details-tabs";
 import AboutInstructor from "../about-instructor/AboutInstructor";
 import ReviewSection from "../review-section/review-section";
 import MoreCoursesPage from "../more-courses/more-courses";
-import { postData } from "@/services/api/cart/api";  
 import CourseCard from "../course-card/course-card";
 import CourseCart from "../course-cart/course-cart";
 import axios from "axios";
+import { Course } from '@/services/types/course/course';
 
+interface CourseDetailsProps {
+  course: Course;
+}
 
-const CourseDetails = ({course}: {course: object}  ) => {
+const CourseDetails: React.FC<CourseDetailsProps> = ({ course }) => {
   const [openSections, setOpenSections] = useState({});
   const [showCart, setShowCart] = useState(false);
   // For toggling "Show More"/"Show Less" in the small section at the bottom
@@ -52,9 +55,9 @@ const CourseDetails = ({course}: {course: object}  ) => {
 
 
   return (
-    <div>
+    <div className="container mx-auto px-4">
       <div className="flex justify-between mx-auto p-16">
-      <CourseCart showCart={showCart} setShowCart={setShowCart} />
+        <CourseCart showCart={showCart} setShowCart={setShowCart} />
         {/* LEFT SECTION */}
         <div className="w-[60%]">
           <div>

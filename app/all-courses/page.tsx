@@ -5,218 +5,76 @@ import { CourseCard } from "../../components/course-card-all-courses/course-card
 import { CoursesTopSection } from "../../components/all-courses-top-section/courses-top-section"
 import Navbar from "../../components/navbar/navbar"
 import { useState, useEffect } from 'react'
-import { getCategories, getCourses } from '../../services/api/explore-courses/api'
-import { Category, Course, PaginatedResponse } from '../../services/api/explore-courses/api'
+import { getCourses } from "@/services/api/course-and-filters/api"
 import { Grid, List } from "lucide-react"
+import { getFilteredCourses } from "@/services/api/course-and-filters/api"
+import { Course } from "@/services/types/course/course"
 
 
 export default function CoursesPage() {
   const [view, setView] = useState<'grid' | 'list'>('list')
-  const [categories, setCategories] = useState<Category[]>([])
-  const [allInstructors, setAllInstructors] = useState<{id: number; display_name: string; count: number}[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [filters, setFilters] = useState({
-    categories: [] as string[],
-    ratings: [] as number[],
-    instructors: [] as number[],
-    priceType: 'all' as 'all' | 'free' | 'paid',
-    levels: [] as string[]
-  })
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([])
-  const [coursesData, setCoursesData] = useState<PaginatedResponse<Course>>({
-    items: [],
-    total: 0,
-    page: 1,
-    size: 10,
-    pages: 0
-  })
 
-  // Listen for view changes from navbar
-  useEffect(() => {
-    const handleViewChange = (event: CustomEvent<'grid' | 'list'>) => {
-      setView(event.detail)
+  const [coursesData, setCoursesData] = useState<Course[]>([])
+ 
+ 
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [filters, setFilters] = useState<object>({});
+
+  async function getAttFiltersFromSidebar(filters: object) {
+    console.log("Filters from sidebar", filters);
+    // Only set filters if there are actual values
+    const hasValues = Object.values(filters).some(value => value !== null && value !== '');
+    if (hasValues) {
+      setFilters(filters);
+    } else {
+      setFilters({});
+      await fetchAllCourses();
     }
-
-    const handleSearchResults = (event: CustomEvent<{
-      filteredCourses: Course[],
-      coursesData: PaginatedResponse<Course>
-    }>) => {
-      setFilteredCourses(event.detail.filteredCourses)
-      setCoursesData(prevData => ({
-        ...event.detail.coursesData,
-        size: prevData.size // Maintain the current page size
-      }))
-    }
-
-    const handlePageSizeChange = (event: CustomEvent<number>) => {
-      const newSize = event.detail
-      const start = 0 // Reset to first page
-      const end = newSize
-      
-      // Recalculate pagination with new size
-      setCoursesData(prevData => {
-        const newPages = Math.max(1, Math.ceil(prevData.total / newSize))
-        return {
-          ...prevData,
-          items: filteredCourses.slice(start, end),
-          page: 1,
-          size: newSize,
-          pages: newPages
-        }
-      })
-    }
-
-    const handlePageChange = (event: CustomEvent<number>) => {
-      const newPage = event.detail
-      const start = (newPage - 1) * coursesData.size
-      const end = start + coursesData.size
-      
-      setCoursesData(prevData => ({
-        ...prevData,
-        items: filteredCourses.slice(start, end),
-        page: newPage
-      }))
-    }
-
-    window.addEventListener('viewChange', handleViewChange as EventListener)
-    window.addEventListener('searchResults', handleSearchResults as EventListener)
-    window.addEventListener('pageSizeChange', handlePageSizeChange as EventListener)
-    window.addEventListener('pageChange', handlePageChange as EventListener)
-    
-    return () => {
-      window.removeEventListener('viewChange', handleViewChange as EventListener)
-      window.removeEventListener('searchResults', handleSearchResults as EventListener)
-      window.removeEventListener('pageSizeChange', handlePageSizeChange as EventListener)
-      window.removeEventListener('pageChange', handlePageChange as EventListener)
-    }
-  }, [coursesData.size, filteredCourses])
-
-  // Fetch categories and calculate counts
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [categoriesData, coursesResponse] = await Promise.all([
-          getCategories(),
-          getCourses()
-        ])
-
-        console.log('API Response - Courses:', coursesResponse.items)
-
-        setFilteredCourses(coursesResponse.items || [])
-
-        // Calculate category counts
-        const categoryCountMap = new Map<number, number>()
-        categoriesData.forEach(category => {
-          categoryCountMap.set(category.id, 0)
-        })
-        
-        coursesResponse.items.forEach((course: Course) => {
-          if (course.category_id && categoryCountMap.has(course.category_id)) {
-            categoryCountMap.set(
-              course.category_id,
-              (categoryCountMap.get(course.category_id) || 0) + 1
-            )
-          }
-        })
-        
-        // Update categories with counts
-        setCategories(categoriesData.map(category => ({
-          ...category,
-          count: categoryCountMap.get(category.id) || 0
-        })))
-
-        // Calculate instructor counts
-        const instructorMap = new Map()
-        coursesResponse.items.forEach((course: Course) => {
-          console.log('Processing course:', course)
-          const instructor = course.instructor || course.mentor
-          console.log('Instructor found:', instructor)
-          if (instructor && instructor.id && instructor.display_name) {
-            if (!instructorMap.has(instructor.id)) {
-              instructorMap.set(instructor.id, {
-                id: instructor.id,
-                display_name: instructor.display_name.trim(),
-                count: 1
-              })
-            } else {
-              const current = instructorMap.get(instructor.id)
-              instructorMap.set(instructor.id, {
-                ...current,
-                count: current.count + 1
-              })
-            }
-          }
-        })
-
-        const instructorsList = Array.from(instructorMap.values())
-        console.log('Final instructors list:', instructorsList)
-        setAllInstructors(instructorsList)
-
-        // Initialize coursesData with the first page
-        const pageSize = 10
-        setCoursesData({
-          items: coursesResponse.items.slice(0, pageSize),
-          total: coursesResponse.items.length,
-          page: 1,
-          size: pageSize,
-          pages: Math.max(1, Math.ceil(coursesResponse.items.length / pageSize))
-        })
-
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-        setCategories([])
-        setFilteredCourses([])
-        setAllInstructors([])
-        setIsLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
-
-  // Apply additional filters
-  useEffect(() => {
-    if (!filteredCourses.length) return
-
-    const filtered = filteredCourses.filter(course => {
-      const matchesCategories = !filters.categories?.length ||
-        filters.categories.includes((course.category_id || 0).toString())
-
-      const matchesInstructors = !filters.instructors?.length || 
-        ((course.instructor || course.mentor) && filters.instructors.includes((course.instructor || course.mentor)!.id))
-
-      const matchesRating = !filters.ratings?.length ||
-        filters.ratings.includes(Math.round(course.ratings || 0))
-
-      const matchesPrice = !filters.priceType || filters.priceType === 'all' ||
-        (filters.priceType === 'free' && (course.price || 0) === 0) ||
-        (filters.priceType === 'paid' && (course.price || 0) > 0)
-
-      return matchesCategories && matchesInstructors && matchesRating && matchesPrice
-    })
-
-    // Reset to page 1 when filters change
-    const newPage = 1;
-    const start = (newPage - 1) * coursesData.size
-    const end = start + coursesData.size
-
-    // Update coursesData with filtered results and reset pagination
-    setCoursesData({
-      items: filtered.slice(start, end),
-      total: filtered.length,
-      page: newPage,
-      size: coursesData.size,
-      pages: Math.max(1, Math.ceil(filtered.length / coursesData.size))
-    })
-
-    // Notify navbar of page change
-    const event = new CustomEvent('pageChange', { detail: newPage })
-    window.dispatchEvent(event)
-  }, [filteredCourses, filters])
-
-  const handleFiltersChange = (newFilters: typeof filters) => {
-    setFilters(newFilters)
   }
+
+  const fetchAllCourses = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getCourses();
+      console.log("Response from getCourses", response);
+      setCoursesData(response);
+    } catch (error) {
+      console.error('Error fetching all courses:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  
+  useEffect(() => {
+  
+
+
+    fetchAllCourses();
+  }, []);
+
+  useEffect(() => {
+    const fetchFilteredCourses = async () => {
+      try {
+        setIsLoading(true);
+        if (Object.keys(filters).length > 0) {
+          const response = await getFilteredCourses(filters);
+          setCoursesData(response);
+        } else {
+          await fetchAllCourses();
+        }
+      } catch (error) {
+        console.error('Error fetching filtered courses:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFilteredCourses();
+  }, [filters]);
+
 
   const handleSearch = (query: string) => {
     // Filter courses based on search query
@@ -227,18 +85,7 @@ export default function CoursesPage() {
       return matchesSearch
     })
 
-    // Update filtered courses and recalculate pagination
-    const start = 0
-    const end = coursesData.size
 
-    setFilteredCourses(filtered)
-    setCoursesData(prevData => ({
-      items: filtered.slice(start, end),
-      total: filtered.length,
-      page: 1,
-      size: prevData.size,
-      pages: Math.max(1, Math.ceil(filtered.length / prevData.size))
-    }))
   }
 
   return (
@@ -248,15 +95,13 @@ export default function CoursesPage() {
         <CoursesTopSection
           onSearch={handleSearch}
         />
-        
+
         <div className="container mx-auto px-4">
           <div className="flex gap-8">
-            <Sidebar 
-              categories={categories} 
-              instructors={allInstructors}
-              onFiltersChange={handleFiltersChange}
+            <Sidebar
+              filtersPassingFunction={getAttFiltersFromSidebar}
             />
-            
+
             <div className="flex-1">
               {/* Grid/List View Controls */}
               <div className="flex items-center justify-between mb-4">
@@ -284,27 +129,26 @@ export default function CoursesPage() {
                     List
                   </button>
                 </div>
-                <span className="text-sm font-size-16px text-gray-600 font-inter">
+                {/* <span className="text-sm font-size-16px text-gray-600 font-inter">
                   Showing {((coursesData.page - 1) * coursesData.size) + 1}-
                   {Math.min(coursesData.page * coursesData.size, coursesData.total)} of {coursesData.total} results
-                </span>
+                </span> */}
               </div>
 
-              <div className={`${
-                view === 'grid' 
-                  ? 'grid grid-cols-2 gap-4' 
+              <div className={`${view === 'grid'
+                  ? 'grid grid-cols-2 gap-4'
                   : 'space-y-4'
-              } mb-8`}>
+                } mb-8`}>
                 {isLoading ? (
                   <div className="flex items-center justify-center p-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
-                ) : coursesData.items.length === 0 ? (
+                ) : coursesData.length === 0 ? (
                   <div className="text-center p-8 text-gray-500">
                     No courses found
                   </div>
                 ) : (
-                  coursesData.items.map((course) => (
+                  coursesData.map((course) => (
                     <CourseCard key={course.id} course={course} view={view} />
                   ))
                 )}
@@ -318,7 +162,7 @@ export default function CoursesPage() {
                     <select
                       value={coursesData.size}
                       onChange={(e) => {
-                        const event = new CustomEvent('pageSizeChange', { 
+                        const event = new CustomEvent('pageSizeChange', {
                           detail: Number(e.target.value)
                         })
                         window.dispatchEvent(event)
@@ -334,21 +178,20 @@ export default function CoursesPage() {
                   </div>
 
                   <div className="flex justify-center gap-2">
-                    <button 
+                    <button
                       onClick={() => {
                         if (coursesData.page > 1) {
-                          const event = new CustomEvent('pageChange', { 
+                          const event = new CustomEvent('pageChange', {
                             detail: coursesData.page - 1
                           })
                           window.dispatchEvent(event)
                         }
                       }}
                       disabled={coursesData.page === 1}
-                      className={`p-2 border rounded-md ${
-                        coursesData.page === 1 
-                          ? 'text-gray-400 cursor-not-allowed' 
+                      className={`p-2 border rounded-md ${coursesData.page === 1
+                          ? 'text-gray-400 cursor-not-allowed'
                           : 'hover:bg-gray-50 text-[#16197C]'
-                      }`}
+                        }`}
                     >
                       ←
                     </button>
@@ -356,35 +199,33 @@ export default function CoursesPage() {
                       <button
                         key={page}
                         onClick={() => {
-                          const event = new CustomEvent('pageChange', { 
+                          const event = new CustomEvent('pageChange', {
                             detail: page
                           })
                           window.dispatchEvent(event)
                         }}
-                        className={`px-3 py-1.5 ${
-                          coursesData.page === page
+                        className={`px-3 py-1.5 ${coursesData.page === page
                             ? 'bg-[#16197C] text-white'
                             : 'border hover:bg-gray-50 text-[#16197C]'
-                        } rounded-md`}
+                          } rounded-md`}
                       >
                         {page}
                       </button>
                     ))}
-                    <button 
+                    <button
                       onClick={() => {
                         if (coursesData.page < coursesData.pages) {
-                          const event = new CustomEvent('pageChange', { 
+                          const event = new CustomEvent('pageChange', {
                             detail: coursesData.page + 1
                           })
                           window.dispatchEvent(event)
                         }
                       }}
                       disabled={coursesData.page === coursesData.pages}
-                      className={`p-2 border rounded-md ${
-                        coursesData.page === coursesData.pages 
-                          ? 'text-gray-400 cursor-not-allowed' 
+                      className={`p-2 border rounded-md ${coursesData.page === coursesData.pages
+                          ? 'text-gray-400 cursor-not-allowed'
                           : 'hover:bg-gray-50 text-[#16197C]'
-                      }`}
+                        }`}
                     >
                       →
                     </button>

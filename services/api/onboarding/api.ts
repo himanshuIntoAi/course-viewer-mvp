@@ -1,4 +1,5 @@
 // Validate and format API URL
+
 function normalizeApiUrl(url: string): string {
   try {
     console.log('Normalizing API URL:', url);
@@ -37,12 +38,12 @@ function normalizeApiUrl(url: string): string {
   }
 }
 
-if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
-  throw new Error('NEXT_PUBLIC_BACKEND_URL environment variable is not set');
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
 }
 
 // Normalize and validate the API URL
-export const API_BASE_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_BACKEND_URL);
+export const API_BASE_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
 console.log('Initialized API_BASE_URL:', API_BASE_URL);
 
 // Types

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@next/swc-darwin-arm64": "^15.2.1",
     "axios": "^1.7.9",
     "lucide-react": "^0.476.0",
     "next": "15.1.5",

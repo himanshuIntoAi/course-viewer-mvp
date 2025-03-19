@@ -15,10 +15,9 @@ export default function CartPage() {
   useEffect(() => {
     const fetchCartItems = async () => {
       try {
-        const data = await axios.get(`https://cou-ip-bkend-dev.vercel.app/api/v1/usercourse/?user_id=${user_id}`);
-        console.log(data.data);
-        setCartItems(data.data);
-        const total = data.data.reduce((acc: number, item: any) => acc + item.course_price, 0);
+        const data = await getCartItems(user_id as string);
+        setCartItems(data);
+        const total = data.reduce((acc: number, item: any) => acc + item.course_price, 0);
         setTotalPrice(total);
       } catch (error) {
         console.error("Error fetching cart items:", error);

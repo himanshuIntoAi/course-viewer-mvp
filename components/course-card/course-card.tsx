@@ -1,50 +1,55 @@
-import React from "react";
-import { postData } from "../../services/api/cart/api"; // Adjust the path as necessary
 import Link from "next/link";
 import axios from "axios";
+import { useState } from "react";
+import { Course, CartItem } from "@/services/types/course/course";
+import React from "react";
+import { addToCart } from "@/services/api/cart/api";
 
-const CourseCard = ({ course, setShowCart }: { course: any, setShowCart: any } ) => {
-    const userString = localStorage.getItem("user");
-    let user_id;
+interface CourseCardProps {
+    course: Course;
+    setShowCart: (show: boolean) => void;
+}
 
-    if (userString) {
+const CourseCard: React.FC<CourseCardProps> = ({ course, setShowCart }) => {
+    const [userId, setUserId] = useState<string | null>(null);
+
+
+
+    React.useEffect(() => {
+        const userString = localStorage.getItem("user");
+        if (userString) {
+            try {
+                const user = JSON.parse(userString);
+                setUserId(user.id);
+            } catch (error) {
+                console.error("Error parsing user data from localStorage:", error);
+            }
+        }
+    }, [])
+
+
+    const handleAddToCart = async () => {
+        if (!userId) {
+            alert("please login to add to cart");
+            return;
+        }
+        setShowCart(true);
+        const cartData: CartItem = {
+            user_id: Number(userId),
+            course_id: Number(course.id),
+        }
         try {
-            const user = JSON.parse(userString);
-            user_id = user.id;
+            await addToCart(cartData);
+            alert("Course successfully added to cart!");
         } catch (error) {
-            console.error("Error parsing user data from localStorage:", error);
+            // console.error("Error adding to cart:");
+            // alert("Failed to add course to cart");
         }
     }
 
-    console.log("user_id", user_id);
-
-    const handleAddToCart = async () => {   
-        setShowCart(true);
-        const data = {
-            user_id: user_id,
-            course_id: course?.id,
-            transaction_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            is_enrolled: false,
-            enrollment_date: new Date().toISOString(),
-            course_completion_status: "string",
-            created_by: user_id,
-            updated_by: user_id,
-            active: true,
-            price: course?.price || 0
-        };
-
-        try {
-            const response = await axios.post(`https://cou-ip-bkend-dev.vercel.app/api/v1/usercourse/`, data);
-            console.log("Add to Cart Response:", response);
-            alert("Course successfully added to cart!");
-
-        } catch (error) {
-            console.error("Error adding to cart:", error);
-        }
-    };
 
     return (
-        <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden sticky top-[0px]" style={{height : "max-content"}}>
+        <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden sticky top-[0px]" style={{ height: "max-content" }}>
             {/* Top Image/Heading Section */}
             <div className="">
                 <img
@@ -52,7 +57,7 @@ const CourseCard = ({ course, setShowCart }: { course: any, setShowCart: any } )
                     alt="Web Design Course"
                     className="h-44 w-full object-cover"
                 />
-              
+
             </div>
 
             {/* Content Section */}
@@ -88,7 +93,7 @@ const CourseCard = ({ course, setShowCart }: { course: any, setShowCart: any } )
 
                 {/* Add to Cart / Buy Now */}
                 {/* <Link href="/cart"> */}
-                <button 
+                <button
                     className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-4 rounded-md mb-2"
                     onClick={handleAddToCart}
                 >

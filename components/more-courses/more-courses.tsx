@@ -71,9 +71,9 @@ export default function MoreCoursesPage() {
       </div>
 
       <div className="flex flex-wrap justify-between">
-        {courses.map((course) => (
+        {courses.map((course , index) => (
           <div
-            key={course.id}
+            key={index}
             className="bg-white rounded-lg shadow hover:shadow-lg transition w-[23%] m-2"
           >
             {/* Course Image */}

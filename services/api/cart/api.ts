@@ -1,44 +1,33 @@
 import axios from "axios";
+import { CartItem } from "@/services/types/course/course";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+export const getCartItems = async (user_id: string): Promise<CartItem[]> => {
+    try {
+      const response = await axios.get<CartItem[]>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/usercourse?user_id=${user_id}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching cart items:", error);
+      throw error;
+    }
+};
 
-// API Methods
-export const fetchData = async (endpoint: string, params: Record<string, string> = {}) => {
+export const addToCart = async(data: { user_id: number, course_id: number }): Promise<CartItem> => {
   try {
-    const url = new URL(endpoint, API_BASE_URL);
-    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-
-    const response = await apiClient.get(url.toString());
+    const response = await axios.post<CartItem>(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/usercourse/cart?user_id=${data.user_id}&course_id=${data.course_id}`,
+      '', // Empty body as per the curl command
+      {
+        headers: {
+          'accept': 'application/json'
+        }
+      }
+    );
     return response.data;
-  } catch (error: any) {
-    console.error("API Error:", error?.response?.data || error.message);
+  } catch (error) {
+    // console.error("Error adding to cart:", error);
     throw error;
   }
-};
-
-
-export const postData = async (endpoint: string, data: any) => {
-  try {
-    console.log("POST Request to:", endpoint);
-    console.log("Payload:", JSON.stringify(data, null, 2));
-
-    const response = await apiClient.post(endpoint, data);
-    console.log("Response:", response.data);
-    return response.data;
-  } catch (error: any) {
-    console.error("API Error:", error?.response?.data || error.message);
-    throw error;
-  }
-};
-
-export const getCartItems = async (user_id: string) => {
-    const response = await axios.get(`${API_BASE_URL}/usercourse?user_id=${user_id}`);
-    return response.data;   
-};
+}

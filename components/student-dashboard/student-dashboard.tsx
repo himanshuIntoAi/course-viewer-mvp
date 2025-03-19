@@ -3,8 +3,9 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { HiOutlineBookOpen, HiOutlineAcademicCap } from 'react-icons/hi';
-
+import { useEffect } from 'react';
 export default function StudentDashboard() {
+  const [user, setUser] = useState<boolean>(false);
   const [menuItems] = useState([
     'Dashboard',
     'My Profile',
@@ -15,6 +16,17 @@ export default function StudentDashboard() {
     'Log out',
   ]);
 
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error("Failed to parse user from localStorage", error);
+      }
+    }
+  }, []);
   return (
     <div className="min-h-screen flex flex-col items-center p-4">
       <div className="max-w-6xl w-full bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -38,11 +50,11 @@ export default function StudentDashboard() {
               />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-900">John Doe</h2>
-              <p className="text-xs text-gray-600">Country: Australia</p>
+              <h2 className="text-sm font-bold text-gray-900">{user ? user.display_name || "Dummy User" : "Dummy User"}</h2>
+              <p className="text-xs text-gray-600">{user ? user.country || "Dummy Country" : "Dummy Country"}</p>
               <div className="flex items-center gap-2 text-gray-500 text-xs">
-                <span>🏆 12 Courses</span>
-                <span>📍 5 Locations</span>
+                <span>🏆 {user && user.courses_enrolled !== undefined ? user.courses_enrolled : "NA"} Courses</span>
+                <span>📍 {user && user.locations !== undefined ? user.locations : "NA"} Locations</span>
               </div>
             </div>
           </div>
