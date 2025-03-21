@@ -19,6 +19,7 @@ interface User {
 
 export default function StudentDashboard() {
   const [user, setUser] = useState<User | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const [menuItems] = useState([
     'Dashboard',
     'My Profile',
@@ -29,7 +30,15 @@ export default function StudentDashboard() {
     'Log out',
   ]);
 
+  // Set isClient to true when component mounts
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Only run on client side
+    if (!isClient) return;
+    
     // Get user data from localStorage or session
     const getUserData = () => {
       try {
@@ -42,7 +51,7 @@ export default function StudentDashboard() {
             user_id: parsedUser.id || parsedUser.user_id || 123456,
             display_name: parsedUser.name || parsedUser.display_name || 'Student User',
             email: parsedUser.email || 'student@example.com',
-            profile_image: parsedUser.image || parsedUser.profile_image || parsedUser.avatar_url || parsedUser.picture || '/images/default-avatar.png',
+            profile_image: parsedUser.image || parsedUser.profile_image || parsedUser.avatar_url || parsedUser.picture || '/images/user-icon.svg',
             is_student: true,
             is_instructor: false,
             country: parsedUser.country || parsedUser.location || 'Not specified',
@@ -56,7 +65,7 @@ export default function StudentDashboard() {
             user_id: 123456,
             display_name: 'Demo Student',
             email: 'student@example.com',
-            profile_image: '/images/default-avatar.png',
+            profile_image: '/images/user-icon.svg',
             is_student: true,
             is_instructor: false,
             country: 'Not specified',
@@ -72,7 +81,7 @@ export default function StudentDashboard() {
           user_id: 123456,
           display_name: 'Demo Student',
           email: 'student@example.com',
-          profile_image: '/images/default-avatar.png',
+          profile_image: '/images/user-icon.svg',
           is_student: true,
           is_instructor: false,
           country: 'Not specified',
@@ -84,11 +93,21 @@ export default function StudentDashboard() {
     };
     
     getUserData();
-  }, []);
+  }, [isClient]);
 
-  if (!user) {
-    return <div>Loading...</div>;
-  }
+  // Use a default user for initial server-side rendering
+  const displayUser = user || {
+    user_id: 123456,
+    display_name: 'Demo Student',
+    email: 'student@example.com',
+    profile_image: '/images/user-icon.svg',
+    is_student: true,
+    is_instructor: false,
+    country: 'Not specified',
+    courses_enrolled: 0,
+    locations: [],
+    provider: ''
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4">
@@ -99,34 +118,35 @@ export default function StudentDashboard() {
             <div className="bg-white p-6 rounded-xl shadow-md">
               {/* Profile Section */}
               <div className="text-center mb-6">
-                <div className="relative w-24 h-24 mx-auto mb-4">
+                <div className="relative mx-auto mb-4" style={{ width: '96px', height: '96px' }}>
                   <Image
-                    src={user.profile_image || "/images/default-avatar.png"}
+                    src={displayUser.profile_image}
                     alt="Profile"
                     width={96}
                     height={96}
                     className="rounded-full object-cover"
+                    priority
                   />
-                  {user.provider && (
+                  {isClient && displayUser.provider && (
                     <div className="absolute bottom-0 right-0 bg-blue-500 text-white text-xs p-1 rounded-full">
-                      {user.provider}
+                      {displayUser.provider}
                     </div>
                   )}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800">{user.display_name}</h3>
-                <p className="text-gray-500">{user.email}</p>
-                <p className="text-gray-500">{user.country || 'Location not set'}</p>
+                <h3 className="text-xl font-semibold text-gray-800">{displayUser.display_name}</h3>
+                <p className="text-gray-500">{displayUser.email}</p>
+                <p className="text-gray-500">{displayUser.country || 'Location not set'}</p>
               </div>
 
               {/* Quick Stats */}
               <div className="border-t border-gray-200 pt-4 mb-6">
                 <div className="flex justify-between mb-2">
                   <span className="text-gray-600">Courses Enrolled</span>
-                  <span className="font-semibold">{user.courses_enrolled || 0}</span>
+                  <span className="font-semibold">{displayUser.courses_enrolled || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Locations</span>
-                  <span className="font-semibold">{user.locations?.length || 0}</span>
+                  <span className="font-semibold">{displayUser.locations?.length || 0}</span>
                 </div>
               </div>
 
@@ -152,7 +172,7 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-2 gap-10">
               <div className="bg-violet-100 p-6 rounded-xl shadow-md text-center border border-violet-300 space-y-4">
                 <HiOutlineBookOpen className="text-blue-700 text-4xl mx-auto mb-2" />
-                <p className="text-3xl font-extrabold text-blue-400">{user.courses_enrolled || 0}</p>
+                <p className="text-3xl font-extrabold text-blue-400">{displayUser.courses_enrolled || 0}</p>
                 <p className="text-gray-600 text-lg">Enrolled Courses</p>
               </div>
               <div className="bg-violet-100 p-6 rounded-xl shadow-md text-center border border-violet-300 space-y-4">
