@@ -1,46 +1,25 @@
 'use server';
 
 import { FormData } from '@/components/form/types';
-import { pool } from '@/services/storage/onboarding/db';
+import { makeDbRequest } from '@/services/storage/onboarding/db';
 
 export async function saveFormData(formData: FormData) {
   try {
-    const client = await pool.connect();
-    try {
-      const query = `
-        INSERT INTO user_onboarding (
-          user_type,
-          education_status,
-          help_type,
-          graduation_year,
-          field_of_study,
-          major,
-          current_skills,
-          target_skills,
-          wants_mentor,
-          preference_type
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING *
-      `;
+    const data = {
+      user_type: formData.userType,
+      education_status: formData.educationStatus,
+      help_type: formData.helpType,
+      graduation_year: formData.graduationYear || null,
+      field_of_study: formData.fieldOfStudy || null,
+      major: formData.major || null,
+      current_skills: formData.currentSkills || [],
+      target_skills: formData.targetSkills || [],
+      wants_mentor: formData.wantsMentor,
+      preference_type: formData.preferenceType || null,
+    };
 
-      const values = [
-        formData.userType,
-        formData.educationStatus,
-        formData.helpType,
-        formData.graduationYear || null,
-        formData.fieldOfStudy || null,
-        formData.major || null,
-        formData.currentSkills || [],
-        formData.targetSkills || [],
-        formData.wantsMentor,
-        formData.preferenceType || null,
-      ];
-
-      const result = await client.query(query, values);
-      return { data: result.rows[0], error: null };
-    } finally {
-      client.release();
-    }
+    const result = await makeDbRequest('/onboarding', 'POST', data);
+    return { data: result, error: null };
   } catch (error) {
     console.error('Error saving form data:', error);
     return { data: null, error };

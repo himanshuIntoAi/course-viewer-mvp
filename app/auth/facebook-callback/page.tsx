@@ -11,6 +11,7 @@ interface FacebookCallbackResponse {
     email: string;
     profile_image: string;
   };
+  is_student?: boolean;
   redirect_path?: string;
   detail?: string;
 }

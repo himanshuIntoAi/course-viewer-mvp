@@ -1,11 +1,25 @@
-import { Pool } from 'pg';
+// Using axios for HTTP requests instead of direct database access
+import axios from 'axios';
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_POSTGRES_URL) {
-  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_POSTGRES_URL');
-}
+// Setup base URL from environment variable
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
-const pool = new Pool({
-  connectionString: process.env.NEXT_PUBLIC_SUPABASE_POSTGRES_URL,
-});
+// Create a function to make database requests through the API
+const makeDbRequest = async (endpoint: string, method: string = 'GET', data?: unknown) => {
+  try {
+    const response = await axios({
+      method,
+      url: `${API_URL}${endpoint}`,
+      data,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Database request error:', error);
+    throw error;
+  }
+};
 
-export { pool }; 
+export { makeDbRequest }; 

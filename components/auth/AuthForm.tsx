@@ -19,7 +19,7 @@ interface State {
   timestamp: number;
 }
 
-export default function AuthForm({ buttonStyle, inputStyle, selectedPath }: AuthFormProps): JSX.Element {
+export default function AuthForm({ buttonStyle, inputStyle, selectedPath }: AuthFormProps): React.ReactElement {
   const { login, register } = useOnboarding();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');

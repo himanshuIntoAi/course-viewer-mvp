@@ -71,7 +71,7 @@ export default function MentorDashboard() {
               <textarea
                 className="w-full p-2 mt-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Type your request here..."
-                rows="3"
+                rows={3}
               ></textarea>
 
               {/* Payment Input Field */}

@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-export default function FacebookSDK(): JSX.Element {
+export default function FacebookSDK(): React.ReactElement {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.fbAsyncInit = function() {

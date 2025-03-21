@@ -65,12 +65,12 @@ class SupabaseStore implements OnboardingStore {
       if (!sessionId) return null;
 
       const response = await onboardingApiClient.getOnboardingProgress(sessionId);
-      if (!response.data) return null;
+      if (!response.data || !response.session_id) return null;
 
       // Convert API response to OnboardingProgress type
       return {
         session_id: response.session_id,
-        step_number: response.step_number,
+        step_number: response.step_number || 1,
         data: response.data,
         user_id: response.user_id,
         created_at: response.created_at,
@@ -97,6 +97,11 @@ class SupabaseStore implements OnboardingStore {
           data: data.data,
           user_id: data.user_id || null
         });
+        
+        if (!result) {
+          throw new Error('Failed to create onboarding progress');
+        }
+        
         await this.setSessionId(result.session_id);
       } else {
         // Update existing onboarding progress
@@ -106,6 +111,10 @@ class SupabaseStore implements OnboardingStore {
           data: data.data,
           user_id: data.user_id
         });
+        
+        if (!result) {
+          throw new Error('Failed to update onboarding progress');
+        }
       }
 
       // Convert API response to OnboardingProgress type

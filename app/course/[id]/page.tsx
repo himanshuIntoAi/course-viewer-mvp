@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { Course } from "@/services/types/course/course";
 import { getCourseData } from "@/services/api/course/api";
 
-const page = () => {
+const Page = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,4 +83,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

@@ -5,7 +5,7 @@ import CourseTabs from "../course-details-tabs/course-details-tabs";
 import AboutInstructor from "../about-instructor/AboutInstructor";
 import ReviewSection from "../review-section/review-section";
 import MoreCoursesPage from "../more-courses/more-courses";
-import CourseCard from "../course-card/course-card";
+import { CourseCard } from "../course-card/course-card";
 import CourseCart from "../course-cart/course-cart";
 import axios from "axios";
 import { Course } from '@/services/types/course/course';
@@ -57,7 +57,9 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ course }) => {
   return (
     <div className="container mx-auto px-4">
       <div className="flex justify-between mx-auto p-16">
-        <CourseCart showCart={showCart} setShowCart={setShowCart} />
+        <div className={showCart ? "block" : "hidden"}>
+          <CourseCart />
+        </div>
         {/* LEFT SECTION */}
         <div className="w-[60%]">
           <div>
@@ -217,7 +219,7 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ course }) => {
 
         </div>
         {/* RIGHT SECTION (SIDEBARS) */}
-        <CourseCard course={course} setShowCart={setShowCart} />
+        <CourseCard course={course} view="grid" />
         
       </div>
       <img src="/certificate.png" alt="Course Details" className="w-[90%] mx-auto h-auto" />

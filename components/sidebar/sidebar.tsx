@@ -1,6 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { getAllFilters } from '@/services/api/course-and-filters/api';
+
+// Define filter option types
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Subcategory {
+  id: string;
+  name: string;
+}
+
+interface FilterOptions {
+  categories: Category[];
+  subcategories: Subcategory[];
+  course_types: any[];
+  sells_types: any[];
+  languages: any[];
+  price_range: { min: number; max: number };
+  ratings_range: { min: number; max: number };
+}
+
 // Tailwind CSS components
 export const Sidebar: React.FC<{ filtersPassingFunction: (filters: any) => void }> = ({ filtersPassingFunction }) => {
   const initialFilters = {
@@ -20,7 +41,7 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: any) => void 
 
   const [filters, setFilters] = useState(initialFilters);
 
-  const [filterOptions, setFilterOptions] = useState({
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     categories: [],
     subcategories: [],
     course_types: [],
@@ -79,7 +100,7 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: any) => void 
         <select name="category_id" value={filters.category_id} onChange={handleFilterChange} className="w-full p-2 border border-gray-300 rounded">
           <option value="">Select Category</option>
           {filterOptions.categories && filterOptions.categories.map(category => (
-            <option key={category.id} value={category.id}>
+            <option key={String(category.id)} value={String(category.id)}>
               {category.name}
             </option>
           ))}

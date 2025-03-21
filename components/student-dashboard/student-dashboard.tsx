@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { HiOutlineBookOpen, HiOutlineAcademicCap } from 'react-icons/hi';
-import { useSearchParams } from 'next/navigation';
 
 interface User {
   user_id: number;
@@ -19,7 +18,6 @@ interface User {
 
 export default function StudentDashboard() {
   const [user, setUser] = useState<User | null>(null);
-  const searchParams = useSearchParams();
   const [menuItems] = useState([
     'Dashboard',
     'My Profile',
@@ -31,37 +29,21 @@ export default function StudentDashboard() {
   ]);
 
   useEffect(() => {
-    // First check URL parameters
-    const token = searchParams.get('token');
-    const userParam = searchParams.get('user');
-
-    if (token && userParam) {
-      try {
-        // Store token and user data
-        localStorage.setItem('access_token', token);
-        const userData = JSON.parse(userParam);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-        
-        // Clean up URL parameters after storing them
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
-      } catch (error) {
-        console.error("Failed to process URL parameters", error);
-      }
-    } else {
-      // If no URL parameters, try localStorage
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-        } catch (error) {
-          console.error("Failed to parse user from localStorage", error);
-        }
-      }
-    }
-  }, [searchParams]);
+    // Mock user data for demonstration
+    setUser({
+      user_id: 123456,
+      display_name: 'John Doe',
+      email: 'john.doe@example.com',
+      profile_image: 'https://randomuser.me/api/portraits/men/1.jpg',
+      is_student: true,
+      is_instructor: false,
+      country: 'United States',
+      courses_enrolled: 3,
+      locations: ['New York', 'Los Angeles', 'Chicago'],
+    });
+    
+    // No longer using searchParams
+  }, []);
 
   if (!user) {
     return <div>Loading...</div>;

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthForm from './AuthForm';
@@ -27,7 +27,8 @@ interface Themes {
   [key: string]: Theme;
 }
 
-export default function LoginComponent(): JSX.Element {
+// Create a client component that uses searchParams
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useOnboarding();
@@ -35,6 +36,7 @@ export default function LoginComponent(): JSX.Element {
   const isSigningOut = searchParams?.get('signout') === 'true';
   const error = searchParams?.get('error');
   const redirectPath = searchParams?.get('redirect');
+  const [errorMessage, setError] = useState('');
 
   // Set initial user type in sessionStorage and cookies when component mounts
   useEffect(() => {
@@ -65,49 +67,45 @@ export default function LoginComponent(): JSX.Element {
     }
   };
 
-  // Handle authentication data when component mounts
+  const handleGoogleAuthSuccess = (response: { credential: string }) => {
+    handleAuthSuccess({
+      credential: response.credential, 
+      provider: 'google',
+      is_student: sessionStorage.getItem('user_type') === 'student'
+    });
+  };
+
+  const handleFacebookAuthSuccess = (response: { accessToken: string }) => {
+    handleAuthSuccess({
+      accessToken: response.accessToken, 
+      provider: 'facebook',
+      is_student: sessionStorage.getItem('user_type') === 'student'
+    });
+  };
+
+  const handleGithubAuthSuccess = (code: string) => {
+    handleAuthSuccess({
+      code,
+      provider: 'github',
+      is_student: sessionStorage.getItem('user_type') === 'student'
+    });
+  };
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token');
-      const userStr = params.get('user');
-
-      if (token && userStr) {
-        try {
-          // Parse and store user data
-          const userData = JSON.parse(userStr);
-          
-          // Store token
-          localStorage.setItem('access_token', token);
-          
-          // Set user type based on backend response ONLY
-          if (userData.is_student === true) {
-            sessionStorage.setItem('user_type', 'student');
-            document.cookie = `temp_is_student=true; path=/`;
-            document.cookie = `temp_is_instructor=false; path=/`;
-          } else if (userData.is_instructor === true) {
-            sessionStorage.setItem('user_type', 'instructor');
-            document.cookie = `temp_is_student=false; path=/`;
-            document.cookie = `temp_is_instructor=true; path=/`;
-          }
-
-          // Store complete user data
-          localStorage.setItem('user', JSON.stringify(userData));
-          
-          // Clean up URL
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.delete('token');
-          newUrl.searchParams.delete('user');
-          window.history.replaceState({}, '', newUrl.toString());
-          
-          // Handle redirect
-          handleAuthSuccess(userData);
-        } catch (error) {
-          console.error('Error processing authentication data:', error);
-        }
-      }
+    if (searchParams.get('token')) {
+      handleAuthSuccess({
+        token: searchParams.get('token'),
+        provider: searchParams.get('provider'),
+        is_student: sessionStorage.getItem('user_type') === 'student'
+      });
     }
-  }, [router, redirectPath]);
+  }, [searchParams, handleAuthSuccess]);
+
+  useEffect(() => {
+    if (searchParams.get('error')) {
+      setError(searchParams.get('error') || '');
+    }
+  }, [searchParams, handleAuthSuccess]);
 
   // Handle user state changes
   useEffect(() => {
@@ -132,25 +130,6 @@ export default function LoginComponent(): JSX.Element {
     }
   };
 
-  // Handle error messages
-  let errorMessage = '';
-  if (error && !isSigningOut) {
-    try {
-      const errorData = JSON.parse(decodeURIComponent(error));
-      errorMessage = errorData.detail || 'Authentication failed';
-    } catch (e) {
-      errorMessage = error === 'Authentication required' ? '' : error;
-    }
-  }
-
-  useEffect(() => {
-    if (error && typeof window !== 'undefined') {
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('error');
-      window.history.replaceState({}, '', newUrl.toString());
-    }
-  }, [error]);
-
   const handlePathClick = (path: UserPath): void => {
     setSelectedPath(path);
     // Update sessionStorage and cookies with new selection
@@ -166,6 +145,15 @@ export default function LoginComponent(): JSX.Element {
     }
   };
 
+  const handleSubmit = async () => {
+    try {
+      // Handle submit logic
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('An error occurred during login');
+    }
+  };
+
   if (loading && user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -175,7 +163,7 @@ export default function LoginComponent(): JSX.Element {
   }
 
   if (user && !isSigningOut && !loading) {
-    return null;
+    return <></>;
   }
 
   const currentTheme = themes[selectedPath === 'student' ? 'student' : 'instructor'];
@@ -305,5 +293,17 @@ export default function LoginComponent(): JSX.Element {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginComponent(): React.ReactElement {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 } 

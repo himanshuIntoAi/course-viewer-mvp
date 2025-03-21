@@ -2,12 +2,13 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "@/components/navbar/navbar";
 import Footer from "@/components/footer/footer";
-import { fetchData } from "@/services/api";
 import { getCartItems } from "@/services/api/cart/api";
 import { useParams } from "next/navigation";
-import axios from "axios";
+import { CartItem } from "@/services/types/course/course";
+import Image from "next/image";
+
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const params = useParams();
   const user_id = params.user_id_number;
@@ -17,7 +18,9 @@ export default function CartPage() {
       try {
         const data = await getCartItems(user_id as string);
         setCartItems(data);
-        const total = data.reduce((acc: number, item: any) => acc + item.course_price, 0);
+        const total = data.reduce((acc: number, item: CartItem) => {
+          return acc + (item.course_price || 0);
+        }, 0);
         setTotalPrice(total);
       } catch (error) {
         console.error("Error fetching cart items:", error);
@@ -54,10 +57,12 @@ export default function CartPage() {
             <div key={item.id} className="grid grid-cols-[50px,auto,120px,120px,50px] items-center p-4 text-sm border-t">
               <span>{index + 1}.</span>
               <div className="flex items-center gap-3">
-                <img
+                <Image
                   src="/course-card-img.svg"
-                  alt={item.course_title}
-                  className="w-20 h-14 object-cover rounded"
+                  alt={item.course_title || "Course image"}
+                  width={80}
+                  height={56}
+                  className="object-cover rounded"
                 />
                 <p className="font-medium text-gray-800">{item.course_title}</p>
               </div>

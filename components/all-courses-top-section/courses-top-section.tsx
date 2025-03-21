@@ -1,6 +1,5 @@
-import { Search, Grid, List, Filter } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { useState } from 'react';
-import Image from 'next/image';
 // import heroImage from '../public/explore_course_images/redesigned-hero-image-removebg-preview.png';
 
 interface CoursesTopSectionProps {

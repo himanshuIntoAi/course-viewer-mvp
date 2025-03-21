@@ -3,8 +3,31 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '../../../services/login/auth';
-import { User } from '../../../services/login/auth';
-import { AuthResponse } from '../../../services/login/auth';
+
+// Define User interface locally to avoid import issues
+interface User {
+  id: string;
+  display_name: string;
+  email: string;
+  profile_image: string;
+  is_student: boolean;
+  is_instructor: boolean;
+  full_name?: string;
+  username?: string;
+  user_type: string;
+}
+
+// Define AuthResponse interface locally
+interface AuthResponse {
+  access_token: string;
+  expires_in?: number;
+  user_id: string;
+  email: string;
+  display_name: string;
+  profile_image: string;
+  is_student: boolean;
+  is_instructor: boolean;
+}
 
 interface OnboardingData {
   step: number;

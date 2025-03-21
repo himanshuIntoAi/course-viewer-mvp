@@ -52,7 +52,7 @@ export function useFormData() {
   };
 
   // Fetch skills based on selected category and subcategory
-  const fetchSkills = async (categoryId?: string, subcategoryId?: string) => {
+  const fetchSkills = async () => {
     setLoading(prev => ({ ...prev, skills: true }));
     try {
       const data = await onboardingApiClient.getAllSkills();
@@ -67,7 +67,7 @@ export function useFormData() {
   };
 
   // Fetch job roles based on selected category and subcategory
-  const fetchJobRoles = async (categoryId?: string, subcategoryId?: string) => {
+  const fetchJobRoles = async () => {
     setLoading(prev => ({ ...prev, jobRoles: true }));
     try {
       const data = await onboardingApiClient.getAllJobRoles();

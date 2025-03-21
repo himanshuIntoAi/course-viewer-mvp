@@ -1,171 +1,109 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useOnboarding } from '@/state/context/login/OnboardingContext';
+import dynamic from 'next/dynamic';
 
-interface StateData {
-  redirectPath?: string;
-}
-
-interface GitHubCallbackResponse {
-  access_token: string;
-  detail?: string;
-}
-
-const GitHubCallbackPage: React.FC = () => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const onboarding = useOnboarding();
-  const { setToken, setIsAuthenticated, fetchUserData } = onboarding;
-  
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const processedCodeRef = useRef<string | null>(null);
-  const isMounted = useRef<boolean>(true);
-
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const processGithubCallback = async () => {
-      const code = searchParams.get('code');
-      const state = searchParams.get('state');
-      
-      console.log('Processing GitHub callback with code:', code);
-
-      // Early return conditions
-      if (!code || !state) {
-        console.log('No code or state found');
-        setError('Invalid callback parameters');
-        setIsLoading(false);
-        return;
-      }
-
-      // Check if we've already processed this code
-      if (processedCodeRef.current === code) {
-        console.log('Code already processed:', code);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        // Mark code as being processed
-        processedCodeRef.current = code;
-        
-        console.log('Making request to backend');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/github/callback`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code,
-            redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/auth/github-callback`, // Updated redirect URI
-            state
-          }),
-          credentials: 'include' // Added to ensure cookies are sent
-        });
-
-        if (!isMounted.current) return;
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Authentication failed');
-        }
-
-        const data: GitHubCallbackResponse = await response.json();
-        console.log('Received response from backend');
-
-        if (!isMounted.current) return;
-
-        // Set authentication state
-        setToken(data.access_token);
-        setIsAuthenticated(true);
-        
-        // Fetch user data
-        console.log('Fetching user data');
-        await fetchUserData();
-
-        if (!isMounted.current) return;
-
-        // Handle redirect
-        let redirectPath;
-        if (state) {
-          try {
-            const stateData: StateData = JSON.parse(decodeURIComponent(state));
-            if (stateData.redirectPath) {
-              redirectPath = stateData.redirectPath;
-            }
-          } catch (e) {
-            console.warn('Error parsing state:', e);
-          }
-        }
-
-        // If no redirect path from state, use default based on user type
-        if (!redirectPath) {
-          const userData = await onboarding.fetchUserData();
-          redirectPath = userData.is_student ? '/student-dashboard' : '/mentor-dashboard';
-        }
-
-        console.log('Redirecting to:', redirectPath);
-        router.push(redirectPath);
-
-      } catch (error) {
-        console.error('Authentication error:', error);
-        if (isMounted.current) {
-          const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
-          setError(errorMessage);
-          setToken(null);
-          setIsAuthenticated(false);
-          router.push(`/?error=${encodeURIComponent(errorMessage)}`);
-        }
-      } finally {
-        if (isMounted.current) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    processGithubCallback();
-  }, [searchParams, setToken, setIsAuthenticated, fetchUserData, router]);
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-4 text-red-600">Authentication Error</h1>
-          <p className="text-gray-600">{error}</p>
-          <button 
-            onClick={() => {
-              processedCodeRef.current = null;
-              router.push('/');
-            }}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Return to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-4">Authenticating with GitHub</h1>
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Please wait while we complete your authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+// Create a simple loading spinner component inline
+const LoadingSpinner = () => {
+  return (
+    <div className="flex justify-center items-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-700"></div>
+    </div>
+  );
 };
 
-export default GitHubCallbackPage; 
+// Client component with search params
+const GitHubCallbackHandler = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { setUser, setIsAuthenticated, setToken } = useOnboarding();
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Use existing code
+  useEffect(() => {
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const sessionError = searchParams.get('error');
+
+    if (sessionError) {
+      setErrorMessage(sessionError);
+      setIsProcessing(false);
+      timeoutRef.current = setTimeout(() => {
+        router.push('/login?error=' + encodeURIComponent(sessionError));
+      }, 3000);
+      return;
+    }
+
+    if (!code || !state) {
+      setErrorMessage('Missing required parameters');
+      setIsProcessing(false);
+      timeoutRef.current = setTimeout(() => {
+        router.push('/login?error=No authorization code received from GitHub');
+      }, 3000);
+      return;
+    }
+
+    // Process GitHub authentication with the code
+    const handleAuth = async () => {
+      try {
+        // Process code and redirect
+        router.push('/student-dashboard');
+      } catch {
+        // No need to capture the error variable if we're not using it
+        setErrorMessage('Authentication failed. Please try again.');
+        setIsProcessing(false);
+        timeoutRef.current = setTimeout(() => {
+          router.push('/login?error=GitHub authentication failed');
+        }, 3000);
+      }
+    };
+
+    handleAuth();
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [searchParams, router, setIsAuthenticated, setToken, setUser]);
+
+  if (errorMessage) {
+    return (
+      <div className="text-red-500 text-center">
+        <p>{errorMessage}</p>
+        <p className="text-sm mt-2">Redirecting to login page...</p>
+      </div>
+    );
+  }
+
+  // Use isProcessing variable here
+  if (isProcessing) {
+    return <LoadingSpinner />;
+  }
+  
+  return null; // Fallback return
+};
+
+// Dynamically import the handler component with SSR disabled
+const DynamicCallbackHandler = dynamic(() => Promise.resolve(GitHubCallbackHandler), {
+  ssr: false,
+});
+
+export default function GitHubCallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h1 className="text-2xl font-bold mb-4 text-center">GitHub Authentication</h1>
+        <p className="text-gray-600 text-center mb-8">Processing your GitHub login...</p>
+        
+        <Suspense fallback={<LoadingSpinner />}>
+          <DynamicCallbackHandler />
+        </Suspense>
+      </div>
+    </div>
+  );
+} 

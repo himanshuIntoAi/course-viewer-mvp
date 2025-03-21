@@ -31,7 +31,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
-    const state = searchParams.get('state');
 
     if (!code) {
       return NextResponse.redirect(`${request.nextUrl.origin}/?error=NoCodeProvided`);

@@ -1,5 +1,13 @@
 // You might want to create separate interfaces for related entities
-import { User } from "../user/user";
+// Define User interface locally instead of importing
+interface User {
+  id: number;
+  name?: string;
+  email?: string;
+  profile_image?: string;
+  display_name?: string;
+}
+
 export interface Course {
     id: number;
     title: string;
@@ -22,6 +30,10 @@ export interface Course {
 }
 
 export interface CartItem {
+    id?: number;
     user_id: number;
     course_id: number;
+    course_title?: string;
+    course_price?: number;
+    image_url?: string;
 }

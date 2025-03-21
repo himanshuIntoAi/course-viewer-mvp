@@ -6,14 +6,14 @@ import TrendingCourses from '@/components/TrendingCourses/TrendingCourses'
 import BestWayToLearn from '@/components/best-way-to-learn/bestWayToLearn'
 import Footer from '@/components/footer/footer'
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image'
 
 const Home = () => {
 
     const [user, setUser] = useState<boolean>(false);
 
     useEffect(() => {
-        let user = localStorage.getItem("user");
+        const user = localStorage.getItem("user");
         console.log("User at home ",user);
         if (user) {
             console.log("User at home ",user);
@@ -46,7 +46,7 @@ const Home = () => {
                             <div>
                                 <button className='bg-white flex items-center text-gray-800 px-6 py-3 rounded-full shadow-lg text-sm w-[15vw]  '>
                                     <span className='text-left'>Personalise Learning Pathway</span>
-                                    <img src="/right-arrow-filled.svg" alt="right-arrow" className='' />
+                                    <Image src="/right-arrow-filled.svg" alt="right-arrow" width={24} height={24} className='' />
                                 </button>
                             </div>
                         </div>
@@ -82,9 +82,11 @@ const Home = () => {
                         style={{ top: "0", left: "-2rem" }} />
 
                     {/* Illustration image (replace src with your own) */}
-                    <img
+                    <Image
                         src="/health-run.svg"
                         alt="Person on Skateboard"
+                        width={400}
+                        height={300}
                         className="relative max-w-sm"
                     />
                 </div>
@@ -100,7 +102,7 @@ const Home = () => {
                         Use our course helpers for doubts too...
                     </p>
                     <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition">
-                        Let's Do It
+                        Let&apos;s Do It
                     </button>
                 </div>
             </section>

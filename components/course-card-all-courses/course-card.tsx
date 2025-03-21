@@ -3,7 +3,7 @@ import { StarRating } from "../star-rating/star-rating"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from 'react'
-import { Course } from "@/services/api/explore-courses/api"
+import { Course } from "@/services/types/course/course"
 
 interface CourseCardProps {
   course: Course
@@ -18,7 +18,7 @@ function formatDate(dateString: string) {
 
 export function CourseCard({ course, view }: CourseCardProps) {
   const [imageError, setImageError] = useState(false);
-  const instructorData = course.instructor || course.mentor;
+  const instructorData = course.instructor;
   const router = useRouter();
   return (
     <div className={`bg-white rounded-lg border p-4 ${
@@ -60,7 +60,7 @@ export function CourseCard({ course, view }: CourseCardProps) {
               {instructorData && (
                 <div className="text-sm">
                   <span className="text-gray-700">
-                    By <span className="font-medium">{instructorData.display_name.trim()}</span>
+                    By <span className="font-medium">{instructorData.display_name?.trim() || 'Instructor'}</span>
                   </span>
                   <div className="mt-1">
                     <StarRating rating={course.ratings ? Math.round(Number(course.ratings)) : 0} />

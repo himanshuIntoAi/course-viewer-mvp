@@ -215,9 +215,21 @@ const API_ENDPOINTS = {
     update: (sessionId: string) => `/api/v1/onboarding/${sessionId}`,
     delete: (sessionId: string) => `/api/v1/onboarding/${sessionId}`,
     getByUserId: (userId: string) => `/api/v1/onboarding/user/${userId}`,
-    getAll: '/api/v1/onboarding'
+    getAll: '/api/v1/onboarding',
+    getProgress: '/api/v1/onboarding/:sessionId'
   }
 };
+
+// API response interface
+interface ApiResponse<T> {
+  data: T | null;
+  error?: string;
+  session_id?: string;
+  step_number?: number;
+  user_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
 
 // API Client
 class OnboardingApiClient {
@@ -617,14 +629,77 @@ class OnboardingApiClient {
   // Verify if a session exists
   private async verifySession(sessionId: string): Promise<boolean> {
     try {
-      await this.getOnboardingProgress(sessionId);
-      return true;
+      const progressResponse = await this.getOnboardingProgress(sessionId);
+      return !!progressResponse.data;
     } catch (error) {
       if (error instanceof Error && error.message.includes('not found')) {
         return false;
       }
       throw error;
     }
+  }
+
+  // Get onboarding progress by session ID
+  async getOnboardingProgress(sessionId: string): Promise<ApiResponse<any>> {
+    if (!sessionId) {
+      throw new Error('sessionId is required for getting onboarding progress');
+    }
+
+    try {
+      console.log('Fetching onboarding progress:', sessionId);
+      const response = await this.fetchApi<OnboardingProgressResponse>(
+        API_ENDPOINTS.onboarding.getBySessionId(sessionId),
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      if (!response) {
+        console.log('No session found, returning null response');
+        return { data: null, error: 'Session not found' };
+      }
+
+      console.log('Successfully fetched onboarding progress:', {
+        sessionId,
+        step: response.step_number,
+        hasData: !!response.data,
+        hasUserId: !!response.user_id,
+        createdAt: response.created_at,
+        updatedAt: response.updated_at
+      });
+
+      return {
+        data: response.data,
+        session_id: response.session_id,
+        step_number: response.step_number,
+        user_id: response.user_id,
+        created_at: response.created_at,
+        updated_at: response.updated_at
+      };
+    } catch (error) {
+      console.error('Failed to fetch onboarding progress:', {
+        sessionId,
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        } : 'Unknown error'
+      });
+      
+      if (error instanceof Error) {
+        return { data: null, error: error.message };
+      }
+      return { data: null, error: 'Unknown error occurred' };
+    }
+  }
+
+  // Utility method to validate UUID
+  private isValidUuid(id: string): boolean {
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidPattern.test(id);
   }
 
   // Update onboarding progress with verification and retry
@@ -736,76 +811,23 @@ class OnboardingApiClient {
           (error.message.includes('duplicate') || 
            error.message.includes('already exists'))) {
         console.log('Session already exists, fetching current state:', data.session_id);
-        return await this.getOnboardingProgress(data.session_id);
+        // Cast the API response to OnboardingProgressResponse to fix type compatibility
+        const progress = await this.getOnboardingProgress(data.session_id);
+        if (progress.data && progress.session_id) {
+          return {
+            session_id: progress.session_id,
+            step_number: progress.step_number || 1,
+            data: progress.data,
+            user_id: progress.user_id,
+            created_at: progress.created_at,
+            updated_at: progress.updated_at
+          } as OnboardingProgressResponse;
+        }
+        return null;
       }
 
       console.error('Failed to create onboarding progress:', {
         sessionId: data.session_id,
-        error: error instanceof Error ? {
-          message: error.message,
-          name: error.name,
-          stack: error.stack
-        } : 'Unknown error'
-      });
-      throw error;
-    }
-  }
-
-  // Get onboarding progress by session ID
-  async getOnboardingProgress(sessionId: string): Promise<OnboardingProgressResponse | null> {
-    if (!sessionId) {
-      throw new Error('sessionId is required for getting onboarding progress');
-    }
-
-    try {
-      console.log('Fetching onboarding progress:', sessionId);
-      const response = await this.fetchApi<OnboardingProgressResponse>(
-        API_ENDPOINTS.onboarding.getBySessionId(sessionId),
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          }
-        }
-      );
-
-      if (!response) {
-        console.log('No session found, attempting to create:', sessionId);
-        // Instead of returning null, create a new session
-        const newSession = await this.createOnboardingProgress({
-          session_id: sessionId,
-          step_number: 1,
-          data: {}
-        });
-        return newSession;
-      }
-
-      console.log('Successfully fetched onboarding progress:', {
-        sessionId,
-        step: response.step_number,
-        hasData: !!response.data,
-        hasUserId: !!response.user_id,
-        createdAt: response.created_at,
-        updatedAt: response.updated_at
-      });
-
-      return response;
-    } catch (error) {
-      if (error instanceof Error && 
-          (error.message.includes('not found') || 
-           error.message.includes('404'))) {
-        console.log('Session not found (404), creating new session:', sessionId);
-        // Create new session on 404
-        const newSession = await this.createOnboardingProgress({
-          session_id: sessionId,
-          step_number: 1,
-          data: {}
-        });
-        return newSession;
-      }
-
-      console.error('Failed to fetch onboarding progress:', {
-        sessionId,
         error: error instanceof Error ? {
           message: error.message,
           name: error.name,

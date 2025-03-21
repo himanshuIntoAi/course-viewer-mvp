@@ -24,7 +24,7 @@ interface State {
   timestamp: number;
 }
 
-export default function LoginForm(): JSX.Element {
+export default function LoginForm(): React.ReactElement {
   const { login, register } = useOnboarding();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');

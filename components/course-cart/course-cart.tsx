@@ -1,108 +1,89 @@
 import React, { useState, useEffect } from 'react';
 import { getCartItems } from '@/services/api/cart/api';
-import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { CartItem } from '@/services/types/course/course';
 
-const CourseCart = ({showCart , setShowCart}) => {
+export default function CourseCart() {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const [cartItems, setCartItems] = useState([]);
-  const [totalPrice, setTotalPrice] = useState(0);
-  const [user_id , setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const userString = localStorage.getItem("user");
-    if (userString) {
+    const fetchCartItems = async () => {
       try {
-        const user = JSON.parse(userString);
-        setUserId(user.id);
+        setIsLoading(true);
+        const items = await getCartItems();
+        setCartItems(items);
       } catch (error) {
-        console.error("Error parsing user data from localStorage:", error);
+        console.error('Error fetching cart items:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    fetchCartItems();
   }, []);
 
-  const fetchCartItems = async () => {
-    if (user_id) {
-      try {
-        const data = await getCartItems(user_id);
-        setCartItems(data);
-        const total = data.reduce((acc: number, item: any) => acc + item.course_price, 0);
-        setTotalPrice(total);
-      } catch (error) {
-        console.error("Error fetching cart items:", error);
-      }
-    }
+  const totalPrice = cartItems.reduce((total, item) => total + (item.course_price || 0), 0);
+
+  const handleProceedToCheckout = () => {
+    router.push('/checkout');
   };
 
-  useEffect(() => {
-    fetchCartItems();
-  }, [showCart]);
-
   return (
-    showCart && ( 
-    <div className="bg-white w-full h-[70vh] max-w-sm p-5 rounded-md shadow-md absolute top-[0px] right-[0px] z-10">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-semibold">Your Courses Cart</h2>
-        <button className="text-gray-400 hover:text-gray-600" onClick={() => setShowCart(false)}>
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className="h-5 w-5" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor">
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth="2" 
-              d="M6 18L18 6M6 6l12 12" 
-            />
-          </svg>
-        </button>
-      </div>
+    <div className="bg-white rounded-lg shadow-lg p-6 w-full lg:w-96">
+      <h2 className="text-2xl font-bold mb-6">Your Cart</h2>
 
-      {/* Course Item */}
-      {cartItems.map((item , index) => (
-        <div className="flex items-start mb-5" key={index}>
-          <img src={item.course_image} alt="Course Thumbnail" className="w-20 h-14 object-cover rounded mr-4" />
-          <div>
-            <h3 className="text-base font-medium mb-1">{item.course_title}</h3>
-            <div className="flex items-center space-x-2">
-              <span className="text-green-500 font-bold">${item.course_price}</span>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-40">
+          <p>Loading cart items...</p>
+        </div>
+      ) : cartItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-40">
+          <p className="text-gray-500 mb-4">Your cart is empty</p>
+          <button 
+            onClick={() => router.push('/courses')}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Explore Courses
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Course Item */}
+          {cartItems.map((item , index) => (
+            <div className="flex items-start mb-5" key={index}>
+              <img src={item.image_url || '/course-card-img.svg'} alt="Course Thumbnail" className="w-20 h-14 object-cover rounded mr-4" />
+              <div>
+                <h3 className="text-base font-medium mb-1">{item.course_title}</h3>
+                <div className="flex items-center space-x-2">
+                  <span className="text-green-500 font-bold">${item.course_price}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Cart Summary */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <div className="flex justify-between mb-2">
+              <span>Subtotal</span>
+              <span>${totalPrice.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg">
+              <span>Total</span>
+              <span>${totalPrice.toFixed(2)}</span>
             </div>
           </div>
-        </div>
-      ))}
 
-      {/* Savings & Offer */}
-      <div className="mb-5">
-        <p className="text-sm font-semibold text-green-600">Saved: $40/-</p>
-        <div className="flex items-center text-sm mt-1">
-          <span>Offer Ends in :</span>
-          <span className="ml-2 bg-blue-100 text-blue-600 px-2 py-1 rounded">
-            1:01:23 Hrs
-          </span>
-        </div>
-      </div>
-
-      {/* Subtotal */}
-      <div className="flex items-center justify-between border-t pt-3 mb-5">
-        <span className="text-gray-500">Sub Total:</span>
-        <span className="font-semibold">${totalPrice}/-</span>
-      </div>
-
-      {/* Buttons */}
-      <div className="flex space-x-3">
-        <button className="w-1/2 border border-teal-600 text-teal-600 font-medium py-2 rounded hover:bg-teal-50" onClick={() => router.push(`/cart/${user_id}`)}>
-          View Cart
-        </button>
-        <button className="w-1/2 bg-teal-600 text-white font-medium py-2 rounded hover:bg-teal-700">
-          Checkout
-        </button>
-      </div>
+          {/* Checkout Button */}
+          <button
+            onClick={handleProceedToCheckout}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg mt-6 hover:bg-blue-700 transition duration-200"
+          >
+            Proceed to Checkout
+          </button>
+        </>
+      )}
     </div>
-    )
   );
-};
-
-export default CourseCart;
+}
