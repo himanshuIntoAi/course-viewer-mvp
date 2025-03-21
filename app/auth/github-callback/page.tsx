@@ -93,7 +93,7 @@ const GitHubCallbackPage: React.FC = () => {
         if (!isMounted.current) return;
 
         // Handle redirect
-        let redirectPath = '/dashboard';
+        let redirectPath;
         if (state) {
           try {
             const stateData: StateData = JSON.parse(decodeURIComponent(state));
@@ -105,8 +105,14 @@ const GitHubCallbackPage: React.FC = () => {
           }
         }
 
+        // If no redirect path from state, use default based on user type
+        if (!redirectPath) {
+          const userData = await onboarding.fetchUserData();
+          redirectPath = userData.is_student ? '/student-dashboard' : '/mentor-dashboard';
+        }
+
         console.log('Redirecting to:', redirectPath);
-        router.push(redirectPath); // Using Next.js router instead of window.location
+        router.push(redirectPath);
 
       } catch (error) {
         console.error('Authentication error:', error);

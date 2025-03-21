@@ -262,21 +262,18 @@ export const auth = {
         }
 
         // Store user data
-        const userData: User = {
+        const userData = {
           id: data.user_id,
           display_name: data.display_name,
           email: data.email,
-          profile_image: data.profile_image || DEFAULT_AVATAR,
+          profile_image: data.profile_image,
           is_student: data.is_student,
-          is_instructor: data.is_instructor,
-          user_type: data.is_student ? USER_TYPES.LEARNER : USER_TYPES.EARNER
+          is_instructor: data.is_instructor
         };
         localStorage.setItem('user', JSON.stringify(userData));
-        
-        console.log('Stored user data:', {
-          userData,
-          userType: sessionStorage.getItem('user_type')
-        });
+
+        // Store auth token in cookie
+        document.cookie = `auth_token=${data.access_token}; path=/; secure; samesite=lax`;
       }
       return data;
     } catch (error) {

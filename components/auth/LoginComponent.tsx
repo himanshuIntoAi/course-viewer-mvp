@@ -34,6 +34,7 @@ export default function LoginComponent(): JSX.Element {
   const [selectedPath, setSelectedPath] = useState<UserPath>('student');
   const isSigningOut = searchParams?.get('signout') === 'true';
   const error = searchParams?.get('error');
+  const redirectPath = searchParams?.get('redirect');
 
   // Set initial user type in sessionStorage and cookies when component mounts
   useEffect(() => {
@@ -54,6 +55,15 @@ export default function LoginComponent(): JSX.Element {
       });
     }
   }, []);
+
+  // Handle successful authentication and redirect
+  const handleAuthSuccess = (userData: any) => {
+    if (redirectPath) {
+      router.replace(redirectPath);
+    } else {
+      router.replace(userData.is_student ? '/student-dashboard' : '/mentor-dashboard');
+    }
+  };
 
   // Handle authentication data when component mounts
   useEffect(() => {
@@ -90,14 +100,21 @@ export default function LoginComponent(): JSX.Element {
           newUrl.searchParams.delete('user');
           window.history.replaceState({}, '', newUrl.toString());
           
-          // Redirect to dashboard
-          router.replace(userData.is_student ? '/student-dashboard' : '/mentor-dashboard');
+          // Handle redirect
+          handleAuthSuccess(userData);
         } catch (error) {
           console.error('Error processing authentication data:', error);
         }
       }
     }
-  }, [router]);
+  }, [router, redirectPath]);
+
+  // Handle user state changes
+  useEffect(() => {
+    if (!loading && user && !isSigningOut) {
+      handleAuthSuccess(user);
+    }
+  }, [user, loading, isSigningOut, redirectPath]);
 
   // Color themes
   const themes: Themes = {
@@ -125,12 +142,6 @@ export default function LoginComponent(): JSX.Element {
       errorMessage = error === 'Authentication required' ? '' : error;
     }
   }
-
-  useEffect(() => {
-    if (!loading && user && !isSigningOut) {
-      router.replace(user.is_student ? '/student-dashboard' : '/mentor-dashboard');
-    }
-  }, [user, router, loading, isSigningOut]);
 
   useEffect(() => {
     if (error && typeof window !== 'undefined') {

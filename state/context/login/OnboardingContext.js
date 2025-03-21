@@ -156,70 +156,67 @@ export function OnboardingProvider({ children }) {
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      // setIsAuthenticated(true);
       // Don't set loading true on initial check
       if (isInitialized) {
         setLoading(true);
       }
       
-      // try {
-      //   // Skip auth check if on home page or signing out
-      //   const isHomePage = typeof window !== 'undefined' && window.location.pathname === '/';
-      //   const isSigningOut = typeof window !== 'undefined' && window.location.search.includes('signout=true');
+      try {
+        // Skip auth check if on home page or signing out
+        const isHomePage = typeof window !== 'undefined' && window.location.pathname === '/';
+        const isSigningOut = typeof window !== 'undefined' && window.location.search.includes('signout=true');
         
-      //   if (isHomePage || isSigningOut) {
-      //     if (isSigningOut) {
-      //       clearAuthState();
-      //     }
-      //     return;
-      //   }
+        if (isHomePage || isSigningOut) {
+          if (isSigningOut) {
+            clearAuthState();
+          }
+          return;
+        }
 
-      //   // Skip auth check on callback page
-      //   if (typeof window !== 'undefined' && window.location.pathname.includes('/api/auth/callback')) {
-      //     return;
-      //   }
+        // Skip auth check on callback page
+        if (typeof window !== 'undefined' && window.location.pathname.includes('/api/auth/callback')) {
+          return;
+        }
 
-      //   const token = getToken();
-      //   if (!token) {
-      //     clearAuthState();
-      //     // Only redirect if not on excluded pages and not home page
-      //     const isExcludedPage = window.location.pathname.startsWith('/auth') ||
-      //                           window.location.pathname.includes('/api/auth/callback');
+        const token = getToken();
+        if (!token) {
+          clearAuthState();
+          // Only redirect if on dashboard pages
+          const isDashboardPage = window.location.pathname.startsWith('/student-dashboard') ||
+                                window.location.pathname.startsWith('/mentor-dashboard');
           
-      //     if (!isExcludedPage && !isHomePage && !isSigningOut) {
-      //       window.location.replace('/?error=' + encodeURIComponent('Authentication required'));
-      //     }
-      //     return;
-      //   }
+          if (isDashboardPage && !isSigningOut) {
+            window.location.replace('/login?redirect=' + encodeURIComponent(window.location.pathname));
+          }
+          return;
+        }
 
-      //   // Verify token with backend
-      //   const response = await fetch('http://localhost:8000/api/v1/auth/verify', {
-      //     headers: {
-      //       'Authorization': `Bearer ${token}`
-      //     }
-      //   });
+        // Verify token with backend
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/verify`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-      //   if (!response.ok) {
-      //     throw new Error('Token verification failed');
-      //   }
+        if (!response.ok) {
+          throw new Error('Token verification failed');
+        }
 
-      //   setIsAuthenticated(true);
+        setIsAuthenticated(true);
         
-      //   // Fetch user data only if we don't have it
-      //   if (!user) {
-      //     await fetchUserData();
-      //   }
-      // } catch (error) {
-      //   console.error('Authentication check failed:', error);
-      //   clearAuthState();
-      // } finally {
-      //   setLoading(false);
-      //   if (!isInitialized) {
-      //     setIsInitialized(true);
-      //   }
-      // }
-
-      setIsAuthenticated(true);
+        // Fetch user data only if we don't have it
+        if (!user) {
+          await fetchUserData();
+        }
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        clearAuthState();
+      } finally {
+        setLoading(false);
+        if (!isInitialized) {
+          setIsInitialized(true);
+        }
+      }
     };
 
     checkAuthentication();

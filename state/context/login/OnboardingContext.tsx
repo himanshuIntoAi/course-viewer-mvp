@@ -210,12 +210,12 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         const token = getToken();
         if (!token) {
           clearAuthState();
-          // Only redirect if not on excluded pages and not home page
-          const isExcludedPage = window.location.pathname.startsWith('/auth') ||
-                                window.location.pathname.includes('/api/auth/callback');
+          // Only redirect if on dashboard pages
+          const isDashboardPage = window.location.pathname.startsWith('/student-dashboard') ||
+                                window.location.pathname.startsWith('/mentor-dashboard');
           
-          if (!isExcludedPage && !isHomePage && !isSigningOut) {
-            window.location.replace('/?error=' + encodeURIComponent('Authentication required'));
+          if (isDashboardPage && !isSigningOut) {
+            window.location.replace('/login?redirect=' + encodeURIComponent(window.location.pathname));
           }
           return;
         }

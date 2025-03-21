@@ -87,11 +87,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     if (data.access_token) {
-      // Use redirect_path from backend response if available
-      const redirectPath = data.redirect_path || data.is_student ? '/student-dashboard' : '/mentor-dashboard';
+      // Fix the redirection logic with proper operator precedence
+      const redirectPath = data.redirect_path || (data.is_student ? '/student-dashboard' : '/mentor-dashboard');
       const redirectUrl = new URL(redirectPath, request.nextUrl.origin);
       
-      // Set token and user data
+      // Create the response first
+      const response = NextResponse.redirect(redirectUrl);
+
+      // Set auth token in HTTP-only cookie
+      response.cookies.set('auth_token', data.access_token, {
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax'
+      });
+
+      // Also set access_token in URL for client-side storage
       redirectUrl.searchParams.set('token', data.access_token);
       
       // Pass all user data from backend response
@@ -103,14 +114,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         is_student: Boolean(data.is_student),
         is_instructor: Boolean(data.is_instructor)
       };
-
-      // Store token in a cookie
-      const response = NextResponse.redirect(redirectUrl);
-      response.cookies.set('auth_token', data.access_token, {
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      });
       
       // Store user data in URL params
       redirectUrl.searchParams.set('user', JSON.stringify(userData));
@@ -118,6 +121,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       // Clean up temporary cookies
       response.cookies.delete('temp_is_student');
       response.cookies.delete('temp_is_instructor');
+      
+      // Update the response URL with all parameters
+      response.headers.set('Location', redirectUrl.toString());
       
       console.log('Redirecting to:', redirectUrl.toString());
       return response;

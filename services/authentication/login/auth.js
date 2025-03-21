@@ -366,19 +366,8 @@ export const auth = {
       sessionStorage.setItem('oauth_state', state);
       sessionStorage.setItem('redirect_path', window.location.pathname);
       
-      // Store user type in cookies for server-side access
-      const isStudent = userType === 'student';
-      const isInstructor = userType === 'instructor';
-      
-      if (!isStudent && !isInstructor) {
-        throw new Error('Invalid user type - must be either student or instructor');
-      }
-      
-      console.log('Setting cookie values:', { isStudent, isInstructor });
-      
-      // Set cookies with explicit true/false strings
-      document.cookie = `temp_is_student=${isStudent ? 'true' : 'false'}; path=/`;
-      document.cookie = `temp_is_instructor=${isInstructor ? 'true' : 'false'}; path=/`;
+      // Store user type in session for callback
+      sessionStorage.setItem('temp_user_type', userType);
       
       const params = new URLSearchParams({
         client_id: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID,
@@ -404,26 +393,22 @@ export const auth = {
       sessionStorage.removeItem('oauth_state');
       const redirectPath = sessionStorage.getItem('redirect_path') || '/dashboard';
       
-      // Get user type from temporary storage
-      const isStudent = sessionStorage.getItem('temp_is_student') === 'true';
-      const isInstructor = sessionStorage.getItem('temp_is_instructor') === 'true';
+      // Get user type from session storage
+      const userType = sessionStorage.getItem('temp_user_type');
+      const is_student = userType === 'student';
+      const is_instructor = userType === 'instructor';
       
-      // Clean up all storage
+      // Clean up session storage
       sessionStorage.removeItem('redirect_path');
-      sessionStorage.removeItem('user_type');
-      sessionStorage.removeItem('is_student');
-      sessionStorage.removeItem('is_instructor');
       sessionStorage.removeItem('temp_user_type');
-      sessionStorage.removeItem('temp_is_student');
-      sessionStorage.removeItem('temp_is_instructor');
       
       const response = await makeRequest(`${API_BASE}/social_auth/github`, {
         method: 'POST',
         body: JSON.stringify({ 
           code,
           redirect_uri: `${window.location.origin}/api/auth/callback/github`,
-          is_student: isStudent,
-          is_instructor: isInstructor
+          is_student,
+          is_instructor
         })
       });
       
@@ -456,19 +441,8 @@ export const auth = {
       sessionStorage.setItem('oauth_state', state);
       sessionStorage.setItem('redirect_path', window.location.pathname);
       
-      // Store user type in cookies for server-side access
-      const isStudent = userType === 'student';
-      const isInstructor = userType === 'instructor';
-      
-      if (!isStudent && !isInstructor) {
-        throw new Error('Invalid user type - must be either student or instructor');
-      }
-      
-      console.log('Setting cookie values:', { isStudent, isInstructor });
-      
-      // Set cookies with explicit true/false strings
-      document.cookie = `temp_is_student=${isStudent ? 'true' : 'false'}; path=/`;
-      document.cookie = `temp_is_instructor=${isInstructor ? 'true' : 'false'}; path=/`;
+      // Store user type in session for callback
+      sessionStorage.setItem('temp_user_type', userType);
       
       const params = new URLSearchParams({
         client_id: process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID,
@@ -494,26 +468,22 @@ export const auth = {
       sessionStorage.removeItem('oauth_state');
       const redirectPath = sessionStorage.getItem('redirect_path') || '/dashboard';
       
-      // Get user type from temporary storage
-      const isStudent = sessionStorage.getItem('temp_is_student') === 'true';
-      const isInstructor = sessionStorage.getItem('temp_is_instructor') === 'true';
+      // Get user type from session storage
+      const userType = sessionStorage.getItem('temp_user_type');
+      const is_student = userType === 'student';
+      const is_instructor = userType === 'instructor';
       
-      // Clean up all storage
+      // Clean up session storage
       sessionStorage.removeItem('redirect_path');
-      sessionStorage.removeItem('user_type');
-      sessionStorage.removeItem('is_student');
-      sessionStorage.removeItem('is_instructor');
       sessionStorage.removeItem('temp_user_type');
-      sessionStorage.removeItem('temp_is_student');
-      sessionStorage.removeItem('temp_is_instructor');
       
-      const response = await makeRequest('/api/v1/auth/facebook', {
+      const response = await makeRequest(`${API_BASE}/auth/facebook/callback`, {
         method: 'POST',
         body: JSON.stringify({ 
           code,
-          redirect_uri: `${FRONTEND_URL}/auth/facebook/callback`,
-          is_student: isStudent,
-          is_instructor: isInstructor
+          redirect_uri: `${window.location.origin}/api/auth/callback/facebook`,
+          is_student,
+          is_instructor
         })
       });
       
@@ -541,7 +511,7 @@ export const auth = {
       
       // Store current user type flags before redirecting
       const userType = sessionStorage.getItem('user_type');
-      console.log('Current user type before Google auth:', userType); // Debug log
+      console.log('Current user type before Google auth:', userType);
       
       if (!userType) {
         throw new Error('Please select whether you are a student or instructor before proceeding');
@@ -550,32 +520,8 @@ export const auth = {
       sessionStorage.setItem('oauth_state', state);
       sessionStorage.setItem('redirect_path', window.location.pathname);
       
-      // Store user type in cookies for server-side access
-      const isStudent = userType === 'student';
-      const isInstructor = userType === 'instructor';
-      
-      if (!isStudent && !isInstructor) {
-        throw new Error('Invalid user type - must be either student or instructor');
-      }
-      
-      console.log('Setting cookie values:', { isStudent, isInstructor }); // Debug log
-      
-      // Set cookies with explicit true/false strings
-      document.cookie = `temp_is_student=${isStudent ? 'true' : 'false'}; path=/`;
-      document.cookie = `temp_is_instructor=${isInstructor ? 'true' : 'false'}; path=/`;
-      
-      // Double check cookie values were set
-      const studentCookie = getCookie('temp_is_student');
-      const instructorCookie = getCookie('temp_is_instructor');
-      
-      console.log('Cookies after setting:', {
-        student: studentCookie,
-        instructor: instructorCookie
-      });
-      
-      if (studentCookie === null || instructorCookie === null) {
-        throw new Error('Failed to set user type cookies');
-      }
+      // Store user type in session for callback
+      sessionStorage.setItem('temp_user_type', userType);
       
       const params = new URLSearchParams({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
@@ -593,27 +539,24 @@ export const auth = {
   },
 
   async handleGoogleCallback(code, state) {
-    if (!isBrowser) {
-      throw new Error('OAuth callback can only be handled in browser environment');
-    }
-
     try {
       const savedState = sessionStorage.getItem('oauth_state');
       if (!savedState || savedState !== state) {
         throw new Error('Invalid OAuth state');
       }
       
-      // Get user type from temporary storage
-      const isStudent = sessionStorage.getItem('temp_is_student') === 'true';
-      const isInstructor = sessionStorage.getItem('temp_is_instructor') === 'true';
+      // Get user type from session storage
+      const userType = sessionStorage.getItem('temp_user_type');
+      const is_student = userType === 'student';
+      const is_instructor = userType === 'instructor';
       
       const response = await makeRequest(`${API_BASE}/auth/google/callback`, {
         method: 'POST',
         body: JSON.stringify({
           code,
           redirect_uri: `${window.location.origin}/api/auth/callback/google`,
-          is_student: isStudent,
-          is_instructor: isInstructor
+          is_student,
+          is_instructor
         })
       });
 
@@ -624,16 +567,11 @@ export const auth = {
       }
 
       if (data.access_token) {
-        const redirectPath = sessionStorage.getItem('redirect_path') || data.is_student ? '/student-dashboard' : '/mentor-dashboard';
+        const redirectPath = sessionStorage.getItem('redirect_path') || (data.is_student ? '/student-dashboard' : '/mentor-dashboard');
         // Clean up all storage
         sessionStorage.removeItem('oauth_state');
         sessionStorage.removeItem('redirect_path');
-        sessionStorage.removeItem('user_type');
-        sessionStorage.removeItem('is_student');
-        sessionStorage.removeItem('is_instructor');
         sessionStorage.removeItem('temp_user_type');
-        sessionStorage.removeItem('temp_is_student');
-        sessionStorage.removeItem('temp_is_instructor');
         
         return { 
           redirectPath,

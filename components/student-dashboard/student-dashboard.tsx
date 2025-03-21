@@ -1,11 +1,25 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HiOutlineBookOpen, HiOutlineAcademicCap } from 'react-icons/hi';
-import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+
+interface User {
+  user_id: number;
+  display_name: string;
+  email: string;
+  profile_image: string;
+  is_student: boolean;
+  is_instructor: boolean;
+  country?: string;
+  courses_enrolled?: number;
+  locations?: string[];
+}
+
 export default function StudentDashboard() {
-  const [user, setUser] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const searchParams = useSearchParams();
   const [menuItems] = useState([
     'Dashboard',
     'My Profile',
@@ -17,65 +31,90 @@ export default function StudentDashboard() {
   ]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    // First check URL parameters
+    const token = searchParams.get('token');
+    const userParam = searchParams.get('user');
+
+    if (token && userParam) {
       try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
+        // Store token and user data
+        localStorage.setItem('access_token', token);
+        const userData = JSON.parse(userParam);
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+        
+        // Clean up URL parameters after storing them
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
       } catch (error) {
-        console.error("Failed to parse user from localStorage", error);
+        console.error("Failed to process URL parameters", error);
+      }
+    } else {
+      // If no URL parameters, try localStorage
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error("Failed to parse user from localStorage", error);
+        }
       }
     }
-  }, []);
+  }, [searchParams]);
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center p-4">
-      <div className="max-w-6xl w-full bg-white rounded-2xl shadow-lg overflow-hidden">
-        {/* Profile Section */}
-        <div className="relative w-full h-96">
-          <Image
-            src="/images/hero.png"
-            alt="Background"
-            layout="fill"
-            objectFit="cover"
-            className="rounded-t-2xl"
-          />
-          <div className="absolute top-[30vh] left-10 bg-white px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
-            <div className="w-26 h-24">
-              <Image
-                src="/images/user-avatar.png"
-                alt="User Avatar"
-                width={100}
-                height={100}
-                className="rounded-full border-2 border-white shadow-md"
-              />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-gray-900">{user ? user.display_name || "Dummy User" : "Dummy User"}</h2>
-              <p className="text-xs text-gray-600">{user ? user.country || "Dummy Country" : "Dummy Country"}</p>
-              <div className="flex items-center gap-2 text-gray-500 text-xs">
-                <span>🏆 {user && user.courses_enrolled !== undefined ? user.courses_enrolled : "NA"} Courses</span>
-                <span>📍 {user && user.locations !== undefined ? user.locations : "NA"} Locations</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Content Section */}
-        <div className="p-8 grid grid-cols-12 gap-6">
+      <div className="container mx-auto">
+        <div className="grid grid-cols-12 gap-6">
           {/* Sidebar */}
-          <div className="col-span-3 bg-white p-5 rounded-xl shadow-md border border-violet-200">
-            <ul className="text-gray-700 space-y-4">
-            {menuItems.map((item, index) => (
-                <li
-                  key={index} // Ensure each item has a unique key
-                  className={`p-4 rounded-lg text-sm font-medium cursor-pointer transition border-b border-gray-300 ${
-                    index === 0 ? 'bg-violet-100 text-violet-700 font-semibold' : 'hover:bg-violet-100'
-                  }`}
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
+          <div className="col-span-3">
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              {/* Profile Section */}
+              <div className="text-center mb-6">
+                <div className="relative w-24 h-24 mx-auto mb-4">
+                  <Image
+                    src={user.profile_image || "/images/default-avatar.png"}
+                    alt="Profile"
+                    layout="fill"
+                    className="rounded-full"
+                  />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800">{user.display_name}</h3>
+                <p className="text-gray-500">{user.email}</p>
+                <p className="text-gray-500">{user.country || 'Location not set'}</p>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="border-t border-gray-200 pt-4 mb-6">
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Courses Enrolled</span>
+                  <span className="font-semibold">{user.courses_enrolled || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Locations</span>
+                  <span className="font-semibold">{user.locations?.length || 0}</span>
+                </div>
+              </div>
+
+              {/* Menu */}
+              <ul className="space-y-2">
+                {menuItems.map((item, index) => (
+                  <li
+                    key={item}
+                    className={`p-4 rounded-lg text-sm font-medium cursor-pointer transition border-b border-gray-300 ${
+                      index === 0 ? 'bg-violet-100 text-violet-700 font-semibold' : 'hover:bg-violet-100'
+                    }`}
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           {/* Main Content */}
@@ -83,8 +122,8 @@ export default function StudentDashboard() {
             <h2 className="text-4xl font-bold text-black mb-10">Dashboard</h2>
             <div className="grid grid-cols-2 gap-10">
               <div className="bg-violet-100 p-6 rounded-xl shadow-md text-center border border-violet-300 space-y-4">
-                <HiOutlineBookOpen className="text-blue-700 text-4xl mx-auto mb-2 "/>
-                <p className="text-3xl font-extrabold text-blue-400">10</p>
+                <HiOutlineBookOpen className="text-blue-700 text-4xl mx-auto mb-2" />
+                <p className="text-3xl font-extrabold text-blue-400">{user.courses_enrolled || 0}</p>
                 <p className="text-gray-600 text-lg">Enrolled Courses</p>
               </div>
               <div className="bg-violet-100 p-6 rounded-xl shadow-md text-center border border-violet-300 space-y-4">
