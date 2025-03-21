@@ -14,6 +14,7 @@ interface User {
   country?: string;
   courses_enrolled?: number;
   locations?: string[];
+  provider?: string;
 }
 
 export default function StudentDashboard() {
@@ -29,20 +30,60 @@ export default function StudentDashboard() {
   ]);
 
   useEffect(() => {
-    // Mock user data for demonstration
-    setUser({
-      user_id: 123456,
-      display_name: 'John Doe',
-      email: 'john.doe@example.com',
-      profile_image: 'https://randomuser.me/api/portraits/men/1.jpg',
-      is_student: true,
-      is_instructor: false,
-      country: 'United States',
-      courses_enrolled: 3,
-      locations: ['New York', 'Los Angeles', 'Chicago'],
-    });
+    // Get user data from localStorage or session
+    const getUserData = () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          
+          // Create user object with data from authentication provider
+          setUser({
+            user_id: parsedUser.id || parsedUser.user_id || 123456,
+            display_name: parsedUser.name || parsedUser.display_name || 'Student User',
+            email: parsedUser.email || 'student@example.com',
+            profile_image: parsedUser.image || parsedUser.profile_image || parsedUser.avatar_url || parsedUser.picture || '/images/default-avatar.png',
+            is_student: true,
+            is_instructor: false,
+            country: parsedUser.country || parsedUser.location || 'Not specified',
+            courses_enrolled: parsedUser.courses_enrolled || 0,
+            locations: parsedUser.locations || [],
+            provider: parsedUser.provider || ''
+          });
+        } else {
+          // Fallback to demo data if no user in storage
+          setUser({
+            user_id: 123456,
+            display_name: 'Demo Student',
+            email: 'student@example.com',
+            profile_image: '/images/default-avatar.png',
+            is_student: true,
+            is_instructor: false,
+            country: 'Not specified',
+            courses_enrolled: 0,
+            locations: [],
+            provider: ''
+          });
+        }
+      } catch (error) {
+        console.error('Error getting user data:', error);
+        // Fallback to demo data
+        setUser({
+          user_id: 123456,
+          display_name: 'Demo Student',
+          email: 'student@example.com',
+          profile_image: '/images/default-avatar.png',
+          is_student: true,
+          is_instructor: false,
+          country: 'Not specified',
+          courses_enrolled: 0,
+          locations: [],
+          provider: ''
+        });
+      }
+    };
     
-    // No longer using searchParams
+    getUserData();
   }, []);
 
   if (!user) {
@@ -62,9 +103,15 @@ export default function StudentDashboard() {
                   <Image
                     src={user.profile_image || "/images/default-avatar.png"}
                     alt="Profile"
-                    layout="fill"
-                    className="rounded-full"
+                    width={96}
+                    height={96}
+                    className="rounded-full object-cover"
                   />
+                  {user.provider && (
+                    <div className="absolute bottom-0 right-0 bg-blue-500 text-white text-xs p-1 rounded-full">
+                      {user.provider}
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800">{user.display_name}</h3>
                 <p className="text-gray-500">{user.email}</p>

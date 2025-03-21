@@ -1,15 +1,88 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HiOutlineBookOpen, HiOutlineAcademicCap } from 'react-icons/hi';
 
+interface User {
+  user_id: number;
+  display_name: string;
+  email: string;
+  profile_image: string;
+  country?: string;
+  age?: number;
+  specialty?: string;
+  provider?: string;
+  courses_created?: number;
+  mentees?: number;
+}
+
 export default function MentorDashboard() {
+  const [user, setUser] = useState<User | null>(null);
   const [menuItems] = useState([
     'Dashboard',
     'Courses',
     'Reviews'
   ]);
+
+  useEffect(() => {
+    // Get user data from localStorage or session
+    const getUserData = () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          
+          // Create user object with data from authentication provider
+          setUser({
+            user_id: parsedUser.id || parsedUser.user_id || 123456,
+            display_name: parsedUser.name || parsedUser.display_name || 'Mentor User',
+            email: parsedUser.email || 'mentor@example.com',
+            profile_image: parsedUser.image || parsedUser.profile_image || parsedUser.avatar_url || parsedUser.picture || '/images/user-avatar.png',
+            country: parsedUser.country || parsedUser.location || 'Not specified',
+            age: parsedUser.age || null,
+            specialty: parsedUser.specialty || 'Not specified',
+            provider: parsedUser.provider || '',
+            courses_created: parsedUser.courses_created || 0,
+            mentees: parsedUser.mentees || 0
+          });
+        } else {
+          // Fallback to demo data if no user in storage
+          setUser({
+            user_id: 123456,
+            display_name: 'Demo Mentor',
+            email: 'mentor@example.com',
+            profile_image: '/images/user-avatar.png',
+            country: 'Not specified',
+            specialty: 'Not specified',
+            provider: '',
+            courses_created: 0,
+            mentees: 0
+          });
+        }
+      } catch (error) {
+        console.error('Error getting user data:', error);
+        // Fallback to demo data
+        setUser({
+          user_id: 123456,
+          display_name: 'Demo Mentor',
+          email: 'mentor@example.com',
+          profile_image: '/images/user-avatar.png',
+          country: 'Not specified',
+          specialty: 'Not specified',
+          provider: '',
+          courses_created: 0,
+          mentees: 0
+        });
+      }
+    };
+    
+    getUserData();
+  }, []);
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6">
@@ -26,17 +99,22 @@ export default function MentorDashboard() {
           <div className="relative top-[30vh] left-10 w-[25vw] bg-white px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
             <div className="w-26 h-24">
               <Image
-                src="/images/user-avatar.png"
+                src={user.profile_image || "/images/user-avatar.png"}
                 alt="Mentor Avatar"
                 width={100}
                 height={100}
-                className="rounded-full border-2 border-white shadow-md"
+                className="rounded-full border-2 border-white shadow-md object-cover"
               />
+              {user.provider && (
+                <div className="absolute mt-[-20px] ml-[75px] bg-blue-500 text-white text-xs p-1 rounded-full">
+                  {user.provider}
+                </div>
+              )}
             </div>
             <div className=''>
-              <h2 className="text-sm font-bold text-gray-900">Claudia Pruit</h2>
-              <p className="text-xs text-gray-600">Country: Australia • Age: 30</p>
-              <p className="text-xs text-gray-500">Publications &amp; Linguistics</p>
+              <h2 className="text-sm font-bold text-gray-900">{user.display_name}</h2>
+              <p className="text-xs text-gray-600">Country: {user.country || 'Not specified'}{user.age ? ` • Age: ${user.age}` : ''}</p>
+              <p className="text-xs text-gray-500">{user.specialty || 'Specialty not specified'}</p>
             </div>
           </div>
           <div className="absolute top-[40vh] right-10 flex items-center gap-2 bg-teal-500 text-white px-4 py-2 rounded-full shadow-md">
@@ -97,12 +175,12 @@ export default function MentorDashboard() {
             <div className="grid grid-cols-2 gap-10">
               <div className="bg-violet-100 p-6 rounded-xl shadow-md text-center border border-violet-300 space-y-4">
                 <HiOutlineBookOpen className="text-blue-700 text-4xl mx-auto mb-2 "/>
-                <p className="text-3xl font-extrabold text-blue-700">10</p>
+                <p className="text-3xl font-extrabold text-blue-700">{user.courses_created || 0}</p>
                 <p className="text-gray-600 text-lg">Courses Created</p>
               </div>
               <div className="bg-violet-100 p-6 rounded-xl shadow-md text-center border border-violet-300 space-y-4">
                 <HiOutlineAcademicCap className="text-blue-700 text-4xl mx-auto mb-2" />
-                <p className="text-3xl font-extrabold text-blue-700">3</p>
+                <p className="text-3xl font-extrabold text-blue-700">{user.mentees || 0}</p>
                 <p className="text-gray-600 text-lg">Mentees</p>
               </div>
             </div>
