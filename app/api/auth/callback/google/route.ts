@@ -93,12 +93,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       // Create the response first
       const response = NextResponse.redirect(redirectUrl);
 
+      // Set a stronger max-age for the cookie to ensure it persists
+      const maxAge = 24 * 60 * 60; // 24 hours in seconds
+      
       // Set auth token in HTTP-only cookie
       response.cookies.set('auth_token', data.access_token, {
         path: '/',
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        sameSite: 'lax'
+        sameSite: 'lax',
+        maxAge: maxAge
       });
 
       // Also set access_token in URL for client-side storage
@@ -120,6 +124,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       // Clean up temporary cookies
       response.cookies.delete('temp_is_student');
       response.cookies.delete('temp_is_instructor');
+      
+      // Add a flag to indicate this is an OAuth callback redirect
+      redirectUrl.searchParams.set('oauth_redirect', 'true');
       
       // Update the response URL with all parameters
       response.headers.set('Location', redirectUrl.toString());

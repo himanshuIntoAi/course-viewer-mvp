@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 const API_BASE = `${API_URL}/api/v1`;
 
 interface GitHubCallbackResponse {
@@ -91,10 +91,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const redirectUrl = new URL(redirectPath, request.nextUrl.origin);
       
       // Create the response first
-      const response = NextResponse.redirect(redirectUrl);
+      const redirectResponse = NextResponse.redirect(redirectUrl);
 
       // Set auth token in HTTP-only cookie
-      response.cookies.set('auth_token', data.access_token, {
+      redirectResponse.cookies.set('auth_token', data.access_token, {
         path: '/',
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
@@ -118,14 +118,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       redirectUrl.searchParams.set('user', JSON.stringify(userData));
       
       // Clean up temporary cookies
-      response.cookies.delete('temp_is_student');
-      response.cookies.delete('temp_is_instructor');
+      redirectResponse.cookies.delete('temp_is_student');
+      redirectResponse.cookies.delete('temp_is_instructor');
       
       // Update the response URL with all parameters
-      response.headers.set('Location', redirectUrl.toString());
+      redirectResponse.headers.set('Location', redirectUrl.toString());
       
       console.log('Redirecting to:', redirectUrl.toString());
-      return response;
+      return redirectResponse;
     }
     
     throw new Error('No access token received from backend');

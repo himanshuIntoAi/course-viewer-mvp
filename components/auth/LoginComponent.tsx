@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthForm from './AuthForm';
@@ -27,6 +27,18 @@ interface Themes {
   [key: string]: Theme;
 }
 
+// Define a type for auth user data
+interface AuthUserData {
+  credential?: string;
+  accessToken?: string;
+  code?: string;
+  token?: string | null;
+  provider?: string | null;
+  is_student: boolean;
+  is_instructor?: boolean;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
 // Create a client component that uses searchParams
 function LoginContent() {
   const router = useRouter();
@@ -34,44 +46,46 @@ function LoginContent() {
   const { user, loading } = useOnboarding();
   const [selectedPath, setSelectedPath] = useState<UserPath>('student');
   const isSigningOut = searchParams?.get('signout') === 'true';
-  const error = searchParams?.get('error');
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+  const errorParam = searchParams?.get('error');
   const redirectPath = searchParams?.get('redirect');
   const [errorMessage, setError] = useState('');
 
   // Set initial user type in sessionStorage and cookies when component mounts
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Always set the default values when the page loads
-      const defaultUserType: UserPath = 'student';
-      sessionStorage.setItem('user_type', defaultUserType);
-      document.cookie = `temp_is_student=true; path=/`;
-      document.cookie = `temp_is_instructor=false; path=/`;
-      setSelectedPath(defaultUserType);
-      
-      console.log('Initial user type set:', {
-        sessionStorage: sessionStorage.getItem('user_type'),
-        cookies: {
-          student: document.cookie.includes('temp_is_student=true'),
-          instructor: document.cookie.includes('temp_is_instructor=true')
-        }
-      });
-    }
+    // Only run on client side
+    const defaultUserType: UserPath = 'student';
+    sessionStorage.setItem('user_type', defaultUserType);
+    document.cookie = `temp_is_student=true; path=/`;
+    document.cookie = `temp_is_instructor=false; path=/`;
+    setSelectedPath(defaultUserType);
+    
+    console.log('Initial user type set:', {
+      sessionStorage: sessionStorage.getItem('user_type'),
+      cookies: {
+        student: document.cookie.includes('temp_is_student=true'),
+        instructor: document.cookie.includes('temp_is_instructor=true')
+      }
+    });
   }, []);
 
-  // Handle successful authentication and redirect
-  const handleAuthSuccess = (userData: any) => {
+  // Handle successful authentication and redirect - memoized with useCallback
+  const handleAuthSuccess = useCallback((userData: AuthUserData) => {
     if (redirectPath) {
       router.replace(redirectPath);
     } else {
       router.replace(userData.is_student ? '/student-dashboard' : '/mentor-dashboard');
     }
-  };
+  }, [redirectPath, router]);
 
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  // The following handlers are used by auth providers but may not be directly called in this component
+  // They're kept for API completeness and future use
   const handleGoogleAuthSuccess = (response: { credential: string }) => {
     handleAuthSuccess({
       credential: response.credential, 
       provider: 'google',
-      is_student: sessionStorage.getItem('user_type') === 'student'
+      is_student: typeof window !== 'undefined' ? sessionStorage.getItem('user_type') === 'student' : true
     });
   };
 
@@ -79,7 +93,7 @@ function LoginContent() {
     handleAuthSuccess({
       accessToken: response.accessToken, 
       provider: 'facebook',
-      is_student: sessionStorage.getItem('user_type') === 'student'
+      is_student: typeof window !== 'undefined' ? sessionStorage.getItem('user_type') === 'student' : true
     });
   };
 
@@ -87,16 +101,17 @@ function LoginContent() {
     handleAuthSuccess({
       code,
       provider: 'github',
-      is_student: sessionStorage.getItem('user_type') === 'student'
+      is_student: typeof window !== 'undefined' ? sessionStorage.getItem('user_type') === 'student' : true
     });
   };
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   useEffect(() => {
     if (searchParams.get('token')) {
       handleAuthSuccess({
         token: searchParams.get('token'),
         provider: searchParams.get('provider'),
-        is_student: sessionStorage.getItem('user_type') === 'student'
+        is_student: typeof window !== 'undefined' ? sessionStorage.getItem('user_type') === 'student' : true
       });
     }
   }, [searchParams, handleAuthSuccess]);
@@ -105,14 +120,17 @@ function LoginContent() {
     if (searchParams.get('error')) {
       setError(searchParams.get('error') || '');
     }
-  }, [searchParams, handleAuthSuccess]);
+  }, [searchParams]);
 
   // Handle user state changes
   useEffect(() => {
     if (!loading && user && !isSigningOut) {
-      handleAuthSuccess(user);
+      // Convert User object to AuthUserData format
+      handleAuthSuccess({
+        ...user
+      });
     }
-  }, [user, loading, isSigningOut, redirectPath]);
+  }, [user, loading, isSigningOut, redirectPath, handleAuthSuccess]);
 
   // Color themes
   const themes: Themes = {
@@ -145,9 +163,12 @@ function LoginContent() {
     }
   };
 
+  // Placeholder for future submit functionality
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const handleSubmit = async () => {
     try {
-      // Handle submit logic
+      // Handle submit logic will be implemented later
+      console.log('Submit handler placeholder');
     } catch (error) {
       console.error('Login error:', error);
       setError('An error occurred during login');
@@ -211,6 +232,8 @@ function LoginContent() {
               width={200}
               height={80}
               priority
+              onClick={() => router.push('/')}
+              className="cursor-pointer"
             />
           </div>
 

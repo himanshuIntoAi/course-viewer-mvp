@@ -1,7 +1,8 @@
 import { nanoid } from 'nanoid';
+import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const FRONTEND_URL = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL;
+const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL;
 const API_BASE = `${API_URL}/api/v1`;
 const DEFAULT_AVATAR = '/images/avatar-placeholder.svg';
 
@@ -33,6 +34,9 @@ let userDataCache: User | null = null;
 let userDataPromise: Promise<User | null> | null = null;
 const USER_CACHE_DURATION = 60000; // 1 minute
 let lastUserFetch = 0;
+
+// Use a type union for router to handle both AppRouter and undefined
+type RouterType = AppRouterInstance | undefined;
 
 interface User {
   id: string;
@@ -68,7 +72,13 @@ interface RequestOptions extends RequestInit {
   signal?: AbortSignal;
 }
 
-const handleResponse = async (response: Response): Promise<any> => {
+interface ApiResponse extends AuthResponse {
+  detail?: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
+const handleResponse = async (response: Response): Promise<ApiResponse> => {
   const contentType = response.headers.get('content-type');
   if (!response.ok) {
     let errorMessage: string;
@@ -79,7 +89,7 @@ const handleResponse = async (response: Response): Promise<any> => {
       } else {
         errorMessage = await response.text();
       }
-    } catch (e) {
+    } catch {
       errorMessage = response.statusText;
     }
     throw new Error(errorMessage || 'Request failed');
@@ -88,16 +98,15 @@ const handleResponse = async (response: Response): Promise<any> => {
   if (contentType?.includes('application/json')) {
     return response.json();
   }
-  return response.text();
+  
+  // If we get here with a text response, we need to throw an error
+  // as we can't convert text to expected JSON structure
+  throw new Error('Invalid response format: expected JSON');
 };
 
 const defaultHeaders: Record<string, string> = {
   'Content-Type': 'application/json',
   'Accept': 'application/json'
-};
-
-const isHomePage = (): boolean => {
-  return typeof window !== 'undefined' && window.location.pathname === '/';
 };
 
 // Health check function
@@ -166,18 +175,36 @@ const makeRequest = async (url: string, options: RequestOptions = {}): Promise<R
   }
 };
 
-const checkSession = (): boolean => {
-  try {
-    return document.cookie.includes('session=');
-  } catch (error) {
-    console.error('Error checking session:', error);
-    return false;
+// Add a function to handle navigations
+const navigateTo = (path: string): void => {
+  if (isBrowser) {
+    // This will be used when no router is available
+    window.location.href = path;
   }
 };
 
-const clearSession = (): void => {
-  // Let the backend handle cookie clearing
-  // The logout endpoint will clear the cookie with proper settings
+// Helper function for redirects
+export const redirect = (path: string, router?: RouterType): void => {
+  if (router) {
+    router.push(path);
+  } else {
+    navigateTo(path);
+  }
+};
+
+// Helper function to get current path
+export const getCurrentPath = (): string => {
+  return isBrowser ? window.location.pathname : '';
+};
+
+// Helper function to get window origin
+export const getOrigin = (): string => {
+  return isBrowser ? window.location.origin : '';
+};
+
+// Helper function to get search params
+export const getSearchParams = (): URLSearchParams => {
+  return isBrowser ? new URLSearchParams(window.location.search) : new URLSearchParams('');
 };
 
 export const auth = {
@@ -282,7 +309,7 @@ export const auth = {
     }
   },
 
-  async logout(): Promise<void> {
+  async logout(): Promise<ApiResponse> {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
@@ -357,12 +384,12 @@ export const auth = {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
-          const userData = JSON.parse(storedUser);
+          const userData = JSON.parse(storedUser) as User;
           userDataCache = userData;
           lastUserFetch = currentTime;
           return userData;
-        } catch (e) {
-          console.error('Error parsing stored user data:', e);
+        } catch {
+          console.error('Error parsing stored user data');
         }
       }
 
@@ -381,7 +408,17 @@ export const auth = {
             }
           });
           
-          const userData = await handleResponse(response);
+          const apiResponse = await handleResponse(response);
+          // Ensure the response has the required User properties
+          const userData: User = {
+            id: apiResponse.user_id,
+            display_name: apiResponse.display_name,
+            email: apiResponse.email,
+            profile_image: apiResponse.profile_image || DEFAULT_AVATAR,
+            is_student: apiResponse.is_student,
+            is_instructor: apiResponse.is_instructor,
+            user_type: apiResponse.is_student ? USER_TYPES.LEARNER : USER_TYPES.EARNER
+          };
           
           // Update localStorage with fresh data
           localStorage.setItem('user', JSON.stringify(userData));
@@ -420,7 +457,7 @@ export const auth = {
     }
   },
 
-  async loginWithGitHub(): Promise<void> {
+  async loginWithGitHub(router?: RouterType): Promise<void> {
     try {
       const state = generateOAuthState('/dashboard');
       
@@ -430,7 +467,9 @@ export const auth = {
       
       // Store state and user type
       sessionStorage.setItem('oauth_state', state);
-      sessionStorage.setItem('redirect_path', window.location.pathname);
+      if (isBrowser) {
+        sessionStorage.setItem('redirect_path', getCurrentPath());
+      }
       sessionStorage.setItem('temp_user_type', userType);
       
       // Store user type in cookies for server-side access
@@ -444,12 +483,12 @@ export const auth = {
       
       const params = new URLSearchParams({
         client_id: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID!,
-        redirect_uri: `${window.location.origin}/api/auth/callback/github`,
+        redirect_uri: `${FRONTEND_URL}/api/auth/callback/github`,
         state,
         scope: 'read:user user:email'
       });
 
-      window.location.href = `https://github.com/login/oauth/authorize?${params}`;
+      redirect(`https://github.com/login/oauth/authorize?${params}`, router);
     } catch (error) {
       console.error('Failed to initiate GitHub login:', error);
       throw new Error('Failed to start GitHub login - Please try again');
@@ -480,7 +519,7 @@ export const auth = {
         method: 'POST',
         body: JSON.stringify({ 
           code,
-          redirect_uri: `${window.location.origin}/api/auth/callback/github`,
+          redirect_uri: `${getOrigin()}/api/auth/callback/github`,
           is_student,
           is_instructor
         })
@@ -488,13 +527,26 @@ export const auth = {
       
       const data = await handleResponse(response);
       if (data.access_token) {
-        // Store the access token
+        // Store the access token in multiple places for redundancy
         localStorage.setItem('access_token', data.access_token);
         sessionStorage.setItem('access_token', data.access_token);
         
-        // Set auth header
+        // Set auth header immediately
         defaultHeaders['Authorization'] = `Bearer ${data.access_token}`;
         
+        // Set auth cookie with proper expiration and security
+        const maxAge = data.expires_in || 86400; // Default to 24 hours
+        const secure = window.location.protocol === 'https:' ? 'Secure;' : '';
+        const domain = process.env.COOKIE_DOMAIN || window.location.hostname;
+        
+        // Set HTTP-only cookie with proper attributes
+        document.cookie = `auth_token=${data.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; ${secure} domain=${domain}`;
+        
+        if (data.expires_in) {
+          const expiresAt = Date.now() + (data.expires_in * 1000);
+          localStorage.setItem('token_expires_at', expiresAt.toString());
+        }
+
         // Store user type based on API response
         const finalUserType = data.is_student ? USER_TYPES.LEARNER : USER_TYPES.EARNER;
         localStorage.setItem('user_type', finalUserType);
@@ -526,7 +578,7 @@ export const auth = {
     }
   },
 
-  async loginWithFacebook(): Promise<void> {
+  async loginWithFacebook(router?: RouterType): Promise<void> {
     try {
       const state = Array.from(crypto.getRandomValues(new Uint8Array(16)))
         .map(b => b.toString(16).padStart(2, '0'))
@@ -541,7 +593,9 @@ export const auth = {
       }
       
       sessionStorage.setItem('oauth_state', state);
-      sessionStorage.setItem('redirect_path', window.location.pathname);
+      if (isBrowser) {
+        sessionStorage.setItem('redirect_path', getCurrentPath());
+      }
       
       // Store user type in cookies for server-side access
       const isStudent = userType === USER_TYPES.LEARNER;
@@ -558,13 +612,13 @@ export const auth = {
       document.cookie = `temp_is_instructor=${isInstructor ? 'true' : 'false'}; path=/`;
       
       const params = new URLSearchParams({
-        client_id: process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID!,
-        redirect_uri: `${window.location.origin}/api/auth/callback/facebook`,
+        client_id: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID!,
+        redirect_uri: `${FRONTEND_URL}/api/auth/callback/facebook`,
         state,
         scope: 'email,public_profile'
       });
 
-      window.location.href = `https://www.facebook.com/v12.0/dialog/oauth?${params}`;
+      redirect(`https://www.facebook.com/v12.0/dialog/oauth?${params}`, router);
     } catch (error) {
       console.error('Failed to initiate Facebook login:', error);
       throw new Error('Failed to start Facebook login - Please try again');
@@ -606,7 +660,48 @@ export const auth = {
       
       const data = await handleResponse(response);
       if (data.access_token) {
+        // Store the access token in multiple places for redundancy
+        localStorage.setItem('access_token', data.access_token);
+        sessionStorage.setItem('access_token', data.access_token);
+        
+        // Set auth header immediately
         defaultHeaders['Authorization'] = `Bearer ${data.access_token}`;
+        
+        // Set auth cookie with proper expiration and security
+        const maxAge = data.expires_in || 86400; // Default to 24 hours
+        const secure = window.location.protocol === 'https:' ? 'Secure;' : '';
+        const domain = process.env.COOKIE_DOMAIN || window.location.hostname;
+        
+        // Set HTTP-only cookie with proper attributes
+        document.cookie = `auth_token=${data.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; ${secure} domain=${domain}`;
+        
+        if (data.expires_in) {
+          const expiresAt = Date.now() + (data.expires_in * 1000);
+          localStorage.setItem('token_expires_at', expiresAt.toString());
+        }
+
+        // Store user type based on API response
+        const finalUserType = data.is_student ? USER_TYPES.LEARNER : USER_TYPES.EARNER;
+        localStorage.setItem('user_type', finalUserType);
+        sessionStorage.setItem('user_type', finalUserType);
+
+        // Store user data
+        const userData: User = {
+          id: data.user_id,
+          display_name: data.display_name,
+          email: data.email,
+          profile_image: data.profile_image || DEFAULT_AVATAR,
+          is_student: data.is_student,
+          is_instructor: data.is_instructor,
+          user_type: finalUserType
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userData));
+        sessionStorage.setItem('user', JSON.stringify(userData));
+        
+        // Update cache
+        userDataCache = userData;
+        lastUserFetch = Date.now();
       }
       
       return { data, redirectPath };
@@ -616,7 +711,7 @@ export const auth = {
     }
   },
 
-  async loginWithGoogle(): Promise<void> {
+  async loginWithGoogle(router?: RouterType): Promise<void> {
     if (!isBrowser) {
       throw new Error('Google login can only be initiated in browser environment');
     }
@@ -630,7 +725,9 @@ export const auth = {
       
       // Store state and user type
       sessionStorage.setItem('oauth_state', state);
-      sessionStorage.setItem('redirect_path', window.location.pathname);
+      if (isBrowser) {
+        sessionStorage.setItem('redirect_path', getCurrentPath());
+      }
       sessionStorage.setItem('temp_user_type', userType);
       
       // Store user type in cookies for server-side access
@@ -644,13 +741,13 @@ export const auth = {
       
       const params = new URLSearchParams({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-        redirect_uri: `${window.location.origin}/api/auth/callback/google`,
+        redirect_uri: `${FRONTEND_URL}/api/auth/callback/google`,
         response_type: 'code',
         state,
         scope: 'email profile'
       });
 
-      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+      redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`, router);
     } catch (error) {
       console.error('Failed to initiate Google login:', error);
       throw new Error(error instanceof Error ? error.message : 'Failed to start Google login - Please try again');
@@ -679,7 +776,7 @@ export const auth = {
         method: 'POST',
         body: JSON.stringify({ 
           code,
-          redirect_uri: `${window.location.origin}/api/auth/callback/google`,
+          redirect_uri: `${getOrigin()}/api/auth/callback/google`,
           is_student,
           is_instructor
         })
@@ -695,9 +792,13 @@ export const auth = {
         // Set auth header immediately
         defaultHeaders['Authorization'] = `Bearer ${data.access_token}`;
         
-        // Set auth cookie with proper expiration
-        const maxAge = data.expires_in || 3600;
-        document.cookie = `auth_token=${data.access_token}; path=/; max-age=${maxAge}`;
+        // Set auth cookie with proper expiration and security
+        const maxAge = data.expires_in || 86400; // Default to 24 hours
+        const secure = window.location.protocol === 'https:' ? 'Secure;' : '';
+        const domain = process.env.COOKIE_DOMAIN || window.location.hostname;
+        
+        // Set HTTP-only cookie with proper attributes
+        document.cookie = `auth_token=${data.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; ${secure} domain=${domain}`;
         
         if (data.expires_in) {
           const expiresAt = Date.now() + (data.expires_in * 1000);
@@ -753,13 +854,22 @@ export const auth = {
 };
 
 export function generateOAuthState(redirectPath = '/dashboard'): string {
+  // Guard against server-side execution
+  if (typeof window === 'undefined') {
+    // Return a placeholder state string that will be replaced on client side
+    return JSON.stringify({
+      stateId: 'placeholder',
+      redirectPath,
+      timestamp: 0
+    });
+  }
+  
   const state: OAuthState = {
     stateId: nanoid(),
     redirectPath,
     timestamp: Date.now()
   };
   const stateStr = JSON.stringify(state);
-  console.log('Generated state object:', state);
   return stateStr;
 }
 
@@ -783,9 +893,9 @@ export function getAuthUrl(provider: 'github' | 'facebook' | 'google', state: st
   };
 
   const redirectUris = {
-    github: `${window.location.origin}/api/auth/callback/github`,
-    facebook: `${window.location.origin}/api/auth/callback/facebook`,
-    google: `${window.location.origin}/api/auth/callback/google`
+    github: `${FRONTEND_URL}/api/auth/callback/github`,
+    facebook: `${FRONTEND_URL}/api/auth/callback/facebook`,
+    google: `${FRONTEND_URL}/api/auth/callback/google`
   };
 
   const url = new URL(baseUrls[provider]);
@@ -802,18 +912,33 @@ export function getAuthUrl(provider: 'github' | 'facebook' | 'google', state: st
   return url.toString();
 }
 
-export function initiateOAuthLogin(provider: 'github' | 'facebook' | 'google', redirectPath = '/student-dashboard'): void {
-  if (!isBrowser) {
+export function initiateOAuthLogin(provider: 'github' | 'facebook' | 'google', redirectPath = '/student-dashboard', router?: RouterType): void {
+  // Guard against server-side execution
+  if (typeof window === 'undefined') {
     throw new Error('OAuth login can only be initiated in browser environment');
   }
 
   try {
     const state = generateOAuthState(redirectPath);
-    console.log('Generated state:', state);
-    sessionStorage.setItem('oauth_state', state);
-    console.log('Stored state in session:', sessionStorage.getItem('oauth_state'));
+    
+    // Store state in sessionStorage
+    if (window.sessionStorage) {
+      window.sessionStorage.setItem('oauth_state', state);
+      
+      // Store user type in cookies for server-side access if we're handling Google login
+      if (provider === 'google') {
+        const userType = window.sessionStorage.getItem('user_type') || 'student';
+        const isStudent = userType === 'student';
+        const isInstructor = userType === 'instructor';
+        
+        // Set cookies with explicit true/false strings
+        document.cookie = `temp_is_student=${isStudent ? 'true' : 'false'}; path=/`;
+        document.cookie = `temp_is_instructor=${isInstructor ? 'true' : 'false'}; path=/`;
+      }
+    }
+    
     const authUrl = getAuthUrl(provider, state);
-    window.location.href = authUrl;
+    redirect(authUrl, router);
   } catch (error) {
     console.error('Failed to initiate OAuth login:', error);
     throw error;

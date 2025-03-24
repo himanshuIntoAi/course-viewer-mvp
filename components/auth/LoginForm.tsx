@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { initiateOAuthLogin, auth } from '../../services/login/auth';
+import { initiateOAuthLogin } from '../../services/login/auth';
 import { useOnboarding } from '../../state/context/login/OnboardingContext';
 import Image from 'next/image';
 import styles from './auth.module.css';
@@ -28,7 +28,6 @@ export default function LoginForm(): React.ReactElement {
   const { login, register } = useOnboarding();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [displayName, setDisplayName] = useState<string>('');
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -83,17 +82,6 @@ export default function LoginForm(): React.ReactElement {
       });
     }
   };
-
-  const getButtonStyle = (path: UserPath): React.CSSProperties => ({
-    backgroundColor: selectedPath === path ? themes[path].primary : 'transparent',
-    color: selectedPath === path ? 'white' : '#6B7280',
-    flex: 1,
-    padding: '8px 24px',
-    borderRadius: '8px',
-    transition: 'all 0.2s',
-    fontSize: '14px',
-    fontWeight: '500'
-  });
 
   const validateForm = (): boolean => {
     if (!email || !email.includes('@')) {
@@ -172,18 +160,35 @@ export default function LoginForm(): React.ReactElement {
   };
 
   const handleGitHubLogin = (): void => {
-    const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
-    const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`;
+    // Ensure code only runs on client side
+    if (typeof window === 'undefined') return;
     
-    const state: State = {
-      stateId: crypto.randomUUID(),
-      redirectPath: '/dashboard',
-      timestamp: Date.now()
-    };
-    
-    const githubUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=user:email&state=${encodeURIComponent(JSON.stringify(state))}`;
-    
-    window.location.href = githubUrl;
+    try {
+      const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+      const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`;
+      
+      // Use a safer approach for generating UUID
+      let stateId = '';
+      try {
+        stateId = crypto.randomUUID();
+      } catch {
+        // Fallback if randomUUID is not available
+        stateId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      }
+      
+      const state: State = {
+        stateId,
+        redirectPath: '/dashboard',
+        timestamp: Date.now()
+      };
+      
+      const githubUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=user:email&state=${encodeURIComponent(JSON.stringify(state))}`;
+      
+      window.location.href = githubUrl;
+    } catch (error) {
+      console.error('GitHub login error:', error);
+      setError('Failed to initialize GitHub login');
+    }
   };
 
   const handleSocialAuth = async (provider: 'github' | 'facebook' | 'google' | 'linkedin' | 'apple'): Promise<void> => {

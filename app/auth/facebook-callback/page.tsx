@@ -26,6 +26,9 @@ const FacebookCallbackPage: React.FC = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Ensure we're on the client side
+        if (typeof window === 'undefined') return;
+        
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         const state = params.get('state');
@@ -61,7 +64,7 @@ const FacebookCallbackPage: React.FC = () => {
 
         const data: FacebookCallbackResponse = await response.json();
         
-        // Store the token in localStorage
+        // Store the token in localStorage (client-side only)
         if (data.access_token) {
           localStorage.setItem('auth_token', data.access_token);
           if (data.user) {
@@ -71,10 +74,13 @@ const FacebookCallbackPage: React.FC = () => {
 
         // Get redirect path from state or use default
         let redirectPath = data.is_student ? '/student-dashboard' : '/mentor-dashboard';
+        
         if (state) {
           try {
             const stateData: StateData = JSON.parse(decodeURIComponent(state));
-            redirectPath = stateData.redirectPath || data.is_student ? '/student-dashboard' : '/mentor-dashboard';
+            if (stateData.redirectPath) {
+              redirectPath = stateData.redirectPath;
+            }
           } catch (error) {
             console.error('Failed to parse state:', error);
           }
@@ -89,7 +95,10 @@ const FacebookCallbackPage: React.FC = () => {
       }
     };
 
-    handleCallback();
+    // Only run callback logic on the client side
+    if (typeof window !== 'undefined') {
+      handleCallback();
+    }
   }, [router]);
 
   return (

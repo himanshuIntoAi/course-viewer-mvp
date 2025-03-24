@@ -28,6 +28,10 @@ const GitHubCallbackHandler = () => {
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const sessionError = searchParams.get('error');
+    
+    // Check for token in URL (passed from server component)
+    const token = searchParams.get('token');
+    const userParam = searchParams.get('user');
 
     if (sessionError) {
       setErrorMessage(sessionError);
@@ -36,6 +40,28 @@ const GitHubCallbackHandler = () => {
         router.push('/login?error=' + encodeURIComponent(sessionError));
       }, 3000);
       return;
+    }
+
+    if (token && userParam) {
+      // This means we're already authenticated and just need to set the state
+      try {
+        const userData = JSON.parse(userParam);
+        setToken(token);
+        setUser(userData);
+        setIsAuthenticated(true);
+        setIsProcessing(false);
+        // Remove token from URL for security
+        router.replace('/student-dashboard');
+        return;
+      } catch (error) {
+        console.error('Failed to process user data:', error);
+        setErrorMessage('Failed to process user data');
+        setIsProcessing(false);
+        timeoutRef.current = setTimeout(() => {
+          router.push('/login?error=Invalid user data');
+        }, 3000);
+        return;
+      }
     }
 
     if (!code || !state) {
@@ -50,14 +76,15 @@ const GitHubCallbackHandler = () => {
     // Process GitHub authentication with the code
     const handleAuth = async () => {
       try {
-        // Process code and redirect
+        // We're letting the server component handle the OAuth exchange
+        // Just redirect to the dashboard, server component already set cookies
         router.push('/student-dashboard');
-      } catch {
-        // No need to capture the error variable if we're not using it
-        setErrorMessage('Authentication failed. Please try again.');
+      } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : 'Authentication failed. Please try again.';
+        setErrorMessage(errorMsg);
         setIsProcessing(false);
         timeoutRef.current = setTimeout(() => {
-          router.push('/login?error=GitHub authentication failed');
+          router.push('/login?error=' + encodeURIComponent(errorMsg));
         }, 3000);
       }
     };

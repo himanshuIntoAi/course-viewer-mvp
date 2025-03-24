@@ -4,7 +4,7 @@ import Footer from "@/components/footer/footer";
 import LoginComponent from "@/components/auth/LoginComponent";
 import Image from 'next/image';
 
-const page = () => {
+const Page = () => {
 
   return (
     <div className="relative from-[#E4F7F7] to-white">
@@ -19,4 +19,4 @@ const page = () => {
   );
 }
 
-export default page;
+export default Page;

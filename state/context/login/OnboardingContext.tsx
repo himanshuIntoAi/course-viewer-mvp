@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '../../../services/login/auth';
 
@@ -27,13 +27,14 @@ interface AuthResponse {
   profile_image: string;
   is_student: boolean;
   is_instructor: boolean;
+  redirect_path?: string;
 }
 
 interface OnboardingData {
   step: number;
   category: string;
-  personalInfo: Record<string, any>;
-  preferences: Record<string, any>;
+  personalInfo: Record<string, string | number | boolean>;
+  preferences: Record<string, string | number | boolean>;
   profileId: string | null;
   userType: 'student' | 'instructor';
 }
@@ -65,6 +66,9 @@ export function useOnboarding() {
   return context;
 }
 
+// Check if code is running in browser
+const isBrowser = typeof window !== 'undefined';
+
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
@@ -90,7 +94,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       };
       
       // Store user type in sessionStorage when it changes
-      if (newData.userType) {
+      if (newData.userType && isBrowser) {
         // Store the user type selection
         sessionStorage.setItem('user_type', newData.userType);
         
@@ -108,17 +112,19 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     });
   };
 
-  const clearAuthState = () => {
+  const clearAuthState = useCallback(() => {
     setUser(null);
     setIsAuthenticated(false);
     setToken(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('token_expires_at');
-  };
+    if (isBrowser) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('token_expires_at');
+    }
+  }, []);
 
   // Function to get the JWT token
   const getToken = () => {
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       const token = localStorage.getItem('access_token');
       const expiresAt = localStorage.getItem('token_expires_at');
       
@@ -138,7 +144,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   // Function to set the JWT token
   const setToken = (token: string | null) => {
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       if (token) {
         localStorage.setItem('access_token', token);
       } else {
@@ -149,7 +155,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   };
 
   // Enhanced authenticatedFetch with retry mechanism
-  const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
+  const authenticatedFetch = useCallback(async (url: string, options: RequestInit = {}) => {
     const token = getToken();
     if (!token) {
       clearAuthState();
@@ -184,10 +190,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       }
       throw error;
     }
-  };
+  }, [clearAuthState, router]);
 
   // Enhanced fetchUserData with validation
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const response = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/user`);
       const userData = await response.json();
@@ -204,7 +210,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       clearAuthState();
       throw error;
     }
-  };
+  }, [authenticatedFetch, clearAuthState]);
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -225,20 +231,68 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           return;
         }
 
-        // Skip auth check on callback page
-        if (typeof window !== 'undefined' && window.location.pathname.includes('/api/auth/callback')) {
-          return;
-        }
+        // Skip auth check on callback page or if this is an OAuth redirect
+        if (typeof window !== 'undefined') {
+          const pathname = window.location.pathname;
+          const search = window.location.search;
+          
+          if (pathname.includes('/api/auth/callback') || 
+              search.includes('oauth_redirect=true') ||
+              search.includes('token=')) {
+            // If there's a token in URL, set it in localStorage immediately
+            const urlParams = new URLSearchParams(search);
+            const token = urlParams.get('token');
+            const userData = urlParams.get('user');
+            
+            if (token) {
+              localStorage.setItem('access_token', token);
+              document.cookie = `auth_token=${token}; path=/; max-age=${24 * 60 * 60}; SameSite=Lax;`;
+              setIsAuthenticated(true);
+              
+              // If we have user data, parse it and set the user state
+              if (userData) {
+                try {
+                  const parsedUser = JSON.parse(userData);
+                  setUser({
+                    id: parsedUser.user_id,
+                    display_name: parsedUser.display_name,
+                    email: parsedUser.email,
+                    profile_image: parsedUser.profile_image,
+                    is_student: parsedUser.is_student,
+                    is_instructor: parsedUser.is_instructor,
+                    user_type: parsedUser.is_student ? 'student' : 'instructor'
+                  });
+                  
+                  // Store user data persistently
+                  localStorage.setItem('user', userData);
+                } catch (e) {
+                  console.error('Failed to parse user data from URL', e);
+                }
+              }
 
+              // Clear URL parameters to avoid issues with subsequent refreshes
+              if (window.history && window.history.replaceState) {
+                const cleanUrl = pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+              }
+              
+              return;
+            }
+          }
+        }
+        
+        // Rest of the authentication check...
         const token = getToken();
         if (!token) {
           clearAuthState();
           // Only redirect if on dashboard pages
-          const isDashboardPage = window.location.pathname.startsWith('/student-dashboard') ||
-                                window.location.pathname.startsWith('/mentor-dashboard');
+          const isDashboardPage = typeof window !== 'undefined' && (
+            window.location.pathname.startsWith('/student-dashboard') ||
+            window.location.pathname.startsWith('/mentor-dashboard')
+          );
           
           if (isDashboardPage && !isSigningOut) {
-            window.location.replace('/login?redirect=' + encodeURIComponent(window.location.pathname));
+            router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
           }
           return;
         }
@@ -276,7 +330,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     const interval = setInterval(checkAuthentication, 300000); // Check every 5 minutes
 
     return () => clearInterval(interval);
-  }, []);
+  }, [clearAuthState, fetchUserData, isInitialized, user, router]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -293,14 +347,25 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           localStorage.setItem('token_expires_at', expiresAt.toString());
         }
         
+        // Set auth cookie with proper expiration and security
+        const maxAge = data.expires_in || 86400; // Default to 24 hours
+        const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'Secure;' : '';
+        const domain = process.env.COOKIE_DOMAIN || (typeof window !== 'undefined' ? window.location.hostname : '');
+        
+        // Set HTTP-only cookie with proper attributes
+        if (typeof document !== 'undefined') {
+          document.cookie = `auth_token=${data.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; ${secure} domain=${domain}`;
+        }
+        
         // Set authentication and user data atomically
-        const userData = {
+        const userData: User = {
           id: data.user_id, // Now correctly handling as string from API
           email: data.email,
           display_name: data.display_name,
           profile_image: data.profile_image,
           is_student: data.is_student,
-          is_instructor: data.is_instructor
+          is_instructor: data.is_instructor,
+          user_type: data.is_student ? 'student' : 'instructor'
         };
         
         setIsAuthenticated(true);
@@ -309,21 +374,17 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         // Store user type based on API response
         if (data.is_student) {
           sessionStorage.setItem('user_type', 'student');
-          document.cookie = `temp_is_student=true; path=/; domain=${process.env.COOKIE_DOMAIN || window.location.hostname}`;
-          document.cookie = `temp_is_instructor=false; path=/; domain=${process.env.COOKIE_DOMAIN || window.location.hostname}`;
+          document.cookie = `temp_is_student=true; path=/; domain=${process.env.COOKIE_DOMAIN || (typeof window !== 'undefined' ? window.location.hostname : '')}`;
+          document.cookie = `temp_is_instructor=false; path=/; domain=${process.env.COOKIE_DOMAIN || (typeof window !== 'undefined' ? window.location.hostname : '')}`;
         } else if (data.is_instructor) {
           sessionStorage.setItem('user_type', 'instructor');
-          document.cookie = `temp_is_student=false; path=/; domain=${process.env.COOKIE_DOMAIN || window.location.hostname}`;
-          document.cookie = `temp_is_instructor=true; path=/; domain=${process.env.COOKIE_DOMAIN || window.location.hostname}`;
+          document.cookie = `temp_is_student=false; path=/; domain=${process.env.COOKIE_DOMAIN || (typeof window !== 'undefined' ? window.location.hostname : '')}`;
+          document.cookie = `temp_is_instructor=true; path=/; domain=${process.env.COOKIE_DOMAIN || (typeof window !== 'undefined' ? window.location.hostname : '')}`;
         }
 
         // Use the redirect_path from the API response if available, otherwise default to dashboard
-        const redirectPath = data.redirect_path || data.is_student ? '/student-dashboard' : '/mentor-dashboard';
-        if (router) {
-          router.push(redirectPath);
-        } else {
-          window.location.href = redirectPath;
-        }
+        const redirectPath = data.redirect_path || (data.is_student ? '/student-dashboard' : '/mentor-dashboard');
+        router.push(redirectPath);
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
@@ -362,7 +423,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         }
       }
 
-      window.location.replace('/?signout=true');
+      router.push('/?signout=true');
     } catch (error) {
       console.error('Logout error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
