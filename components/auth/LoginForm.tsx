@@ -1,9 +1,99 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { initiateOAuthLogin } from '../../services/login/auth';
 import { useOnboarding } from '../../state/context/login/OnboardingContext';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import styles from './auth.module.css';
+
+// Dynamically import social components that might cause hydration issues
+const SocialButtons = dynamic(() => Promise.resolve(({ onSocialAuth }: { 
+  onSocialAuth: (provider: 'github' | 'facebook' | 'google' | 'linkedin' | 'apple') => Promise<void> 
+}) => {
+  // Initialize auth handlers inside the client component to avoid hydration issues
+  const handleSocialClick = async (provider: 'github' | 'facebook' | 'google' | 'linkedin' | 'apple') => {
+    await onSocialAuth(provider);
+  };
+
+  return (
+    <div className={styles['social-login-container']}>
+      {/* Google */}
+      <button
+        type="button"
+        onClick={() => handleSocialClick('google')}
+        className={styles['social-button']}
+        aria-label="Continue with Google"
+      >
+        <Image
+          src="/google.svg"
+          alt="Google"
+          width={24}
+          height={24}
+        />
+      </button>
+
+      {/* GitHub */}
+      <button
+        type="button"
+        onClick={() => handleSocialClick('github')}
+        className={styles['social-button']}
+        aria-label="Continue with GitHub"
+      >
+        <Image
+          src="/github.svg"
+          alt="GitHub"
+          width={24}
+          height={24}
+        />
+      </button>
+
+      {/* Facebook */}
+      <button
+        type="button"
+        onClick={() => handleSocialClick('facebook')}
+        className={styles['social-button']}
+        aria-label="Continue with Facebook"
+      >
+        <Image
+          src="/facebook.svg"
+          alt="Facebook"
+          width={24}
+          height={24}
+        />
+      </button>
+
+      {/* Apple */}
+      <button
+        type="button"
+        onClick={() => handleSocialClick('apple')}
+        className={styles['social-button']}
+        aria-label="Continue with Apple"
+      >
+        <Image
+          src="/apple.svg"
+          alt="Apple"
+          width={24}
+          height={24}
+        />
+      </button>
+
+      {/* LinkedIn */}
+      <button
+        type="button"
+        onClick={() => handleSocialClick('linkedin')}
+        className={styles['social-button']}
+        aria-label="Continue with LinkedIn"
+      >
+        <Image
+          src="/linkedin.svg"
+          alt="LinkedIn"
+          width={24}
+          height={24}
+        />
+      </button>
+    </div>
+  );
+}), { ssr: false });
 
 type UserPath = 'student' | 'instructor';
 
@@ -24,7 +114,8 @@ interface State {
   timestamp: number;
 }
 
-export default function LoginForm(): React.ReactElement {
+// Main content component
+function LoginFormContent(): React.ReactElement {
   const { login, register } = useOnboarding();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -34,8 +125,24 @@ export default function LoginForm(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string>('');
   const [selectedPath, setSelectedPath] = useState<UserPath>('student');
+  const [isClient, setIsClient] = useState(false);
 
-  // Color themes
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const defaultUserType = 'learner';
+      sessionStorage.setItem('user_type', defaultUserType);
+      
+      document.cookie = `temp_is_student=true; path=/`;
+      document.cookie = `temp_is_instructor=false; path=/`;
+      
+      console.log('Default user type set to LEARNER in LoginForm');
+    }
+  }, []);
+
   const themes: Themes = {
     student: {
       primary: '#02baba',
@@ -69,17 +176,31 @@ export default function LoginForm(): React.ReactElement {
   };
 
   const handlePathClick = (path: UserPath): void => {
+    console.log('=== USER PATH SELECTION ===');
+    console.log('Previous path:', selectedPath);
+    console.log('New path selected:', path);
+    
     setSelectedPath(path);
-    // Update sessionStorage and cookies with new selection
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('user_type', path);
+      const userType = path === 'student' ? 'learner' : 'earner';
+      console.log('Converting path to userType:', path, '->', userType);
+      
+      sessionStorage.setItem('user_type', userType);
+      
       document.cookie = `temp_is_student=${path === 'student' ? 'true' : 'false'}; path=/`;
       document.cookie = `temp_is_instructor=${path === 'instructor' ? 'true' : 'false'}; path=/`;
-      console.log('User type updated to:', path);
-      console.log('Cookies set:', {
-        student: document.cookie.includes('temp_is_student=true'),
-        instructor: document.cookie.includes('temp_is_instructor=true')
+      
+      console.log('Setting in sessionStorage:', {
+        'user_type': userType,
+        'stored_value': sessionStorage.getItem('user_type')
       });
+      
+      console.log('Setting in cookies:', {
+        is_student: path === 'student',
+        is_instructor: path === 'instructor',
+        cookie_content: document.cookie
+      });
+      console.log('=== PATH SELECTION COMPLETED ===');
     }
   };
 
@@ -103,7 +224,6 @@ export default function LoginForm(): React.ReactElement {
     setError(null);
 
     try {
-      // Check backend health before attempting auth
       const healthCheck = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, {
         method: 'GET',
         headers: {
@@ -116,7 +236,6 @@ export default function LoginForm(): React.ReactElement {
       }
 
       if (isSignUp) {
-        // Extract first name from email (text before @)
         const firstName = email.split('@')[0];
         await register(email, password, firstName);
         setSuccess('Registration successful! Please sign in.');
@@ -164,6 +283,9 @@ export default function LoginForm(): React.ReactElement {
     if (typeof window === 'undefined') return;
     
     try {
+      setLoading(true);
+      setError(null);
+      
       const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
       const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`;
       
@@ -188,6 +310,7 @@ export default function LoginForm(): React.ReactElement {
     } catch (error) {
       console.error('GitHub login error:', error);
       setError('Failed to initialize GitHub login');
+      setLoading(false);
     }
   };
 
@@ -205,12 +328,10 @@ export default function LoginForm(): React.ReactElement {
       return;
     }
     if (provider === 'linkedin') {
-      // Implement LinkedIn login
       console.log('LinkedIn login not implemented yet');
       return;
     }
     if (provider === 'apple') {
-      // Implement Apple login
       console.log('Apple login not implemented yet');
       return;
     }
@@ -219,9 +340,7 @@ export default function LoginForm(): React.ReactElement {
 
   return (
     <div className="w-full flex justify-center items-center px-4">
-      {/* Main Card */}
       <div className={styles['main-card']}>
-        {/* Toggle Buttons */}
         <div className={styles['toggle-container']}>
           <button
             onClick={() => handlePathClick('student')}
@@ -357,85 +476,22 @@ export default function LoginForm(): React.ReactElement {
               </div>
             </div>
 
-            <div className={styles['social-login-container']}>
-              {/* Google */}
-              <button
-                type="button"
-                onClick={() => handleSocialAuth('google')}
-                className={styles['social-button']}
-                aria-label="Continue with Google"
-              >
-                <Image
-                  src="/google.svg"
-                  alt="Google"
-                  width={24}
-                  height={24}
-                />
-              </button>
-
-              {/* GitHub */}
-              <button
-                type="button"
-                onClick={() => handleSocialAuth('github')}
-                className={styles['social-button']}
-                aria-label="Continue with GitHub"
-              >
-                <Image
-                  src="/github.svg"
-                  alt="GitHub"
-                  width={24}
-                  height={24}
-                />
-              </button>
-
-              {/* Facebook */}
-              <button
-                type="button"
-                onClick={() => handleSocialAuth('facebook')}
-                className={styles['social-button']}
-                aria-label="Continue with Facebook"
-              >
-                <Image
-                  src="/facebook.svg"
-                  alt="Facebook"
-                  width={24}
-                  height={24}
-                />
-              </button>
-
-              {/* Apple */}
-              <button
-                type="button"
-                onClick={() => handleSocialAuth('apple')}
-                className={styles['social-button']}
-                aria-label="Continue with Apple"
-              >
-                <Image
-                  src="/apple.svg"
-                  alt="Apple"
-                  width={24}
-                  height={24}
-                />
-              </button>
-
-              {/* LinkedIn */}
-              <button
-                type="button"
-                onClick={() => handleSocialAuth('linkedin')}
-                className={styles['social-button']}
-                aria-label="Continue with LinkedIn"
-              >
-                <Image
-                  src="/linkedin.svg"
-                  alt="LinkedIn"
-                  width={24}
-                  height={24}
-                />
-              </button>
-            </div>
+            {isClient && <SocialButtons onSocialAuth={handleSocialAuth} />}
           </form>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginForm(): React.ReactElement {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    }>
+      <LoginFormContent />
+    </Suspense>
   );
 } 

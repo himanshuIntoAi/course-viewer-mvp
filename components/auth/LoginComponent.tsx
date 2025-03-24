@@ -5,8 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AuthForm from './AuthForm';
 import { useOnboarding } from '../../state/context/login/OnboardingContext';
 import { Poppins } from 'next/font/google';
-import FacebookSDK from './FacebookSDK';
+import dynamic from 'next/dynamic';
 import styles from './auth.module.css';
+
+// Dynamically import FacebookSDK with no SSR to prevent hydration issues
+const FacebookSDK = dynamic(() => import('./FacebookSDK'), { ssr: false });
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -50,23 +53,28 @@ function LoginContent() {
   const errorParam = searchParams?.get('error');
   const redirectPath = searchParams?.get('redirect');
   const [errorMessage, setError] = useState('');
+  const [isClient, setIsClient] = useState(false);
 
-  // Set initial user type in sessionStorage and cookies when component mounts
+  // Set isClient to true when component mounts on client
   useEffect(() => {
-    // Only run on client side
-    const defaultUserType: UserPath = 'student';
-    sessionStorage.setItem('user_type', defaultUserType);
-    document.cookie = `temp_is_student=true; path=/`;
-    document.cookie = `temp_is_instructor=false; path=/`;
-    setSelectedPath(defaultUserType);
-    
-    console.log('Initial user type set:', {
-      sessionStorage: sessionStorage.getItem('user_type'),
-      cookies: {
-        student: document.cookie.includes('temp_is_student=true'),
-        instructor: document.cookie.includes('temp_is_instructor=true')
-      }
-    });
+    setIsClient(true);
+  }, []);
+
+  // Initialize auth data with default values on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Default to learner
+      const defaultUserType = 'learner';
+      
+      // Store default in sessionStorage
+      sessionStorage.setItem('user_type', defaultUserType);
+      
+      // Set default cookie values
+      document.cookie = `temp_is_student=true; path=/`;
+      document.cookie = `temp_is_instructor=false; path=/`;
+      
+      console.log('Default user type set to LEARNER');
+    }
   }, []);
 
   // Handle successful authentication and redirect - memoized with useCallback
@@ -85,7 +93,10 @@ function LoginContent() {
     handleAuthSuccess({
       credential: response.credential, 
       provider: 'google',
-      is_student: typeof window !== 'undefined' ? sessionStorage.getItem('user_type') === 'student' : true
+      is_student: typeof window !== 'undefined' ? 
+        sessionStorage.getItem('user_type') === 'learner' || sessionStorage.getItem('user_type') === 'student' : true,
+      is_instructor: typeof window !== 'undefined' ? 
+        sessionStorage.getItem('user_type') === 'earner' || sessionStorage.getItem('user_type') === 'instructor' : false
     });
   };
 
@@ -93,7 +104,10 @@ function LoginContent() {
     handleAuthSuccess({
       accessToken: response.accessToken, 
       provider: 'facebook',
-      is_student: typeof window !== 'undefined' ? sessionStorage.getItem('user_type') === 'student' : true
+      is_student: typeof window !== 'undefined' ? 
+        sessionStorage.getItem('user_type') === 'learner' || sessionStorage.getItem('user_type') === 'student' : true,
+      is_instructor: typeof window !== 'undefined' ? 
+        sessionStorage.getItem('user_type') === 'earner' || sessionStorage.getItem('user_type') === 'instructor' : false
     });
   };
 
@@ -101,7 +115,10 @@ function LoginContent() {
     handleAuthSuccess({
       code,
       provider: 'github',
-      is_student: typeof window !== 'undefined' ? sessionStorage.getItem('user_type') === 'student' : true
+      is_student: typeof window !== 'undefined' ? 
+        sessionStorage.getItem('user_type') === 'learner' || sessionStorage.getItem('user_type') === 'student' : true,
+      is_instructor: typeof window !== 'undefined' ? 
+        sessionStorage.getItem('user_type') === 'earner' || sessionStorage.getItem('user_type') === 'instructor' : false
     });
   };
   /* eslint-enable @typescript-eslint/no-unused-vars */
@@ -124,7 +141,7 @@ function LoginContent() {
 
   // Handle user state changes
   useEffect(() => {
-    if (!loading && user && !isSigningOut) {
+    if (!loading && user && !isSigningOut && typeof window !== 'undefined') {
       // Convert User object to AuthUserData format
       handleAuthSuccess({
         ...user
@@ -152,14 +169,16 @@ function LoginContent() {
     setSelectedPath(path);
     // Update sessionStorage and cookies with new selection
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('user_type', path);
+      // Convert path to user_type format (for consistency with services/login/auth.ts constants)
+      const userType = path === 'student' ? 'learner' : 'earner';
+      console.log(`Setting user type in LoginComponent: path=${path}, userType=${userType}`);
+      
+      // Always set the userType in sessionStorage
+      sessionStorage.setItem('user_type', userType);
+      
+      // Set cookie flags for server-side use
       document.cookie = `temp_is_student=${path === 'student' ? 'true' : 'false'}; path=/`;
       document.cookie = `temp_is_instructor=${path === 'instructor' ? 'true' : 'false'}; path=/`;
-      console.log('User type updated to:', path);
-      console.log('Cookies set:', {
-        student: document.cookie.includes('temp_is_student=true'),
-        instructor: document.cookie.includes('temp_is_instructor=true')
-      });
     }
   };
 
@@ -209,7 +228,9 @@ function LoginContent() {
         backgroundBlendMode: 'multiply'
       }}
     >
-      <FacebookSDK />
+      {/* Only render FacebookSDK on client side */}
+      {isClient && <FacebookSDK />}
+      
       <div className="w-full flex flex-col items-center px-4">
         {errorMessage && (
           <div className={styles['error-message']}>

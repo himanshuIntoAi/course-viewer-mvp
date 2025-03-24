@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
-import { initiateOAuthLogin, auth } from '../../services/login/auth';
+import { useState, useEffect } from 'react';
+import { initiateOAuthLogin } from '../../services/login/auth';
 import { useOnboarding } from '../../state/context/login/OnboardingContext';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import styles from './auth.module.css';
 
 interface AuthFormProps {
@@ -19,31 +20,105 @@ interface State {
   timestamp: number;
 }
 
+// Dynamically import social buttons to prevent hydration issues
+const SocialButtons = dynamic(() => Promise.resolve(({ onSocialAuth }: { 
+  onSocialAuth: (provider: 'github' | 'facebook' | 'google' | 'linkedin' | 'apple') => Promise<void> 
+}) => {
+  // Initialize auth handlers inside the client component to avoid hydration issues
+  const handleSocialClick = async (provider: 'github' | 'facebook' | 'google' | 'linkedin' | 'apple') => {
+    await onSocialAuth(provider);
+  };
+
+  return (
+    <div className={styles['social-login-container']}>
+      <button
+        type="button"
+        onClick={() => handleSocialClick('google')}
+        className={styles['social-button']}
+        aria-label="Continue with Google"
+      >
+        <Image
+          src="/google.svg"
+          alt="Google"
+          width={24}
+          height={24}
+        />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => handleSocialClick('github')}
+        className={styles['social-button']}
+        aria-label="Continue with GitHub"
+      >
+        <Image
+          src="/github.svg"
+          alt="GitHub"
+          width={24}
+          height={24}
+        />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => handleSocialClick('facebook')}
+        className={styles['social-button']}
+        aria-label="Continue with Facebook"
+      >
+        <Image
+          src="/facebook.svg"
+          alt="Facebook"
+          width={24}
+          height={24}
+        />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => handleSocialClick('apple')}
+        className={styles['social-button']}
+        aria-label="Continue with Apple"
+      >
+        <Image
+          src="/apple.svg"
+          alt="Apple"
+          width={24}
+          height={24}
+        />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => handleSocialClick('linkedin')}
+        className={styles['social-button']}
+        aria-label="Continue with LinkedIn"
+      >
+        <Image
+          src="/linkedin.svg"
+          alt="LinkedIn"
+          width={24}
+          height={24}
+        />
+      </button>
+    </div>
+  );
+}), { ssr: false });
+
 export default function AuthForm({ buttonStyle, inputStyle, selectedPath }: AuthFormProps): React.ReactElement {
   const { login, register } = useOnboarding();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [displayName, setDisplayName] = useState<string>('');
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string>('');
+  const [isClient, setIsClient] = useState(false);
 
-  const baseInputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '12px 16px 12px 80px',
-    borderWidth: '4px',
-    borderStyle: 'solid',
-    borderRadius: '14px',
-    outline: 'none',
-    transition: 'all 0.2s',
-    backgroundColor: 'white',
-    fontSize: '16px',
-    fontFamily: 'inherit',
-    height: '48px',
-    ...(!error && inputStyle)
-  };
+  // Set isClient to true when component mounts on client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const validateForm = (): boolean => {
     if (!email || !email.includes('@')) {
@@ -96,18 +171,39 @@ export default function AuthForm({ buttonStyle, inputStyle, selectedPath }: Auth
   };
 
   const handleGitHubLogin = (): void => {
-    const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
-    const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`;
+    // Ensure code only runs on client side
+    if (typeof window === 'undefined') return;
     
-    const state: State = {
-      stateId: crypto.randomUUID(),
-      redirectPath: '/dashboard',
-      timestamp: Date.now()
-    };
-    
-    const githubUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=user:email&state=${encodeURIComponent(JSON.stringify(state))}`;
-    
-    window.location.href = githubUrl;
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+      const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`;
+      
+      // Use a safer approach for generating UUID
+      let stateId = '';
+      try {
+        stateId = crypto.randomUUID();
+      } catch {
+        // Fallback if randomUUID is not available
+        stateId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      }
+      
+      const state: State = {
+        stateId,
+        redirectPath: '/dashboard',
+        timestamp: Date.now()
+      };
+      
+      const githubUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=user:email&state=${encodeURIComponent(JSON.stringify(state))}`;
+      
+      window.location.href = githubUrl;
+    } catch (error) {
+      console.error('GitHub login error:', error);
+      setError('Failed to initialize GitHub login');
+      setLoading(false);
+    }
   };
 
   const handleFacebookLogin = async (): Promise<void> => {
@@ -150,12 +246,12 @@ export default function AuthForm({ buttonStyle, inputStyle, selectedPath }: Auth
       return;
     }
     if (provider === 'linkedin') {
-      // LinkedIn login implementation
       console.log('LinkedIn login not implemented yet');
+      return;
     }
     if (provider === 'apple') {
-      // Apple login implementation
       console.log('Apple login not implemented yet');
+      return;
     }
     setError(`${provider} login not implemented yet`);
   };
@@ -265,77 +361,8 @@ export default function AuthForm({ buttonStyle, inputStyle, selectedPath }: Auth
           </div>
         </div>
 
-        <div className={styles['social-login-container']}>
-          <button
-            type="button"
-            onClick={() => handleSocialAuth('google')}
-            className={styles['social-button']}
-            aria-label="Continue with Google"
-          >
-            <Image
-              src="/google.svg"
-              alt="Google"
-              width={24}
-              height={24}
-            />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSocialAuth('github')}
-            className={styles['social-button']}
-            aria-label="Continue with GitHub"
-          >
-            <Image
-              src="/github.svg"
-              alt="GitHub"
-              width={24}
-              height={24}
-            />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSocialAuth('facebook')}
-            className={styles['social-button']}
-            aria-label="Continue with Facebook"
-          >
-            <Image
-              src="/facebook.svg"
-              alt="Facebook"
-              width={24}
-              height={24}
-            />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSocialAuth('apple')}
-            className={styles['social-button']}
-            aria-label="Continue with Apple"
-          >
-            <Image
-              src="/apple.svg"
-              alt="Apple"
-              width={24}
-              height={24}
-            />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSocialAuth('linkedin')}
-            className={styles['social-button']}
-            aria-label="Continue with LinkedIn"
-          >
-            <Image
-              src="/linkedin.svg"
-              alt="LinkedIn"
-              width={24}
-              height={24}
-            />
-          </button>
-        </div>
+        {/* Only render social buttons on client side to prevent hydration errors */}
+        {isClient && <SocialButtons onSocialAuth={handleSocialAuth} />}
       </form>
     </div>
   );

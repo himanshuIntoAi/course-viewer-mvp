@@ -15,16 +15,26 @@ const USER_TYPES = {
 // Add this helper at the top of the file
 const isBrowser = typeof window !== 'undefined';
 
-// Helper function to convert user type to boolean flags
-const getUserTypeFlags = (userType: string = USER_TYPES.LEARNER) => ({
-  is_student: userType === USER_TYPES.LEARNER,
-  is_instructor: userType === USER_TYPES.EARNER
-});
-
 // Helper function to get current user type
 const getCurrentUserType = (): string => {
   if (isBrowser) {
-    return localStorage.getItem('user_type') || sessionStorage.getItem('user_type') || USER_TYPES.LEARNER;
+    // First check sessionStorage as it's more likely to have the current selection
+    const sessionType = sessionStorage.getItem('user_type');
+    if (sessionType && (sessionType === USER_TYPES.LEARNER || sessionType === USER_TYPES.EARNER)) {
+      console.log('Found valid userType in sessionStorage:', sessionType);
+      return sessionType;
+    }
+    
+    // Then check localStorage (may be from previous sessions)
+    const localType = localStorage.getItem('user_type');
+    if (localType && (localType === USER_TYPES.LEARNER || localType === USER_TYPES.EARNER)) {
+      console.log('Found valid userType in localStorage:', localType);
+      return localType;
+    }
+    
+    // If none found or invalid, default to LEARNER
+    console.log('No valid userType found, defaulting to LEARNER');
+    return USER_TYPES.LEARNER;
   }
   return USER_TYPES.LEARNER;
 };
@@ -210,22 +220,48 @@ export const getSearchParams = (): URLSearchParams => {
 export const auth = {
   async register(email: string, password: string, displayName: string): Promise<AuthResponse> {
     try {
+      console.log('=== REGISTRATION STARTED ===');
+      
+      // Get user type from storage
       const userType = getCurrentUserType();
-      const { is_student, is_instructor } = getUserTypeFlags(userType);
+      console.log('User type from storage:', userType);
+      
+      // Set flags based on user type - this is the critical part
+      const is_student = userType === USER_TYPES.LEARNER || userType === 'student' || userType === 'learner';
+      const is_instructor = userType === USER_TYPES.EARNER || userType === 'instructor' || userType === 'earner';
+      
+      // Log the actual values being sent
+      console.log('Registration flags being sent to backend:', { 
+        is_student, 
+        is_instructor,
+        userType
+      });
+      
+      const requestPayload = { 
+        email, 
+        password,
+        first_name: displayName.split(' ')[0],
+        last_name: displayName.split(' ').slice(1).join(' '),
+        is_student,
+        is_instructor
+      };
+      
+      console.log('Sending registration payload:', JSON.stringify(requestPayload));
       
       const response = await makeRequest(`${API_BASE}/auth/register`, {
         method: 'POST',
-        body: JSON.stringify({ 
-          email, 
-          password,
-          first_name: displayName.split(' ')[0],
-          last_name: displayName.split(' ').slice(1).join(' '),
-          is_student,
-          is_instructor
-        })
+        body: JSON.stringify(requestPayload)
       });
       
       const data = await handleResponse(response);
+      
+      // Log the response from the server
+      console.log('Server response flags:', { 
+        is_student: data.is_student, 
+        is_instructor: data.is_instructor 
+      });
+      console.log('=== REGISTRATION COMPLETED ===');
+      
       if (data.access_token) {
         localStorage.setItem('access_token', data.access_token);
         if (data.expires_in) {
@@ -473,9 +509,10 @@ export const auth = {
       sessionStorage.setItem('temp_user_type', userType);
       
       // Store user type in cookies for server-side access
-      const { is_student, is_instructor } = getUserTypeFlags(userType);
+      const is_student = userType === USER_TYPES.LEARNER || userType === 'student' || userType === 'learner';
+      const is_instructor = userType === USER_TYPES.EARNER || userType === 'instructor' || userType === 'earner';
       
-      console.log('Setting cookie values:', { is_student, is_instructor });
+      console.log('Setting cookie values for GitHub login:', { is_student, is_instructor });
       
       // Set cookies with explicit true/false strings
       document.cookie = `temp_is_student=${is_student ? 'true' : 'false'}; path=/`;
@@ -507,13 +544,12 @@ export const auth = {
       
       // Get user type from temporary storage and convert to flags
       const userType = sessionStorage.getItem('temp_user_type') || USER_TYPES.LEARNER;
-      const { is_student, is_instructor } = getUserTypeFlags(userType);
       
-      // Clean up all storage
-      sessionStorage.removeItem('redirect_path');
-      sessionStorage.removeItem('temp_user_type');
-      sessionStorage.removeItem('temp_is_student');
-      sessionStorage.removeItem('temp_is_instructor');
+      // Directly determine user type flags
+      const is_student = userType === USER_TYPES.LEARNER || userType === 'student' || userType === 'learner';
+      const is_instructor = userType === USER_TYPES.EARNER || userType === 'instructor' || userType === 'earner';
+      
+      console.log('GitHub callback - user type flags:', { is_student, is_instructor, userType });
       
       const response = await makeRequest(`${API_BASE}/auth/github/callback`, {
         method: 'POST',
@@ -526,6 +562,7 @@ export const auth = {
       });
       
       const data = await handleResponse(response);
+      
       if (data.access_token) {
         // Store the access token in multiple places for redundancy
         localStorage.setItem('access_token', data.access_token);
@@ -585,7 +622,7 @@ export const auth = {
         .join('');
       
       // Store current user type flags before redirecting
-      const userType = sessionStorage.getItem('user_type');
+      const userType = getCurrentUserType();
       console.log('Current user type before Facebook auth:', userType);
       
       if (!userType) {
@@ -598,18 +635,18 @@ export const auth = {
       }
       
       // Store user type in cookies for server-side access
-      const isStudent = userType === USER_TYPES.LEARNER;
-      const isInstructor = userType === USER_TYPES.EARNER;
+      const is_student = userType === USER_TYPES.LEARNER || userType === 'student' || userType === 'learner';
+      const is_instructor = userType === USER_TYPES.EARNER || userType === 'instructor' || userType === 'earner';
       
-      if (!isStudent && !isInstructor) {
+      if (!is_student && !is_instructor) {
         throw new Error('Invalid user type - must be either student or instructor');
       }
       
-      console.log('Setting cookie values:', { isStudent, isInstructor });
+      console.log('Setting cookie values for Facebook login:', { is_student, is_instructor });
       
       // Set cookies with explicit true/false strings
-      document.cookie = `temp_is_student=${isStudent ? 'true' : 'false'}; path=/`;
-      document.cookie = `temp_is_instructor=${isInstructor ? 'true' : 'false'}; path=/`;
+      document.cookie = `temp_is_student=${is_student ? 'true' : 'false'}; path=/`;
+      document.cookie = `temp_is_instructor=${is_instructor ? 'true' : 'false'}; path=/`;
       
       const params = new URLSearchParams({
         client_id: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID!,
@@ -635,9 +672,27 @@ export const auth = {
       sessionStorage.removeItem('oauth_state');
       const redirectPath = sessionStorage.getItem('redirect_path') || '/dashboard';
       
-      // Get user type from temporary storage
-      const isStudent = sessionStorage.getItem('temp_is_student') === 'true';
-      const isInstructor = sessionStorage.getItem('temp_is_instructor') === 'true';
+      // Get stored user type and convert to flags
+      const userType = sessionStorage.getItem('temp_user_type') || USER_TYPES.LEARNER;
+      let is_student = userType === USER_TYPES.LEARNER || userType === 'student' || userType === 'learner';
+      let is_instructor = userType === USER_TYPES.EARNER || userType === 'instructor' || userType === 'earner';
+      
+      // Also check cookies as fallback
+      if (!is_student && !is_instructor) {
+        // Use cookie values as fallback
+        const is_student_cookie = document.cookie.includes('temp_is_student=true');
+        const is_instructor_cookie = document.cookie.includes('temp_is_instructor=true');
+        
+        console.log('Facebook callback - using cookie values:', { is_student_cookie, is_instructor_cookie });
+        
+        if (is_student_cookie || is_instructor_cookie) {
+          // Cookie values found, use them
+          is_student = is_student_cookie;
+          is_instructor = is_instructor_cookie;
+        }
+      }
+      
+      console.log('Facebook callback - final user type flags:', { is_student, is_instructor, userType });
       
       // Clean up all storage
       sessionStorage.removeItem('redirect_path');
@@ -653,8 +708,8 @@ export const auth = {
         body: JSON.stringify({ 
           code,
           redirect_uri: `${FRONTEND_URL}/auth/facebook/callback`,
-          is_student: isStudent,
-          is_instructor: isInstructor
+          is_student,
+          is_instructor
         })
       });
       
@@ -731,9 +786,10 @@ export const auth = {
       sessionStorage.setItem('temp_user_type', userType);
       
       // Store user type in cookies for server-side access
-      const { is_student, is_instructor } = getUserTypeFlags(userType);
+      const is_student = userType === USER_TYPES.LEARNER || userType === 'student' || userType === 'learner';
+      const is_instructor = userType === USER_TYPES.EARNER || userType === 'instructor' || userType === 'earner';
       
-      console.log('Setting cookie values:', { is_student, is_instructor });
+      console.log('Setting cookie values for Google login:', { is_student, is_instructor });
       
       // Set cookies with explicit true/false strings
       document.cookie = `temp_is_student=${is_student ? 'true' : 'false'}; path=/`;
@@ -770,7 +826,12 @@ export const auth = {
       
       // Get user type from temporary storage and convert to flags
       const userType = sessionStorage.getItem('temp_user_type') || USER_TYPES.LEARNER;
-      const { is_student, is_instructor } = getUserTypeFlags(userType);
+      
+      // Directly determine user type flags
+      const is_student = userType === USER_TYPES.LEARNER || userType === 'student' || userType === 'learner';
+      const is_instructor = userType === USER_TYPES.EARNER || userType === 'instructor' || userType === 'earner';
+      
+      console.log('Google callback - user type flags:', { is_student, is_instructor, userType });
       
       const response = await makeRequest(`${API_BASE}/auth/google/callback`, {
         method: 'POST',
@@ -925,16 +986,22 @@ export function initiateOAuthLogin(provider: 'github' | 'facebook' | 'google', r
     if (window.sessionStorage) {
       window.sessionStorage.setItem('oauth_state', state);
       
-      // Store user type in cookies for server-side access if we're handling Google login
-      if (provider === 'google') {
-        const userType = window.sessionStorage.getItem('user_type') || 'student';
-        const isStudent = userType === 'student';
-        const isInstructor = userType === 'instructor';
-        
-        // Set cookies with explicit true/false strings
-        document.cookie = `temp_is_student=${isStudent ? 'true' : 'false'}; path=/`;
-        document.cookie = `temp_is_instructor=${isInstructor ? 'true' : 'false'}; path=/`;
-      }
+      // Get the current user type
+      const userType = getCurrentUserType();
+      console.log(`Initiating ${provider} login with user type:`, userType);
+      
+      // Store for later use
+      sessionStorage.setItem('temp_user_type', userType);
+      
+      // Convert to boolean flags
+      const is_student = userType === USER_TYPES.LEARNER || userType === 'student' || userType === 'learner';
+      const is_instructor = userType === USER_TYPES.EARNER || userType === 'instructor' || userType === 'earner';
+      
+      console.log(`Setting ${provider} auth cookie values:`, { is_student, is_instructor });
+      
+      // Set cookies with explicit true/false strings for all providers
+      document.cookie = `temp_is_student=${is_student ? 'true' : 'false'}; path=/`;
+      document.cookie = `temp_is_instructor=${is_instructor ? 'true' : 'false'}; path=/`;
     }
     
     const authUrl = getAuthUrl(provider, state);

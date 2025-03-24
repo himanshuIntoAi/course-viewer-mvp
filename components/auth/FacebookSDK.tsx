@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Script from 'next/script';
 
 // Define a type for Facebook SDK
@@ -24,27 +24,40 @@ declare global {
 }
 
 export default function FacebookSDK(): React.ReactElement {
+  const [isLoaded, setIsLoaded] = useState(false);
+
   useEffect(() => {
-    // Only set fbAsyncInit if it hasn't been set yet to prevent hydration conflicts
-    if (typeof window !== 'undefined' && !window.fbAsyncInit) {
-      window.fbAsyncInit = function() {
-        if (window.FB) {
-          window.FB.init({
-            appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
-            cookie: true,
-            xfbml: true,
-            version: 'v18.0'
-          });
-          window.FB.AppEvents.logPageView();
-        }
-      };
-    }
+    // Set isLoaded to true to indicate we're on the client
+    setIsLoaded(true);
+    
+    // Define fbAsyncInit function for Facebook SDK
+    window.fbAsyncInit = function() {
+      if (window.FB) {
+        window.FB.init({
+          appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
+          cookie: true,
+          xfbml: true,
+          version: 'v18.0'
+        });
+        window.FB.AppEvents.logPageView();
+      }
+    };
+
+    // Cleanup function
+    return () => {
+      if (window.fbAsyncInit) {
+        window.fbAsyncInit = () => {};
+      }
+    };
   }, []);
+
+  // Only render the script on client-side
+  if (!isLoaded) return <></>;
 
   return (
     <Script
       id="facebook-sdk"
-      strategy="lazyOnload"
+      strategy="afterInteractive"
       src="https://connect.facebook.net/en_US/sdk.js"
     />
   );
