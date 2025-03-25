@@ -1,55 +1,56 @@
 'use client';
 
-import { FormData, Option, StepProps } from './types';
-import Select from 'react-select';
+import { Step2Props } from './types';
+import Select, { StylesConfig } from 'react-select';
 import { useState, useEffect, useRef } from 'react';
-import MultiSelect from './MultiSelect';
 import { useFormData } from '@/app/utils/hooks/useFormData';
+import { SelectOption } from '@/services/types/onboarding/data';
+import React from 'react';
 
-// Generate graduation years dynamically
-const graduationYears: Option[] = Array.from({ length: 10 }, (_, i) => {
-  const year = new Date().getFullYear() - 5 + i;
-  return { value: year.toString(), label: year.toString() };
-});
-
-const selectStyles = {
-  container: (base: any) => ({
+// Use the proper type for selectStyles
+const selectStyles: StylesConfig<SelectOption, true> = {
+  container: (base) => ({
     ...base,
     position: 'relative',
     zIndex: 99999,
   }),
-  menu: (base: any) => ({
+  menu: (base) => ({
     ...base,
     position: 'absolute',
     zIndex: 99999,
   }),
-  menuPortal: (base: any) => ({
+  menuPortal: (base) => ({
     ...base,
     zIndex: 99999,
   }),
-  dropdownIndicator: (base: any) => ({
+  dropdownIndicator: (base) => ({
     ...base,
     zIndex: 99998,
   }),
-  control: (base: any) => ({
+  control: (base) => ({
     ...base,
     position: 'relative',
     zIndex: 99997,
   }),
-  option: (base: any) => ({
+  option: (base) => ({
     ...base,
     position: 'relative',
     zIndex: 99999,
   }),
 };
 
-export default function Step2({ formData, setFormData, nextStep, prevStep }: StepProps) {
+export default function Step2({ 
+  formData, 
+  updateFormField, 
+  updateFormData, 
+  nextStep, 
+  prevStep 
+}: Step2Props): React.ReactElement | null {
   const {
     loading,
     categoryOptions,
     subcategoryOptions,
     skillOptions,
-    jobRoleOptions,
     fetchSubcategories,
     fetchSkills,
     fetchJobRoles,
@@ -70,7 +71,7 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
     if (formData.userType === 'working') {
       fetchSkills();
     }
-  }, []);
+  }, [fetchSkills, formData.userType]);
 
   // Keep existing useEffect for student flow
   useEffect(() => {
@@ -78,43 +79,55 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
       const firstFieldOfStudy = formData.fieldOfStudy?.[0];
       const firstMajor = formData.major?.[0];
       if (firstFieldOfStudy && firstMajor) {
-        fetchSkills(firstFieldOfStudy, firstMajor);
+        // Add appropriate handling based on whether these functions accept parameters
+        fetchSkills();
       }
     }
-  }, [formData.major, formData.fieldOfStudy, formData.userType]);
+  }, [formData.major, formData.fieldOfStudy, formData.userType, fetchSkills]);
 
   // Update graduation year effect
   useEffect(() => {
-    if (graduationYear) {
-      setFormData({ ...formData, graduationYear: [graduationYear] });
-      fieldOfStudyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    if (!graduationYear) return;
+    
+    // Use updateFormField instead of setFormData
+    updateFormField('graduationYear', [graduationYear]);
+    fieldOfStudyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graduationYear]);
 
   // Add scroll effects for each section
   useEffect(() => {
-    if ((formData.fieldOfStudy?.length ?? 0) > 0) {
-      majorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Fetch subcategories when field of study (category) is selected
-      const firstFieldOfStudy = formData.fieldOfStudy?.[0];
-      if (firstFieldOfStudy) {
-        fetchSubcategories(firstFieldOfStudy);
-      }
+    const fieldOfStudyLength = formData.fieldOfStudy?.length ?? 0;
+    if (fieldOfStudyLength === 0) return;
+    
+    majorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Fetch subcategories when field of study (category) is selected
+    const firstFieldOfStudy = formData.fieldOfStudy?.[0];
+    if (firstFieldOfStudy) {
+      fetchSubcategories();
     }
-  }, [formData.fieldOfStudy]);
+    
+   
+  }, [formData.fieldOfStudy, fetchSubcategories]); // Explicitly disable exhaustive-deps for formData
 
   useEffect(() => {
-    if ((formData.major?.length ?? 0) > 0) {
-      currentSkillsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Fetch skills when major (subcategory) is selected
-      const firstFieldOfStudy = formData.fieldOfStudy?.[0];
-      const firstMajor = formData.major?.[0];
-      if (firstFieldOfStudy && firstMajor) {
-        fetchSkills(firstFieldOfStudy, firstMajor);
-        fetchJobRoles(firstFieldOfStudy, firstMajor);
-      }
+    const majorLength = formData.major?.length ?? 0;
+    if (majorLength === 0) return;
+    
+    currentSkillsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Fetch skills when major (subcategory) is selected
+    const firstFieldOfStudy = formData.fieldOfStudy?.[0];
+    const firstMajor = formData.major?.[0];
+    if (firstFieldOfStudy && firstMajor) {
+      fetchSkills();
+      fetchJobRoles();
     }
-  }, [formData.major]);
+    
+    
+  }, [formData.major, formData.fieldOfStudy, fetchSkills, fetchJobRoles]); // Explicitly disable exhaustive-deps for formData
 
   if (!mounted) return null;
 
@@ -137,9 +150,9 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
                 skillOptions.find(opt => opt.value === skill) || { value: skill, label: skill }
               )}
               onChange={(selected) => {
-                setFormData({
-                  ...formData,
-                  currentSkills: selected ? selected.map(option => option.value) : []
+                const values = selected ? selected.map(option => option.value) : [];
+                updateFormData({
+                  currentSkills: values,
                 });
               }}
               placeholder="Select your current skills..."
@@ -158,7 +171,7 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
                     const newTypes = currentTypes.includes('betterSalary')
                       ? currentTypes.filter(t => t !== 'betterSalary')
                       : [...currentTypes, 'betterSalary'];
-                    setFormData({ ...formData, workingHelpTypes: newTypes });
+                    updateFormData({ workingHelpTypes: newTypes });
                   }}
                 >
                   Better Salary
@@ -170,7 +183,7 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
                     const newTypes = currentTypes.includes('switchCareer')
                       ? currentTypes.filter(t => t !== 'switchCareer')
                       : [...currentTypes, 'switchCareer'];
-                    setFormData({ ...formData, workingHelpTypes: newTypes });
+                    updateFormData({ workingHelpTypes: newTypes });
                   }}
                 >
                   Switch Career
@@ -182,7 +195,7 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
                     const newTypes = currentTypes.includes('upskill')
                       ? currentTypes.filter(t => t !== 'upskill')
                       : [...currentTypes, 'upskill'];
-                    setFormData({ ...formData, workingHelpTypes: newTypes });
+                    updateFormData({ workingHelpTypes: newTypes });
                   }}
                 >
                   Upskill
@@ -194,7 +207,7 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
                     const newTypes = currentTypes.includes('careerGuidance')
                       ? currentTypes.filter(t => t !== 'careerGuidance')
                       : [...currentTypes, 'careerGuidance'];
-                    setFormData({ ...formData, workingHelpTypes: newTypes });
+                    updateFormData({ workingHelpTypes: newTypes });
                   }}
                 >
                   Career Guidance and Advice
@@ -206,7 +219,7 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
                     const newTypes = currentTypes.includes('furtherStudies')
                       ? currentTypes.filter(t => t !== 'furtherStudies')
                       : [...currentTypes, 'furtherStudies'];
-                    setFormData({ ...formData, workingHelpTypes: newTypes });
+                    updateFormData({ workingHelpTypes: newTypes });
                   }}
                 >
                   📚 Preparing for further studies
@@ -218,7 +231,7 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
                     const newTypes = currentTypes.includes('startup')
                       ? currentTypes.filter(t => t !== 'startup')
                       : [...currentTypes, 'startup'];
-                    setFormData({ ...formData, workingHelpTypes: newTypes });
+                    updateFormData({ workingHelpTypes: newTypes });
                   }}
                 >
                   🚀 Starting my own business/startup
@@ -274,14 +287,13 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
               )}
               onChange={(selected) => {
                 const values = selected ? selected.map(option => option.value) : [];
-                setFormData({
-                  ...formData,
+                updateFormData({
                   fieldOfStudy: values,
                   major: [], // Reset dependent fields
                   currentSkills: [],
                 });
                 if (values[0]) {
-                  fetchSubcategories(values[0]);
+                  fetchSubcategories();
                 }
               }}
               placeholder="Select your field(s) of study..."
@@ -305,13 +317,12 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
               )}
               onChange={(selected) => {
                 const values = selected ? selected.map(option => option.value) : [];
-                setFormData({
-                  ...formData,
+                updateFormData({
                   major: values,
                   currentSkills: [], // Reset dependent fields
                 });
                 if (formData.fieldOfStudy?.[0] && values[0]) {
-                  fetchSkills(formData.fieldOfStudy[0], values[0]);
+                  fetchSkills();
                 }
               }}
               placeholder="Select your major(s)..."
@@ -334,10 +345,7 @@ export default function Step2({ formData, setFormData, nextStep, prevStep }: Ste
                 skillOptions.find(opt => opt.value === skill) || { value: skill, label: skill }
               )}
               onChange={(selected) => {
-                setFormData({
-                  ...formData,
-                  currentSkills: selected ? selected.map(option => option.value) : []
-                });
+                updateFormField('currentSkills', selected ? selected.map(option => option.value) : []);
               }}
               placeholder="Select your current skills..."
             />

@@ -1,19 +1,27 @@
 'use client';
 
-import { FormData } from './types';
-import Select from 'react-select';
 import { useState, useEffect } from 'react';
+import Select, { StylesConfig } from 'react-select';
 import { useFormData } from '@/app/utils/hooks/useFormData';
+import { FormData } from './types';
+import { SelectOption } from '@/services/types/onboarding/data';
+import React from 'react';
 
 interface Step1Props {
   formData: FormData;
-  setFormData: (data: FormData) => void;
+  updateFormField: <K extends keyof FormData>(field: K, value: FormData[K]) => void;
+  updateFormData: (updates: Partial<FormData>) => void;
   nextStep: () => void;
 }
 
-export default function Step1({ formData, setFormData, nextStep }: Step1Props) {
+export default function Step1({ 
+  formData, 
+  updateFormField, 
+  updateFormData, 
+  nextStep 
+}: Step1Props): React.ReactElement | null {
   const [mounted, setMounted] = useState(false);
-  const { skillOptions, jobRoleOptions, loading, fetchJobRoles } = useFormData();
+  const { jobRoleOptions, loading, fetchJobRoles } = useFormData();
 
   useEffect(() => {
     setMounted(true);
@@ -24,12 +32,12 @@ export default function Step1({ formData, setFormData, nextStep }: Step1Props) {
     if (formData.userType === 'working') {
       fetchJobRoles();
     }
-  }, [formData.userType]);
+  }, [formData.userType, fetchJobRoles]);
 
   const handleUserTypeSelect = (type: string) => {
-    // Reset all subsequent form data when user type changes
-    setFormData({
-      ...formData,
+    // Instead of building a large object with all reset values
+    // Use updateFormData to update multiple fields at once
+    updateFormData({
       userType: type,
       educationStatus: '', // Reset education status
       graduateHelpTypes: [], // Reset graduate help types
@@ -49,9 +57,8 @@ export default function Step1({ formData, setFormData, nextStep }: Step1Props) {
   };
 
   const handleEducationStatus = (status: string) => {
-    // Reset all subsequent form data when education status changes
-    setFormData({
-      ...formData,
+    // Use updateFormData to update multiple fields at once
+    updateFormData({
       educationStatus: status,
       graduateHelpTypes: [], // Reset graduate help types
       collegeHelpTypes: [], // Reset college help types
@@ -71,7 +78,9 @@ export default function Step1({ formData, setFormData, nextStep }: Step1Props) {
     const newTypes = currentTypes.includes(type)
       ? currentTypes.filter(t => t !== type)
       : [...currentTypes, type];
-    setFormData({ ...formData, graduateHelpTypes: newTypes });
+    
+    // Use updateFormField instead of setFormData
+    updateFormField('graduateHelpTypes', newTypes);
   };
 
   const handleCollegeHelpTypes = (type: string) => {
@@ -79,56 +88,38 @@ export default function Step1({ formData, setFormData, nextStep }: Step1Props) {
     const newTypes = currentTypes.includes(type)
       ? currentTypes.filter(t => t !== type)
       : [...currentTypes, type];
-    setFormData({ ...formData, collegeHelpTypes: newTypes });
+    
+    // Use updateFormField instead of setFormData
+    updateFormField('collegeHelpTypes', newTypes);
   };
 
   const handleExperienceChange = (value: string) => {
-    setFormData({ ...formData, experience: value });
-  };
-
-  const handleCurrentRoles = (selected: any) => {
-    setFormData({
-      ...formData,
-      currentRoles: selected ? selected.map((option: any) => option.value) : []
-    });
-  };
-
-  const handleCurrentSkills = (selected: any) => {
-    setFormData({
-      ...formData,
-      currentSkills: selected ? selected.map((option: any) => option.value) : []
-    });
-  };
-
-  const handleWorkingHelpTypes = (type: string) => {
-    const currentTypes = formData.workingHelpTypes || [];
-    const newTypes = currentTypes.includes(type)
-      ? currentTypes.filter((t: string) => t !== type)
-      : [...currentTypes, type];
-    setFormData({ ...formData, workingHelpTypes: newTypes });
+    // Use updateFormField instead of setFormData
+    updateFormField('experience', value);
   };
 
   const handleBack = () => {
     if (formData.graduateHelpTypes?.length || formData.collegeHelpTypes?.length) {
-      setFormData({ 
-        ...formData, 
+      // Use updateFormData to update multiple fields at once
+      updateFormData({ 
         graduateHelpTypes: [], 
         collegeHelpTypes: [] 
       });
     } else if (formData.educationStatus) {
-      setFormData({ 
-        ...formData, 
+      // Use updateFormData to update multiple fields at once
+      updateFormData({ 
         educationStatus: '', 
         graduateHelpTypes: [], 
         collegeHelpTypes: [] 
       });
     } else if (formData.userType) {
-      setFormData({ ...formData, userType: '' });
+      // Use updateFormField to update a single field
+      updateFormField('userType', '');
     }
   };
 
-  const selectStyles = {
-    control: (styles: any) => ({
+  const selectStyles: StylesConfig<SelectOption, true> = {
+    control: (styles) => ({
       ...styles,
       borderColor: '#00BCD4',
       boxShadow: '0 0 0 1px #00BCD4',
@@ -140,7 +131,7 @@ export default function Step1({ formData, setFormData, nextStep }: Step1Props) {
         boxShadow: '0 0 0 1px #00BCD4',
       },
     }),
-    menu: (base: any) => ({
+    menu: (base) => ({
       ...base,
       zIndex: 9999,
     }),
@@ -320,8 +311,13 @@ export default function Step1({ formData, setFormData, nextStep }: Step1Props) {
                   value={formData.currentRoles?.map(role => 
                     jobRoleOptions.find(opt => opt.value === role) || { value: role, label: role }
                   )}
-                  onChange={handleCurrentRoles}
-                  placeholder="Select your current role..."
+                  onChange={(selected) => {
+                    updateFormData({
+                      ...formData,
+                      currentRoles: selected ? selected.map(option => option.value) : []
+                    });
+                  }}
+                  placeholder="Select roles..."
                 />
               </div>
             )}

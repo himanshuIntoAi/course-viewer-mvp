@@ -1,4 +1,4 @@
-import { OnboardingProgress, OnboardingStore } from '@/components/form/types';
+import { OnboardingProgress, OnboardingStore } from '@/components/onboarding-form/types';
 
 class IndexedDBStore implements OnboardingStore {
   private dbName = 'onboardingDB';

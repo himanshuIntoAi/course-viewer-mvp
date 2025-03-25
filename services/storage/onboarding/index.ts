@@ -1,4 +1,4 @@
-import { OnboardingProgress, OnboardingStore } from '@/components/form/types';
+import { OnboardingProgress, OnboardingStore } from '@/components/onboarding-form/types';
 import { indexedDBStore } from './indexedDB';
 import { supabaseStore } from './supabase';
 import { generateUUID } from '@/app/utils/utils';
@@ -14,7 +14,7 @@ class CombinedStore implements OnboardingStore {
       try {
         await supabaseStore.verifySession(localSessionId);
         return localSessionId;
-      } catch (error) {
+      } catch {
         console.warn('Local session not found in API, will create new session');
       }
     }
@@ -79,7 +79,8 @@ class CombinedStore implements OnboardingStore {
     };
 
     // Save to both stores in parallel
-    const [localProgress, remoteProgress] = await Promise.all([
+    // Store in indexedDB but only return the remote result
+    const [, remoteProgress] = await Promise.all([
       indexedDBStore.saveProgress(progressData),
       supabaseStore.saveProgress(progressData)
     ]);

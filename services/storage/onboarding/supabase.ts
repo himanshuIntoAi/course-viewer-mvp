@@ -1,4 +1,4 @@
-import { OnboardingProgress, OnboardingStore } from '@/components/form/types';
+import { OnboardingProgress, OnboardingStore, FormData } from '@/components/onboarding-form/types';
 import { onboardingApiClient } from '@/services/api/onboarding/api';
 
 class SupabaseStore implements OnboardingStore {
@@ -71,7 +71,7 @@ class SupabaseStore implements OnboardingStore {
       return {
         session_id: response.session_id,
         step_number: response.step_number || 1,
-        data: response.data,
+        data: response.data as unknown as FormData,
         user_id: response.user_id,
         created_at: response.created_at,
         updated_at: response.updated_at
@@ -85,7 +85,7 @@ class SupabaseStore implements OnboardingStore {
   async saveProgress(data: OnboardingProgress): Promise<OnboardingProgress> {
     try {
       // Get or create session ID
-      let sessionId = data.session_id || await this.getSessionId();
+      const sessionId = data.session_id || await this.getSessionId();
       const isNewSession = !sessionId;
       
       let result;
@@ -94,7 +94,7 @@ class SupabaseStore implements OnboardingStore {
         result = await onboardingApiClient.createOnboardingProgress({
           session_id: sessionId!,
           step_number: data.step_number || null,
-          data: data.data,
+          data: data.data as unknown as Record<string, unknown>,
           user_id: data.user_id || null
         });
         
@@ -108,7 +108,7 @@ class SupabaseStore implements OnboardingStore {
         result = await onboardingApiClient.updateOnboardingProgress(sessionId!, {
           session_id: sessionId!,
           step_number: data.step_number,
-          data: data.data,
+          data: data.data as unknown as Record<string, unknown>,
           user_id: data.user_id
         });
         
@@ -121,7 +121,7 @@ class SupabaseStore implements OnboardingStore {
       return {
         session_id: result.session_id,
         step_number: result.step_number,
-        data: result.data,
+        data: result.data as unknown as FormData,
         user_id: result.user_id,
         created_at: result.created_at,
         updated_at: result.updated_at
@@ -149,7 +149,7 @@ class SupabaseStore implements OnboardingStore {
     try {
       await onboardingApiClient.getOnboardingProgress(sessionId);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

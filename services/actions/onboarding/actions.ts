@@ -1,6 +1,6 @@
 'use server';
 
-import { FormData } from '@/components/form/types';
+import { FormData } from '@/components/onboarding-form/types';
 import { makeDbRequest } from '@/services/storage/onboarding/db';
 
 export async function saveFormData(formData: FormData) {

@@ -21,6 +21,16 @@ export interface FormData {
 export interface StepProps {
   formData: FormData;
   setFormData: (data: FormData) => void;
+  updateFormField: <K extends keyof FormData>(field: K, value: FormData[K]) => void;
+  updateFormData: (updates: Partial<FormData>) => void;
+  nextStep: () => void;
+  prevStep: () => void;
+}
+
+export interface Step2Props {
+  formData: FormData;
+  updateFormField: <K extends keyof FormData>(field: K, value: FormData[K]) => void;
+  updateFormData: (updates: Partial<FormData>) => void;
   nextStep: () => void;
   prevStep: () => void;
 }

@@ -136,8 +136,10 @@ function LoginFormContent(): React.ReactElement {
       const defaultUserType = 'learner';
       sessionStorage.setItem('user_type', defaultUserType);
       
-      document.cookie = `temp_is_student=true; path=/`;
-      document.cookie = `temp_is_instructor=false; path=/`;
+      const domain = process.env.COOKIE_DOMAIN || window.location.hostname;
+      
+      document.cookie = `temp_is_student=true; path=/; domain=${domain}`;
+      document.cookie = `temp_is_instructor=false; path=/; domain=${domain}`;
       
       console.log('Default user type set to LEARNER in LoginForm');
     }
@@ -187,8 +189,10 @@ function LoginFormContent(): React.ReactElement {
       
       sessionStorage.setItem('user_type', userType);
       
-      document.cookie = `temp_is_student=${path === 'student' ? 'true' : 'false'}; path=/`;
-      document.cookie = `temp_is_instructor=${path === 'instructor' ? 'true' : 'false'}; path=/`;
+      const domain = process.env.COOKIE_DOMAIN || window.location.hostname;
+      
+      document.cookie = `temp_is_student=${path === 'student' ? 'true' : 'false'}; path=/; domain=${domain}`;
+      document.cookie = `temp_is_instructor=${path === 'instructor' ? 'true' : 'false'}; path=/; domain=${domain}`;
       
       console.log('Setting in sessionStorage:', {
         'user_type': userType,
@@ -256,7 +260,7 @@ function LoginFormContent(): React.ReactElement {
     try {
       setLoading(true);
       setError(null);
-      initiateOAuthLogin('google', '/dashboard');
+      await initiateOAuthLogin('google', '/dashboard');
     } catch (error) {
       console.error('Google login error:', error);
       setError('Failed to initialize Google login');
@@ -269,7 +273,7 @@ function LoginFormContent(): React.ReactElement {
     try {
       setLoading(true);
       setError(null);
-      initiateOAuthLogin('facebook', '/dashboard');
+      await initiateOAuthLogin('facebook', '/dashboard');
     } catch (error) {
       console.error('Facebook login error:', error);
       setError('Failed to initialize Facebook login');
