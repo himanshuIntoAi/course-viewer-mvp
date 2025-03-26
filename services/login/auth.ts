@@ -707,7 +707,7 @@ export const auth = {
         method: 'POST',
         body: JSON.stringify({ 
           code,
-          redirect_uri: `${FRONTEND_URL}/auth/facebook/callback`,
+          redirect_uri: `${FRONTEND_URL}/api/auth/callback/facebook`,
           is_student,
           is_instructor
         })
