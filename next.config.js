@@ -39,10 +39,12 @@ const nextConfig = {
   },
   reactStrictMode: true,
   async rewrites() {
+    // Use a default value if the environment variable is not set
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cou-ip-bkend-dev.vercel.app';
     return [
       {
         source: '/api/v1/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/v1/:path*`,
+        destination: `${apiUrl}/api/v1/:path*`,
       },
     ];
   },
@@ -65,7 +67,6 @@ const nextConfig = {
     });
     return config;
   },
-
 }
 
 module.exports = nextConfig
