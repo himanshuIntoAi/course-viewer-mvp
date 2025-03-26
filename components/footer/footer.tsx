@@ -39,7 +39,7 @@ footer = () => {
                         <li><a href="#">Who we are?</a></li>
                         <li><a href="#">Blogs</a></li>
                         <li><a href="#">Community</a></li>
-                        <li><a href="#">FAQ's</a></li>
+                        <li><a href="#">FAQ&apos;s</a></li>
                     </ul>
                 </div>
 
