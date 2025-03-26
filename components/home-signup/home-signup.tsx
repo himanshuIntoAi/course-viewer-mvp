@@ -1,11 +1,8 @@
-import { useState } from "react";
-import { FaEye, FaEnvelope, FaLock } from "react-icons/fa";
-import OnBoardingChat from "../OnBoardingChat/OnBoardingChat";
+import React from "react";
 import LoginForm from "../auth/LoginForm";
 import MultiStepForm from "../onboarding-form/MultiStepForm";
-const HomeSignupComponent = () => {
-    const [passwordVisible, setPasswordVisible] = useState(false);
 
+const HomeSignupComponent = () => {
     return (
         <div className="flex md:flex-row min-h-screen p-[7vw] w-full ">
             {/* Left Section */}

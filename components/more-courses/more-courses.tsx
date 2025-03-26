@@ -1,5 +1,5 @@
 import React from "react";
-
+import Image from "next/image";
 export default function MoreCoursesPage() {
   const courses = [
     {
@@ -77,11 +77,15 @@ export default function MoreCoursesPage() {
             className="bg-white rounded-lg shadow hover:shadow-lg transition w-[23%] m-2"
           >
             {/* Course Image */}
-            <img
-              src={course.image}
-              alt={course.title}
-              className="w-full h-48 object-cover rounded-t-lg"
-            />
+            <div className="relative w-full h-48">
+              <Image
+                src={course.image}
+                alt={course.title}
+                fill
+                className="object-cover rounded-t-lg"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            </div>
 
             {/* Course Info */}
             <div className="p-4">

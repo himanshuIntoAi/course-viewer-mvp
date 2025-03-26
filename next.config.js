@@ -26,6 +26,11 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'randomuser.me',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
       }
     ],
     dangerouslyAllowSVG: true,

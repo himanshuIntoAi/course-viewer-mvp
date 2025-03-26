@@ -7,12 +7,6 @@ interface CategoryCount {
   count: number
 }
 
-interface InstructorFilter {
-  id: number
-  name: string
-  count: number
-}
-
 interface SidebarProps {
   categories: CategoryCount[]
   instructors: { id: number; display_name: string; count: number }[]

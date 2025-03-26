@@ -1,37 +1,39 @@
 "use client"
 import Navbar from "@/components/navbar/navbar";
 import CourseDetails from "@/components/course-details/course-details";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Footer from "@/components/footer/footer";
 import { useParams } from "next/navigation";
 import { Course } from "@/services/types/course/course";
 import { getCourseData } from "@/services/api/course/api";
+import Image from "next/image";
 
 const Page = () => {
   const [course, setCourse] = useState<Course | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
   
   const params = useParams();
   const courseId = String(params.id);
 
-  const fetchCourseData = async () => {
+  const fetchCourseData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       const courseData = await getCourseData(Number(courseId));
       setCourse(courseData);
     } catch (err) {
-      console.error('Error fetching course:', err);
-      setError('Failed to load course details');
+      const errorMessage = err instanceof Error ? err : new Error('Failed to load course details');
+      setError(errorMessage);
+      console.error('Error fetching course:', errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [courseId]);
 
   useEffect(() => {
     fetchCourseData();
-  }, [courseId]);
+  }, [fetchCourseData]);
 
   if (isLoading) {
     return (
@@ -44,7 +46,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-600">{error}</div>
+        <div className="text-red-600">{error.message}</div>
       </div>
     );
   }
@@ -59,23 +61,29 @@ const Page = () => {
 
   return (
     <div className="relative from-[#E4F7F7] to-white">
-      <img 
+      <Image 
         src="/design-left.svg" 
-        alt="" 
+        alt="Design left decoration" 
+        width={150}
+        height={300}
         className="absolute top-0 left-0 w-1/6 z-[1]" 
       />
-      <img 
+      <Image 
         src="/design-right.svg" 
-        alt="" 
+        alt="Design right decoration" 
+        width={150}
+        height={300}
         className="absolute top-0 right-0 w-1/6 z-[1]" 
       />
       <Navbar />
       <div className="pt-[60px]">
         <CourseDetails course={course} />
       </div>
-      <img 
+      <Image 
         src="/curved-line.png" 
-        alt="" 
+        alt="Curved line decoration" 
+        width={1920}
+        height={200}
         className="w-full h-auto mt-40" 
       />
       <Footer />

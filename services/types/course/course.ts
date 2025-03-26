@@ -27,6 +27,12 @@ export interface Course {
     price: number;
     mentor_id?: number;
     instructor?: User;
+    category_name?: string;
+    subcategory_name?: string;
+    course_type_name?: string;
+    sells_type_name?: string;
+    language_name?: string;
+    image_url?: string;
 }
 
 export interface CartItem {

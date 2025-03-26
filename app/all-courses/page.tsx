@@ -4,81 +4,104 @@ import { Sidebar } from "../../components/sidebar/sidebar"
 import { CourseCard } from "../../components/course-card-all-courses/course-card"
 import { CoursesTopSection } from "../../components/all-courses-top-section/courses-top-section"
 import Navbar from "../../components/navbar/navbar"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getCourses } from "@/services/api/course-and-filters/api"
 import { Grid, List } from "lucide-react"
 import { getFilteredCourses } from "@/services/api/course-and-filters/api"
 import { Course } from "@/services/types/course/course"
 
+interface Filters {
+  category_id?: string | null;
+  subcategory_id?: string | null;
+  course_type_id?: string | null;
+  sells_type_id?: string | null;
+  language_id?: string | null;
+  mentor_id?: string | null;
+  is_flagship?: string | null;
+  active?: string | null;
+  min_price?: string | null;
+  max_price?: string | null;
+  min_ratings?: string | null;
+  max_ratings?: string | null;
+}
+
 export default function CoursesPage() {
   const [view, setView] = useState<'grid' | 'list'>('list')
   const [coursesData, setCoursesData] = useState<Course[]>([])
   const [displayedCourses, setDisplayedCourses] = useState<Course[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [filters, setFilters] = useState<object>({})
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [filters, setFilters] = useState<Filters>({})
 
-  async function getAttFiltersFromSidebar(filters: object) {
-    console.log("Filters from sidebar", filters)
-    const hasValues = Object.values(filters).some(value => value !== null && value !== '')
+  const fetchAllCourses = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await getCourses();
+      setCoursesData(response);
+      setDisplayedCourses(response);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err : new Error('An error occurred while fetching courses');
+      setError(errorMessage);
+      console.error('Error fetching all courses:', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const getAttFiltersFromSidebar = useCallback(async (newFilters: Filters) => {
+    console.log("Filters from sidebar", newFilters)
+    const hasValues = Object.values(newFilters).some(value => value !== null && value !== '')
     if (hasValues) {
-      setFilters(filters)
+      setFilters(newFilters)
     } else {
       setFilters({})
       await fetchAllCourses()
     }
-  }
-
-  const fetchAllCourses = async () => {
-    try {
-      setIsLoading(true)
-      const response = await getCourses()
-      console.log("Response from getCourses", response)
-      setCoursesData(response)
-      setDisplayedCourses(response)
-    } catch (error) {
-      console.error('Error fetching all courses:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  }, [fetchAllCourses])
 
   useEffect(() => {
     fetchAllCourses()
-  }, [])
+  }, [fetchAllCourses])
 
   useEffect(() => {
     const fetchFilteredCourses = async () => {
       try {
-        setIsLoading(true)
+        setIsLoading(true);
+        setError(null);
         if (Object.keys(filters).length > 0) {
           const response = await getFilteredCourses(filters)
+          console.log("Filtered courses:", response)
           setCoursesData(response)
           setDisplayedCourses(response)
         } else {
           await fetchAllCourses()
         }
-      } catch (error) {
-        console.error('Error fetching filtered courses:', error)
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err : new Error('An error occurred while fetching filtered courses');
+        setError(errorMessage);
+        console.error('Error fetching filtered courses:', errorMessage)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchFilteredCourses()
-  }, [filters])
+  }, [filters, fetchAllCourses])
 
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback((query: string) => {
     if (!query.trim()) {
       setDisplayedCourses(coursesData)
       return
     }
     
     const filtered = coursesData.filter(course => {
-      return course.title?.toLowerCase().includes(query.toLowerCase()) ||
-        course.instructor?.display_name?.toLowerCase().includes(query.toLowerCase())
+      const titleMatch = course.title?.toLowerCase().includes(query.toLowerCase()) ?? false;
+      const instructorMatch = course.instructor?.display_name?.toLowerCase().includes(query.toLowerCase()) ?? false;
+      return titleMatch || instructorMatch;
     })
     setDisplayedCourses(filtered)
-  }
+  }, [coursesData])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E4F7F7] to-white">
@@ -118,6 +141,12 @@ export default function CoursesPage() {
                 </div>
               </div>
 
+              {error && (
+                <div className="text-red-500 p-4 mb-4 bg-red-50 rounded-lg">
+                  {error.message}
+                </div>
+              )}
+
               <div className={`${view === 'grid' ? 'grid grid-cols-2 gap-4' : 'space-y-4'} mb-8`}>
                 {isLoading ? (
                   <div className="flex items-center justify-center p-8">
@@ -128,9 +157,16 @@ export default function CoursesPage() {
                     No courses found
                   </div>
                 ) : (
-                  displayedCourses.map((course) => (
-                    <CourseCard key={course.id} course={course} view={view} />
-                  ))
+                  displayedCourses.map((course, index) => {
+                    const uniqueKey = `course-${course?.id ?? index}`;
+                    return (
+                      <CourseCard 
+                        key={uniqueKey}
+                        course={course} 
+                        view={view} 
+                      />
+                    )
+                  })
                 )}
               </div>
             </div>

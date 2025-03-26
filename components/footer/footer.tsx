@@ -1,5 +1,5 @@
 import React from 'react'
-
+import Image from 'next/image'
 const 
 footer = () => {
     return (
@@ -11,8 +11,13 @@ footer = () => {
                 {/* Logo and Socials */}
                 <div>
                     <div className="text-3xl font-bold flex items-center">
-                        <img src="/app-logo.svg" alt="Logo" className="h-10 mr-2" /> {/* Placeholder for logo */}
-                      
+                        <Image 
+                            src="/app-logo.svg" 
+                            alt="Logo" 
+                            width={40} 
+                            height={40} 
+                            className="mr-2" 
+                        />
                     </div>
                     <div className="flex gap-4 mt-4">
                         {/* <Linkedin className="w-6 h-6 cursor-pointer hover:text-teal-500" />
@@ -34,7 +39,7 @@ footer = () => {
                         <li><a href="#">Who we are?</a></li>
                         <li><a href="#">Blogs</a></li>
                         <li><a href="#">Community</a></li>
-                        <li><a href="#">FAQ’s</a></li>
+                        <li><a href="#">FAQ's</a></li>
                     </ul>
                 </div>
 

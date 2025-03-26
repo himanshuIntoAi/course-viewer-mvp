@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getCartItems } from '@/services/api/cart/api';
 import { useRouter } from 'next/navigation';
 import { CartItem } from '@/services/types/course/course';
-
+import Image from 'next/image';
 export default function CourseCart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +53,7 @@ export default function CourseCart() {
           {/* Course Item */}
           {cartItems.map((item , index) => (
             <div className="flex items-start mb-5" key={index}>
-              <img src={item.image_url || '/course-card-img.svg'} alt="Course Thumbnail" className="w-20 h-14 object-cover rounded mr-4" />
+              <Image src={item.image_url || '/course-card-img.svg'} alt="Course Thumbnail" className="w-20 h-14 object-cover rounded mr-4" />
               <div>
                 <h3 className="text-base font-medium mb-1">{item.course_title}</h3>
                 <div className="flex items-center space-x-2">

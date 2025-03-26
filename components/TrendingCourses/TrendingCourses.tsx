@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-
+import Image from "next/image";
 // Example data for the five tabs
 const TABS = [
   { name: "AI&ML" },
@@ -47,7 +47,7 @@ const TrendingCourses = () => {
   // Track active tab (0 => "AI&ML", 1 => "Data Engineering", etc.)
   const [activeTab, setActiveTab] = useState(0);
 
-  // Mock carousel index (which "page" of cards we’re on)
+  // Mock carousel index (which "page" of cards we're on)
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // For a real app, you might filter courses by tab.
@@ -82,11 +82,15 @@ const TrendingCourses = () => {
           </h1>
         </div>
         {/* Optional fun graphic on the right */}
-        <img
-          src="/Astronout-logo.svg" // replace with your actual asset
-          alt="Astronaut"
-          className="hidden md:block w-60 h-60 scale-150 object-contain "
-        />
+        <div className="relative w-60 h-60 hidden md:block">
+          <Image
+            src="/Astronout-logo.svg"
+            alt="Astronaut"
+            fill
+            className="object-contain scale-150"
+            priority
+          />
+        </div>
       </div>
 
       {/* Tabs */}
@@ -117,11 +121,13 @@ const TrendingCourses = () => {
             key={idx}
             className="bg-white rounded-xl shadow-md overflow-hidden relative"
           >
-            <div className="relative">
-              <img
+            <div className="relative h-48">
+              <Image
                 src="https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y291cnNlc3xlbnwwfHwwfHx8MA%3D%3D"
                 alt={course.title}
-                className="w-full h-48 object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
               {/* Circular badge in top-right */}
               <div className="absolute top-3 right-3 bg-orange-500 text-white text-sm w-8 h-8 rounded-full flex items-center justify-center font-bold">

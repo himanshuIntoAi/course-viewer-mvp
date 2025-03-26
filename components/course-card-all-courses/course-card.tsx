@@ -20,6 +20,11 @@ export function CourseCard({ course, view }: CourseCardProps) {
   const [imageError, setImageError] = useState(false);
   const instructorData = course.instructor;
   const router = useRouter();
+
+  const handleImageError = (): void => {
+    setImageError(true);
+  };
+
   return (
     <div className={`bg-white rounded-lg border p-4 ${
       view === 'list' ? 'flex flex-col md:flex-row' : 'flex flex-col'
@@ -32,6 +37,7 @@ export function CourseCard({ course, view }: CourseCardProps) {
           className="object-cover rounded-lg"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           priority={true}
+          onError={handleImageError}
         />
       </div>
       <div className="flex-1">

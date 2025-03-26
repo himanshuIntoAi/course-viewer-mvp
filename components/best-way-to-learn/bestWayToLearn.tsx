@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Image from 'next/image';
 
 export default function BestWayToLearn() {
     // Track which image is in front (0 or 1)
@@ -40,7 +41,7 @@ export default function BestWayToLearn() {
         },
     ];
 
-    // Which tab is “expanded”
+    // Which tab is "expanded"
     const [activeTabIndex, setActiveTabIndex] = useState(0);
 
     // Handler to switch which image is in front
@@ -53,10 +54,12 @@ export default function BestWayToLearn() {
             {/* Top heading area */}
             <div className="flex flex-col md:flex-row items-center mb-6">
                 <div className="hidden md:block w-72 h-52">
-                    <img
-                        src="/buisness-plan.svg"
-                        alt="Hero"
-                        className="w-[40vw] h-full object-contain"
+                    <Image 
+                        src="/images/learning-path.svg"
+                        alt="Learning path illustration"
+                        width={400}
+                        height={300}
+                        className="w-full h-auto"
                     />
                 </div>
                 <div className="flex flex-col items-center justify-center ml-10">
@@ -78,7 +81,7 @@ export default function BestWayToLearn() {
             <div className="flex flex-col md:flex-row gap-8 mt-4">
                 {/* LEFT SIDE: Two overlapping "images" (could be divs or actual img tags) */}
                 <div className="relative w-full md:w-1/2 h-80 md:h-[400px]">
-                    {/* “Back” shape (index 0 or 1) */}
+                    {/* "Back" shape (index 0 or 1) */}
                     <div
                         onClick={handleImageClick}
                         className={`absolute top-0 left-0 w-full h-full 
@@ -90,7 +93,7 @@ export default function BestWayToLearn() {
                         {/* You can also use an <img> here if needed */}
                     </div>
 
-                    {/* “Front” shape (index 0 or 1) */}
+                    {/* "Front" shape (index 0 or 1) */}
                     <div
                         onClick={handleImageClick}
                         className={`absolute top-0 left-0 w-full h-full 

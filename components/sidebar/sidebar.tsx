@@ -12,19 +12,49 @@ interface Subcategory {
   name: string;
 }
 
+interface CourseType {
+  id: string;
+  name: string;
+}
+
+interface SellsType {
+  id: string;
+  name: string;
+}
+
+interface Language {
+  id: string;
+  name: string;
+}
+
 interface FilterOptions {
   categories: Category[];
   subcategories: Subcategory[];
-  course_types: any[];
-  sells_types: any[];
-  languages: any[];
+  course_types: CourseType[];
+  sells_types: SellsType[];
+  languages: Language[];
   price_range: { min: number; max: number };
   ratings_range: { min: number; max: number };
 }
 
+interface Filters {
+  category_id: string;
+  subcategory_id: string;
+  course_type_id: string;
+  sells_type_id: string;
+  language_id: string;
+  mentor_id: string;
+  is_flagship: string;
+  active: string;
+  min_price: string;
+  max_price: string;
+  min_ratings: string;
+  max_ratings: string;
+}
+
 // Tailwind CSS components
-export const Sidebar: React.FC<{ filtersPassingFunction: (filters: any) => void }> = ({ filtersPassingFunction }) => {
-  const initialFilters = {
+export const Sidebar: React.FC<{ filtersPassingFunction: (filters: Partial<Filters>) => void }> = ({ filtersPassingFunction }) => {
+  const initialFilters: Filters = {
     category_id: '',
     subcategory_id: '',
     course_type_id: '',
@@ -39,7 +69,7 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: any) => void 
     max_ratings: '',
   };
 
-  const [filters, setFilters] = useState(initialFilters);
+  const [filters, setFilters] = useState<Filters>(initialFilters);
 
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     categories: [],
@@ -76,20 +106,9 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: any) => void 
     
     // Only pass non-empty values to parent
     const cleanFilters = Object.fromEntries(
-      Object.entries(newFilters).filter(([_, value]) => value !== null && value !== '')
+      Object.entries(newFilters).filter(([, value]) => value !== null && value !== '')
     );
     filtersPassingFunction(cleanFilters);
-  };
-
-  console.log("Filters we get", filters);
-  const fetchFilteredCourses = async () => {
-    try {
-      const response = await getAllFilters();
-      console.log(response.data);
-
-    } catch (error) {
-      console.error('Error fetching courses:', error);
-    }
   };
 
   return (
@@ -100,7 +119,7 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: any) => void 
         <select name="category_id" value={filters.category_id} onChange={handleFilterChange} className="w-full p-2 border border-gray-300 rounded">
           <option value="">Select Category</option>
           {filterOptions.categories && filterOptions.categories.map(category => (
-            <option key={String(category.id)} value={String(category.id)}>
+            <option key={category.id} value={String(category.id)}>
               {category.name}
             </option>
           ))}
@@ -213,7 +232,6 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: any) => void 
       <button
         onClick={() => {
           filtersPassingFunction(filters);
-          console.log("Filters we get", filters);
         }}
         className="w-full bg-purple-500 text-white py-2 rounded mt-2 hover:bg-purple-600"
       >

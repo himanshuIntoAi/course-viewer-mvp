@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import CourseTabs from "../course-details-tabs/course-details-tabs";
 import AboutInstructor from "../about-instructor/AboutInstructor";
@@ -7,7 +7,6 @@ import ReviewSection from "../review-section/review-section";
 import MoreCoursesPage from "../more-courses/more-courses";
 import { CourseCard } from "../course-card/course-card";
 import CourseCart from "../course-cart/course-cart";
-import axios from "axios";
 import { Course } from '@/services/types/course/course';
 
 interface CourseDetailsProps {
@@ -15,44 +14,7 @@ interface CourseDetailsProps {
 }
 
 const CourseDetails: React.FC<CourseDetailsProps> = ({ course }) => {
-  const [openSections, setOpenSections] = useState({});
-  const [showCart, setShowCart] = useState(false);
-  // For toggling "Show More"/"Show Less" in the small section at the bottom
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  // For switching between the four tabs
-  const [activeTab, setActiveTab] = useState(0);
-  const toggleSection = (section: string) => {
-    setOpenSections((prev: { [key: string]: boolean }) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  // Our example tab labels
-  const tabs = ["Course Content", "Details", "About Instructor", "Reviews"];
-
-
-  // Example sections (to display under "Course Content" tab)
-  const sections = [
-    {
-      title: "Introduction to Web Design",
-      lessons: [
-        { title: "What is Webflow", duration: "5.22" },
-        { title: "Exercise: Meet Your Classmates & Instructor", duration: "7.00" },
-        { title: "Webflow Teaser", duration: "12.00" },
-      ],
-    },
-    {
-      title: "Introduction to HTML",
-      lessons: [],
-    },
-    {
-      title: "Advanced Topics",
-      lessons: [],
-    },
-  ];
-
+  const [showCart] = useState(false);
 
   return (
     <div className="container mx-auto px-4">
@@ -67,38 +29,47 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ course }) => {
               { course ? course?.title : "Complete Web Design Course"}
             </h2>
             <p className="text-gray-700 mb-4 text-xl">
-              {course ? course?.description : "Become a full stack web developer with just one course HTMl CSS and JavaScript "}
+              {course ? course?.description : "Become a full stack web developer with just one course HTML CSS and JavaScript "}
             </p>
 
             <div className="grid grid-cols-3 gap-4 text-center bg-blue-50 text-gray-700 border-teal-400 border-2 rounded-md w-[80%]">
               <div className="flex p-4 rounded-lg">
-                <img
-                  src="/growth_svgrepo.com.svg"
-                  alt="Skill Level"
-                  className="w-10 h-10 mr-2"
-                />
+                <div className="relative w-10 h-10 mr-2">
+                  <Image
+                    src="/growth_svgrepo.com.svg"
+                    alt="Skill Level"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
                 <div className="flex flex-col items-start">
                   <p className="font-semibold">Skill Level</p>
                   <p>Beginners</p>
                 </div>
               </div>
               <div className="flex p-4 rounded-lg">
-                <img
-                  src="/time_svgrepo.com.svg"
-                  alt="Time"
-                  className="w-10 h-10 mr-2"
-                />
+                <div className="relative w-10 h-10 mr-2">
+                  <Image
+                    src="/time_svgrepo.com.svg"
+                    alt="Time"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
                 <div className="flex flex-col items-start">
                   <p className="font-semibold">Time</p>
                   <p>7 hours</p>
                 </div>
               </div>
               <div className="flex p-4 rounded-lg">
-                <img
-                  src="/list-up_svgrepo.com.svg"
-                  alt="Prerequisites"
-                  className="w-10 h-10 mr-2"
-                />
+                <div className="relative w-10 h-10 mr-2">
+                  <Image
+                    src="/list-up_svgrepo.com.svg"
+                    alt="Prerequisites"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
                 <div className="flex flex-col items-start">
                   <p className="font-semibold">Prerequisites</p>
                   <p>None</p>
@@ -119,7 +90,6 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ course }) => {
             </div>
           </div>
           <CourseTabs />
-
 
           {/* ================================ WHAT WILL YOU LEARN ================================ */}
           <section className="max-w-4xl text-gray-800 mt-10">
@@ -162,14 +132,12 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ course }) => {
                 </ul>
               </section>
 
-
               {/* Course Requirements */}
               <h3 className="text-xl font-semibold text-black mb-2 mt-5">Course Requirements</h3>
               <p className="mb-3">
                 Before enrolling in a web designing course, you may need:
               </p>
               <div className="mb-8 ml-14">
-
                 <ul className="list-disc list-outside ml-5 space-y-2">
                   <li>
                     <span className="font-semibold">Basic Computer Knowledge :-</span> Familiarity with using a computer and the internet.
@@ -199,7 +167,6 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ course }) => {
                 responsive, and visually appealing websites.
               </p>
 
-
               {/* Who is this Course For? */}
               <h3 className="text-xl font-semibold text-black mb-2 mt-5">Who is This Course For?</h3>
 
@@ -211,18 +178,22 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ course }) => {
                   <li>Anyone interested in front-end web development.</li>
                 </ul>
               </div>
-
             </div>
           </section>
           <AboutInstructor />
           <ReviewSection />
-
         </div>
         {/* RIGHT SECTION (SIDEBARS) */}
         <CourseCard course={course} view="grid" />
-        
       </div>
-      <img src="/certificate.png" alt="Course Details" className="w-[90%] mx-auto h-auto" />
+      <div className="relative w-[90%] h-[300px] mx-auto">
+        <Image
+          src="/certificate.png"
+          alt="Course Details"
+          fill
+          className="object-contain"
+        />
+      </div>
       <MoreCoursesPage />
     </div>
   );

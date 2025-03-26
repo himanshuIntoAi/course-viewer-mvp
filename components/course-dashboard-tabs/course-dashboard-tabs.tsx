@@ -1,7 +1,8 @@
 "use client";
 import React, { useState } from 'react';
-// import { ChevronRight, ChevronDown, Check } from 'lucide-react';
+import Image from 'next/image';
 import "./course-details-tabs.css";
+
 interface Question {
     id: number;
     question: string;
@@ -22,9 +23,8 @@ interface Quiz {
 const CourseDashboardTabs = () => {
     const [activeTab, setActiveTab] = useState<string>('Quizzes');
     const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
-    const [quizPages, setQuizPages] = useState<{ [key: number]: boolean }>({});
 
-    const [quizzes, setQuizzes] = useState<Quiz[]>([
+    const [quizzes] = useState<Quiz[]>([
         {
             id: 1,
             title: 'Quiz 1',
@@ -83,20 +83,11 @@ const CourseDashboardTabs = () => {
 
     const handleTabClick = (tab: string): void => {
         setActiveTab(tab);
-        // Reset expanded quiz and pages state when switching tabs
         setExpandedQuiz(null);
-        setQuizPages({});
     };
 
     const handleQuizToggle = (quizId: number): void => {
         setExpandedQuiz(expandedQuiz === quizId ? null : quizId);
-    };
-
-    const handleQuizPagesToggle = (quizId: number): void => {
-        setQuizPages((prevPages) => ({
-            ...prevPages,
-            [quizId]: !prevPages[quizId]
-        }));
     };
 
     const handleStartQuiz = (quizId: number): void => {
@@ -147,7 +138,6 @@ const CourseDashboardTabs = () => {
                     </span>
                     <button className="bg-white text-blue-950 px-4 py-2 rounded-lg flex items-center space-x-4">
                         <span>Try CloudOU AI Now</span>
-                        {/* <ChevronRight className="w-6 h-6 " /> */}
                     </button>
                 </div>
 
@@ -198,19 +188,20 @@ const CourseDashboardTabs = () => {
                                         <div className="text-lg font-medium">{quiz.title}</div>
                                         {quiz.status === 'completed' && (
                                             <div className="text-teal-500 flex items-center">
-                                                {/* <Check className="w-4 h-4 mr-1" /> */}
                                                 Completed ({quiz.score}%)
                                             </div>
                                         )}
-
                                     </div>
                                     <div className="flex items-center space-x-4">
                                         <div className="text-gray-500">Estimated {quiz.estimatedTime} Mins</div>
-                                        {expandedQuiz === quiz.id ? (
-                                            <img src="/images/right-arrow.svg" alt="" className='w-4 h-4' />
-                                        ): (
-                                            <img src="/images/right-arrow.svg" alt="" className='w-4 h-4' />
-                                            )}
+                                        <div className="relative w-4 h-4">
+                                            <Image
+                                                src="/images/right-arrow.svg"
+                                                alt="Toggle arrow"
+                                                fill
+                                                className="object-contain"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -258,13 +249,18 @@ const CourseDashboardTabs = () => {
 
                 {/* Chat Feature */}
                 <div className="flex justify-end items-center space-x-4 mt-4">
-                    <button className="relative text-white px-6 py-3 rounded-full text-lg font-semibold shadow-lg  transition bg-teal-500 speech-bubble">
+                    <button className="relative text-white px-6 py-3 rounded-full text-lg font-semibold shadow-lg transition bg-teal-500 speech-bubble">
                         Hey, Ask me anything!
                         <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-5 h-5 bg-teal-500 rotate-45 bg"></span>
-
                     </button>
-                    <img alt="OU logo with graduation cap" className="w-20 h-20 ml-4" src="https://media-hosting.imagekit.io//10c1c6b068c549cc/Group%20389.png?Expires=1834316114&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=Ij7Qc9M6Hh6QVh9pdIeuD-f0lyWom4F41c67VXHyB-99xnpy3~U1hrOH2z8logoGmaEejoi-grEkIucwU4ZbgxP~Gw~Ves1boaEe0fgHo9XVkwFQvCQqrUQlhwHPxnO0PQ7AySq0DEzMRHgen9pt2iV1OSoXBjAX8jTs5OqQy8bT4TYAewjrTBIOSonnpUWjrAAasya73ShK0-XnK8ycpxHsTqCD55fIWMzpnWL7XkC7iCJWPdEVZ5O66Uym86W4EqwQnu5siSKYcpukbBe0bcRvoBAboLxEowi4eOsI8aHw6g4uji8LdtaPAct5Zt~XqWkzgwT8njlTI~9daBRcMg" />
-
+                    <div className="relative w-20 h-20 ml-4">
+                        <Image
+                            src="https://media-hosting.imagekit.io//10c1c6b068c549cc/Group%20389.png?Expires=1834316114&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=Ij7Qc9M6Hh6QVh9pdIeuD-f0lyWom4F41c67VXHyB-99xnpy3~U1hrOH2z8logoGmaEejoi-grEkIucwU4ZbgxP~Gw~Ves1boaEe0fgHo9XVkwFQvCQqrUQlhwHPxnO0PQ7AySq0DEzMRHgen9pt2iV1OSoXBjAX8jTs5OqQy8bT4TYAewjrTBIOSonnpUWjrAAasya73ShK0-XnK8ycpxHsTqCD55fIWMzpnWL7XkC7iCJWPdEVZ5O66Uym86W4EqwQnu5siSKYcpukbBe0bcRvoBAboLxEowi4eOsI8aHw6g4uji8LdtaPAct5Zt~XqWkzgwT8njlTI~9daBRcMg"
+                            alt="OU logo with graduation cap"
+                            fill
+                            className="object-contain"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
