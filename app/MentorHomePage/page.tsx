@@ -6,13 +6,16 @@ import TrendingCourses from '@/components/TrendingCourses/TrendingCourses'
 import BestWayToLearn from '@/components/best-way-to-learn/bestWayToLearn'
 import Footer from '@/components/footer/footer'
 import { useEffect, useState } from 'react';
-import"../Home/Home.css";
+import"../MentorHomePage/Mentor.css";
 
 import Image from 'next/image'
 
 import { GraduationCap, Wallet } from 'lucide-react'
+import NavbarMentor from '@/components/NavbarMentor/page'
+import rightarrow from"@/app/Images/right arrow.png";
 
-const Home = () => {
+
+const MentorHomePage = () => {
 
     const [user, setUser] = useState(false);
 
@@ -27,15 +30,15 @@ const Home = () => {
     return (
         <div className="overflow-x-hidden"> {/* Added overflow-x-hidden to prevent horizontal scrolling */}
 
-            <div className="h-screen w-full bg-gray-100 from-[#E4F7F7] to-white relative" style={{ backgroundImage: "url('/home-hero.svg')" }} > {/* Added relative positioning */}
+            <div className="h-screen w-full bg-gray-100 from-[#E4F7F7] to-white relative" style={{ backgroundImage: "url('https://media-hosting.imagekit.io/21b4ee5145124faa/MentorHome.png?Expires=1838119882&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=yfL12Yyt~bmfuLtr-6Mhn2nH9MBqbmUKuOg8TrdcWf7JpCMlNJMyYzkfGfRqbzCI12ELRzG75etxHvMvvubrysSThn-HWBV7MrMzGPXcWf3t-FaU4uybt-I62OT6ZdYZLQaaVBCHznU91pCyQOfTzowOL68JUbMn-pauBdqS~8phxU8w9q3YB4I1QmpKIk5N7-Hy876ynRFHsjd-Um2VzEJUwVeB056DbMusv6t5eN~XzNXSzV8yRnqeqZxHHluwBkRYO9hykTQfpw1364yC7-h-oc5-2~YtDDhhiZfSJ3QSqXXSthyZrugIzlDtnhZpKkQ9uqmVJOHiOf6lHNKO9w')" }} > {/* Added relative positioning */}
                 {/* Navbar */}
-                <Navbar />
+                <NavbarMentor/>
 
                 {/* Hero Section */}
                 <section className="flex items-center h-screen justify-left p-10">
                     <div className="text-white max-w-[80%]">
                         <h1 className="text-8xl font-bold">
-                            <span className="text-teal-400">AI Infused</span> Self <br /> Tutoring 🌱
+                            <span className="">Earn by</span> Sharing <br /> YourExpertise
                         </h1>
                         <div className='flex flex-row gap-4'>
                             <p className="mt-4 text-lg">
@@ -47,7 +50,7 @@ const Home = () => {
                             <div>
                                 <button className='bg-white flex items-center text-gray-800 px-6 py-3 rounded-full shadow-lg text-sm w-[15vw]  '>
                                     <span className='text-left'>Personalise Learning Pathway</span>
-                                    <Image src="/right-arrow-filled.svg" alt="right-arrow" width={50} height={24} className='' />
+                                    <Image src={rightarrow} alt="right-arrow" width={50} height={24} className='' />
                                 </button>
                             </div>
                         </div>
@@ -55,11 +58,11 @@ const Home = () => {
                 </section>
 
                 {/* Info Cards - Fixed positioning relative to the container */}
-                <div className="absolute top-[200px] right-[-5px] bg-white p-4 rounded-lg shadow-lg flex items-center space-x-4 bdr">
+                <div className="absolute top-[200px] right-[-10px] bg-white p-4 rounded-lg shadow-lg flex items-center space-x-4 back ">
                 <GraduationCap 
   className="text-white" 
   style={{
-    backgroundColor: 'rgba(2, 186, 186, 1)', 
+    backgroundColor: ' rgba(22, 25, 124, 1)', 
     borderRadius: '10px', 
    
   }} 
@@ -67,21 +70,22 @@ const Home = () => {
 />
 
 
-                    <span className="text-black-900 font-bold pr-10 ">Never Stop <br/>LEARNING</span>
+                    <span className="text-black-900 font-bold  ">Never Stop <br/>LEARNING</span>
                 </div>
                 
-                <div className="absolute top-[300px] right-[-10px] bg-white p-4 rounded-lg shadow-lg flex items-center space-x-4 bdr">
-                   <Wallet className="text-white mr-3"
+                <div className="absolute top-[300px] right-[-5px] bg-white p-4 rounded-lg shadow-lg flex items-center space-x-4 back pr-10">
+                   <Wallet className="text-white "
 
 style={{
-    backgroundColor: 'rgba(2, 186, 186, 1)', 
+    backgroundColor: ' rgba(22, 25, 124, 1)', 
     borderRadius: '10px', 
     padding: '0.5rem'
   }} 
                     size={50} />
-                    <span className="text-black-900 font-bold  ">Never Stop <br/>EARNING</span>
+                    <span className="text-black-900 font-bold  pr-5">Never Stop <br/>EARNING</span>
                 </div>
             </div>
+           
 
             {/* Footer */}
             {
@@ -127,4 +131,4 @@ style={{
     )
 }
 
-export default Home
+export default MentorHomePage
