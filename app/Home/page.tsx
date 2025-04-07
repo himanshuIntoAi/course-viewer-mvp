@@ -32,7 +32,7 @@ const Home = () => {
 
                 <section className="absolute flex items-center h-screen justify-left p-10">
 
-                    <div className="relative left-0 bottom-[-10%]   text-white max-w-[80%]">
+                    <div className="relative left-0 bottom-[-10%] text-white max-w-[80%]">
                         <h1 className="text-8xl font-bold">
                             <span className="text-teal-400">AI Infused</span> Self <br /> Tutoring 🌱
                         </h1>
