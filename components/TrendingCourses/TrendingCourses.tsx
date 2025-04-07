@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
+import "../TrendingCourses/style.css"; // Import your CSS file for the loader
 // Example data for the five tabs
 const TABS = [
   { name: "AI&ML" },
@@ -151,15 +152,7 @@ const TrendingCourses = () => {
 
       {/* Slider Dots / Pagination */}
       <div className="flex items-center justify-center space-x-2">
-        {Array.from({ length: totalSlides }).map((_, i) => (
-          <span
-            key={i}
-            onClick={() => setCurrentSlide(i)}
-            className={`w-3 h-3 rounded-full cursor-pointer 
-              ${i === currentSlide ? "bg-indigo-800" : "bg-gray-300"}
-            `}
-          />
-        ))}
+      <div className="loader"></div>
       </div>
     </div>
   );
