@@ -52,23 +52,20 @@ const Home = () => {
                                 </button>
                             </div>
                         </div>
-                    
+                    </div>
                 </section>
 
                 {/* Info Cards - Fixed positioning relative to the container */}
                 <div className="absolute top-[200px] right-[-5px] bg-white p-4 rounded-lg shadow-lg flex items-center space-x-4 bdr">
-                <GraduationCap 
-  className="text-white" 
-  style={{
-    backgroundColor: 'rgba(2, 186, 186, 1)', 
-    borderRadius: '10px', 
-   
-  }} 
-  size={50} 
-/>
-
-
-                    <span className="text-black-900 font-bold pr-10 ">Never Stop <br/>LEARNING</span>
+                    <GraduationCap 
+                        className="text-white" 
+                        style={{
+                            backgroundColor: 'rgba(2, 186, 186, 1)', 
+                            borderRadius: '10px', 
+                        }} 
+                        size={50} 
+                    />
+                    <span className="text-black-900 font-bold pr-10">Never Stop <br/>LEARNING</span>
                 </div>
                 
                 <div className="absolute top-[300px] right-[-10px] bg-white p-4 rounded-lg shadow-lg flex items-center space-x-4 bdr">

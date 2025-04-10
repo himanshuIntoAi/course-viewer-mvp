@@ -4,10 +4,11 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from 'react'
 import { Course } from "@/services/types/course/course"
+import { Bookmark, Star } from 'lucide-react'
 
 interface CourseCardProps {
   course: Course
-  view: 'grid' | 'list'       
+  view: 'grid' | 'list'
 }
 
 // Helper function to format date consistently
@@ -18,79 +19,122 @@ function formatDate(dateString: string) {
 
 export function CourseCard({ course, view }: CourseCardProps) {
   const [imageError, setImageError] = useState(false);
-  const instructorData = course.instructor;
   const router = useRouter();
 
-  const handleImageError = (): void => {
-    setImageError(true);
+  // Handler for navigating to course detail page
+  const handleViewCourse = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event from triggering
+    router.push(`/course/${course.id}`);
+  };
+
+  // Handler for the entire card click
+  const handleCardClick = () => {
+    router.push(`/course/${course.id}`);
+  };
+
+  // Handler for bookmark click
+  const handleBookmarkClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event from triggering
+    // Add your bookmark logic here
   };
 
   return (
-    <div className={`bg-white rounded-lg border p-4 ${
-      view === 'list' ? 'flex flex-col md:flex-row' : 'flex flex-col'
-    } gap-4`} onClick={() => router.push(`/course/${course.id}`)} >
-      <div className="relative w-full md:w-64 h-48 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-        <Image
-          src={imageError ? '/course-placeholder.svg' : '/course-placeholder.svg'}
+    <div 
+      className={`bg-white rounded-2xl border border-gray-100 hover:shadow-lg transition-shadow cursor-pointer ${
+        view === 'list' ? 'flex' : 'flex flex-col'
+      }`}
+      onClick={handleCardClick}
+    >
+      {/* Course Image Section */}
+      <div className={`${view === 'list' ? 'w-[320px] rounded-2xl' : 'w-full'} overflow-hidden`}>
+        <img
+          src={"https://foundr.com/wp-content/uploads/2021/09/Best-online-course-platforms.png"}
           alt={course.title}
-          fill
-          className="object-cover rounded-lg"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          priority={true}
-          onError={handleImageError}
+          className="object-cover w-full h-full aspect-video"
+          onError={() => setImageError(true)}
         />
       </div>
-      <div className="flex-1">
-        <div className="flex justify-between items-start">
-          <div className="space-y-1">
-            <h3 className="font-semibold text-lg font-poppins">{course.title}</h3>
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-500">
-                {course.is_flagship && (
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                    Flagship Course
-                  </span>
-                )}
-              </div>
+
+      {/* Course Content Section */}
+      <div className="flex-1 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            {/* Title */}
+            <h3 className="text-[#16197C] text-xl font-semibold leading-tight mb-2">
+              {course.title || 'Complete Web Designing Course for Beginners'}
+            </h3>
+
+            {/* Description */}
+            <p className="text-gray-500 text-sm leading-relaxed mb-6">
+              {course.description || 'Practical online workshops — Learn from home of office in small and intimate classes with direct teacher feedback.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 mb-3">
+            <div className="text-[#5D5FEF]">
+              <Star className="w-4 h-4 fill-[#5D5FEF]" />
             </div>
+            <span className="text-xs font-medium text-[#5D5FEF]">Featured</span>
           </div>
         </div>
-        
-        <p className="text-sm text-gray-600 mt-2">
-          {course.description}
-        </p>
-        
-        <div className="flex items-center justify-between mt-4">
+
+        {/* Price and Rating Section */}
+        <div className="flex items-center justify-between">
+          {/* Price */}
           <div className="flex items-center gap-2">
-            <div className="space-y-1">
-              {instructorData && (
-                <div className="text-sm">
-                  <span className="text-gray-700">
-                    By <span className="font-medium">{instructorData.display_name?.trim() || 'Instructor'}</span>
-                  </span>
-                  <div className="mt-1">
-                    <StarRating rating={course.ratings ? Math.round(Number(course.ratings)) : 0} />
-                  </div>
-                </div>
-              )}
-              <span className="text-gray-500 text-sm">
-                • Created: {formatDate(course.created_at)}
-              </span>
-            </div>
+            <span className="text-[#02BABA] text-2xl font-bold">
+              ${course.price || '49'}
+            </span>
+            <span className="text-gray-400 text-sm line-through">
+              ${course.original_price || '89'}
+            </span>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <span className="text-lg font-bold text-blue-600">
-                {course.price === 0 ? 'Free' : `$${course.price}`}
+
+          {/* Rating */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[#16197C] text-xl font-bold">
+                {course.rating || '4.7'}
               </span>
+              <div className="flex">
+                {Array(5).fill(null).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`w-4 h-4 ${
+                      i < Math.floor(course.rating || 4)
+                        ? 'fill-[#FFB800] text-[#FFB800]'
+                        : 'fill-[#FFB800] text-[#FFB800] opacity-50'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
-            <button className="px-4 py-2 bg-[#16197C] text-white rounded-lg hover:bg-[#13165f] transition-colors font-medium text-sm">
-              ADD TO CART
+            <span className="text-gray-400 text-sm">
+              {course.total_reviews || '89k'} Reviews
+            </span>
+          </div>
+        </div>
+
+        {/* Add to Cart Button */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 border-2 border-gray-200 rounded-md px-2 py-4">
+            <button 
+              className="text-gray-400 hover:text-[#16197C] transition-colors"
+              onClick={handleBookmarkClick}
+            >
+              <Bookmark className="w-5 h-5" />
             </button>
           </div>
+
+          <button 
+            className="px-4 mt-6 bg-[#02BABA] hover:bg-[#029999] text-white font-medium py-3 rounded-xl transition-colors"
+            onClick={handleViewCourse}
+          >
+            View Course
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
+
 

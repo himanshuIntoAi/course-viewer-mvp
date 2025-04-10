@@ -1,10 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
-import BusinessPlan from "@/app/Images/Business Plan.png";
+// Commenting out all problematic image imports
+// import BusinessPlan from "@/app/Images/Business Plan.png";
 import { BrainCircuit, PencilRulerIcon } from "lucide-react";
-import image1 from "@/app/Images/image1.png";
-import image2 from "@/app/Images/image2.png";
+// import image1 from "@/app/Images/image1.png";
+// import image2 from "@/app/Images/image2.png";
 
 export default function BestWayToLearn() {
     const [frontImage, setFrontImage] = useState(0);
@@ -48,13 +49,14 @@ export default function BestWayToLearn() {
             {/* Heading Section */}
             <div className="flex flex-col md:flex-row items-center mb-8">
                 <div className="hidden md:block w-72 h-52">
-                    <Image 
+                    {/* Commenting out the problematic Image component */}
+                    {/*<Image 
                         src={BusinessPlan}
                         alt="Learning path illustration"
                         width={500}
                         height={500}
                         className="w-full h-auto"
-                    />
+                    />*/}
                 </div>
                 <div className="flex flex-col items-center justify-center text-center pl-[80px] mt-5">
                     <BrainCircuit className="text-yellow-600 text-6xl mb-2" />
@@ -71,29 +73,29 @@ export default function BestWayToLearn() {
             <div className="flex flex-col md:flex-row gap-8 mt-[150px] ">
                 {/* Left Side: Images */}
                 <div className="relative flex justify-center items-center  w-[600px] h-[600px]">
-      <Image
-        onClick={handleImageClick}
-        src={image1}
-        alt="Robot and human hand"
-        width={600}
-        height={600}
-        className={`absolute rounded-lg object-cover w-full h-full cursor-pointer
-          transition-all duration-500
-          ${frontImage === 1 ? "z-10 " : "z-0  translate-x-4 translate-y-4"}`}
-      />
-  <Image
-  onClick={handleImageClick}
-  src={image2}
-  alt="Ocean scene"
-  width={600}
-  height={600}
-  className={` rounded-lg object-cover w-full h-full cursor-pointer
-    transition-all duration-500
-    ${frontImage === 0 ? "z-10" : "z-0 translate-x-4 translate-y-4"}`}
-  style={{ transform: "rotate(8deg)" }}
-/>
-
-    </div>
+                    {/* Commenting out problematic Image components */}
+                    {/*<Image
+                        onClick={handleImageClick}
+                        src={image1}
+                        alt="Robot and human hand"
+                        width={600}
+                        height={600}
+                        className={`absolute rounded-lg object-cover w-full h-full cursor-pointer
+                        transition-all duration-500
+                        ${frontImage === 1 ? "z-10 " : "z-0  translate-x-4 translate-y-4"}`}
+                    />
+                    <Image
+                        onClick={handleImageClick}
+                        src={image2}
+                        alt="Ocean scene"
+                        width={600}
+                        height={600}
+                        className={` rounded-lg object-cover w-full h-full cursor-pointer
+                        transition-all duration-500
+                        ${frontImage === 0 ? "z-10" : "z-0 translate-x-4 translate-y-4"}`}
+                        style={{ transform: "rotate(8deg)" }}
+                    />*/}
+                </div>
 
                 {/* Right Side: Tabs */}
                 <div className="w-full md:w-1/2 flex flex-col ml-[100px]">

@@ -99,22 +99,31 @@ export const getCourses = async (): Promise<Course[]> => {
   }
 };
 
-export const getFilteredCourses = async (filters: any): Promise<Course[]> => {
-  try {
-    // Convert filters object to URL parameters
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== null && value !== '') {
-        params.append(key, String(value));
-      }
-    });
+interface FilterState {
+  it_non_it?: string;
+  coding_non_coding?: string;
+  category_id?: number;
+  level?: string;
+  price_type?: string;
+  completion_time?: string;
+  min_price?: number;
+  max_price?: number;
+}
 
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/course?${params.toString()}`
+export const getFilteredCourses = async (filters: FilterState) => {
+  try {
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/courses/filter`,
+      filters,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     );
     return response.data;
   } catch (error) {
-    console.error('Error fetching filtered courses:', error);
+    console.error('Error in getFilteredCourses:', error);
     throw error;
   }
 };
