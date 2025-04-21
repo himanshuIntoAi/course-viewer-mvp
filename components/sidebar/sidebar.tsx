@@ -31,8 +31,8 @@ interface FiltersData {
 }
 
 interface FilterState {
-  it_non_it: string | null;
-  coding_non_coding: string | null;
+  it_non_it: boolean | null;
+  coding_non_coding: boolean | null;
   category_id: number | null;
   level: string | null;
   price_type: string | null;
@@ -78,37 +78,31 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: FilterState) 
   const toggleIT = () => {
     const newValue = !isIT;
     setIsIT(newValue);
-    updateFilters({ it_non_it: newValue ? 'it' : 'non_it' });
+    updateFilters({ it_non_it: !newValue });
   };
 
   const toggleCoding = () => {
     const newValue = !isCoding;
     setIsCoding(newValue);
-    updateFilters({ coding_non_coding: newValue ? 'coding' : 'non-coding' });
+    updateFilters({ coding_non_coding: !newValue });
   };
 
   const handleCategorySelect = (category: FilterOption) => {
-    // First update the local state
     const newSelected = selectedCategory.includes(category.label)
       ? selectedCategory.filter((c) => c !== category.label)
       : [category.label];
     
     setSelectedCategory(newSelected);
 
-    // Use setTimeout to defer the filter update to the next tick
     setTimeout(() => {
-      const newFilter = {
-        ...getCurrentFilters(),
-        category_id: category.id as number
-      };
-      updateFilters(newFilter);
+      updateFilters({ category_id: category.id as number });
     }, 0);
   };
 
   // Helper function to get current filters
   const getCurrentFilters = () => ({
-    it_non_it: isIT ? 'it' : 'non_it',
-    coding_non_coding: isCoding ? 'coding' : 'non-coding',
+    it_non_it: !isIT,
+    coding_non_coding: !isCoding,
     category_id: filtersData?.criteria.categories.find(c => selectedCategory.includes(c.label))?.id as number || null,
     level: filtersData?.criteria.levels.find(l => selectedLevel.includes(l.label))?.id as string || null,
     price_type: filtersData?.preferences.price.find(p => selectedPrice.includes(p.label))?.id as string || null,
@@ -118,16 +112,29 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: FilterState) 
   });
 
   const updateFilters = (newFilter: Partial<FilterState>) => {
-    const updatedFilters = { ...getCurrentFilters(), ...newFilter };
+    const currentFilters = getCurrentFilters();
+    const updatedFilters = { ...currentFilters, ...newFilter } as FilterState;
     
-    // Remove null values
+    // Remove null values and ensure proper types
     const cleanFilters = Object.fromEntries(
-      Object.entries(updatedFilters).filter(([_, value]) => value != null)
+      Object.entries(updatedFilters).filter(([_, value]) => value !== null)
     );
+
+    // Cast the cleaned filters back to FilterState with proper types
+    const typedFilters: FilterState = {
+      it_non_it: typeof cleanFilters.it_non_it === 'boolean' ? cleanFilters.it_non_it : null,
+      coding_non_coding: typeof cleanFilters.coding_non_coding === 'boolean' ? cleanFilters.coding_non_coding : null,
+      category_id: typeof cleanFilters.category_id === 'number' ? cleanFilters.category_id : null,
+      level: typeof cleanFilters.level === 'string' ? cleanFilters.level : null,
+      price_type: typeof cleanFilters.price_type === 'string' ? cleanFilters.price_type : null,
+      completion_time: typeof cleanFilters.completion_time === 'string' ? cleanFilters.completion_time : null,
+      min_price: typeof cleanFilters.min_price === 'number' ? cleanFilters.min_price : null,
+      max_price: typeof cleanFilters.max_price === 'number' ? cleanFilters.max_price : null
+    };
 
     // Use setTimeout to defer the filter update
     setTimeout(() => {
-      filtersPassingFunction(cleanFilters as FilterState);
+      filtersPassingFunction(typedFilters);
     }, 0);
   };
 
@@ -140,11 +147,7 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: FilterState) 
     setSelectedLevel(newSelected);
 
     setTimeout(() => {
-      const newFilter = {
-        ...getCurrentFilters(),
-        level: level.id as string
-      };
-      updateFilters(newFilter);
+      updateFilters({ level: level.id as string });
     }, 0);
   };
 
@@ -156,11 +159,7 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: FilterState) 
     setSelectedPrice(newSelected);
 
     setTimeout(() => {
-      const newFilter = {
-        ...getCurrentFilters(),
-        price_type: price.id as string
-      };
-      updateFilters(newFilter);
+      updateFilters({ price_type: price.id as string });
     }, 0);
   };
 
@@ -172,11 +171,7 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: FilterState) 
     setSelectedCompletionTime(newSelected);
 
     setTimeout(() => {
-      const newFilter = {
-        ...getCurrentFilters(),
-        completion_time: time.id as string
-      };
-      updateFilters(newFilter);
+      updateFilters({ completion_time: time.id as string });
     }, 0);
   };
 
@@ -194,16 +189,16 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: FilterState) 
             <div 
               onClick={toggleIT}
               className={`w-full h-full rounded-full cursor-pointer transition-colors duration-300 ${
-                isIT ? 'bg-green-500' : 'bg-gray-200'
+                !isIT ? 'bg-green-500' : 'bg-gray-200'
               } flex items-center px-1`}
             >
               <div 
                 className={`absolute w-[26px] h-[26px] bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${
-                  isIT ? 'translate-x-[26px]' : 'translate-x-0'
+                  !isIT ? 'translate-x-[26px]' : 'translate-x-0'
                 }`}
               >
-                <span className={`text-xs font-medium ${isIT ? 'text-green-500' : 'text-gray-400'}`}>
-                  {isIT ? '' : ''}
+                <span className={`text-xs font-medium ${!isIT ? 'text-green-500' : 'text-gray-400'}`}>
+                  {!isIT ? '' : ''}
                 </span>
               </div>
             </div>
@@ -219,16 +214,16 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: FilterState) 
             <div 
               onClick={toggleCoding}
               className={`w-full h-full rounded-full cursor-pointer transition-colors duration-300 ${
-                isCoding ? 'bg-green-500' : 'bg-gray-200'
+                !isCoding ? 'bg-green-500' : 'bg-gray-200'
               } flex items-center px-1`}
             >
               <div 
                 className={`absolute w-[26px] h-[26px] bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${
-                  isCoding ? 'translate-x-[26px]' : 'translate-x-0'
+                  !isCoding ? 'translate-x-[26px]' : 'translate-x-0'
                 }`}
               >
-                <span className={`text-xs font-medium ${isCoding ? 'text-green-500' : 'text-gray-400'}`}>
-                  {isCoding ? '' : ''}
+                <span className={`text-xs font-medium ${!isCoding ? 'text-green-500' : 'text-gray-400'}`}>
+                  {!isCoding ? '' : ''}
                 </span>
               </div>
             </div>

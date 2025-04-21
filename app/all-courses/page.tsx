@@ -11,104 +11,82 @@ import { getFilteredCourses } from "@/services/api/course-and-filters/api"
 import { Course } from "@/services/types/course/course"
 
 interface FilterState {
-  it_non_it?: string;
-  coding_non_coding?: string;
-  category_id?: number;
-  level?: string;
-  price_type?: string;
-  completion_time?: string;
-  min_price?: number;
-  max_price?: number;
+  it_non_it: string | null;
+  coding_non_coding: string | null;
+  category_id: number | null;
+  level: string | null;
+  price_type: string | null;
+  completion_time: string | null;
+  min_price: number | null;
+  max_price: number | null;
 }
 
-// --- Pagination Helper Function ---
-// This function determines which page numbers to display
-const getPaginationItems = (currentPage: number, totalPages: number, maxVisiblePages = 5) => {
-  const items: (number | string)[] = [];
-  const halfVisible = Math.floor(maxVisiblePages / 2);
-
-  // Always show the first page
-  if (totalPages > 0) {
-    items.push(1);
-  }
-
-  // Add ellipsis before the middle section if needed
-  let startPage = Math.max(2, currentPage - halfVisible);
-  if (startPage > 2) {
-    items.push('...');
-  }
-
-  // Calculate the end page for the middle section
-  let endPage = Math.min(totalPages - 1, currentPage + halfVisible);
-
-  // Adjust startPage if endPage is near the end
-  if (endPage === totalPages - 1) {
-     startPage = Math.max(2, totalPages - maxVisiblePages + 2);
-  }
-   // Adjust endPage if startPage is near the beginning
-   if (startPage === 2) {
-     endPage = Math.min(totalPages - 1, maxVisiblePages - 1);
-   }
-
-
-  // Add middle page numbers
-  for (let i = startPage; i <= endPage; i++) {
-    items.push(i);
-  }
-
-  // Add ellipsis after the middle section if needed
-  if (endPage < totalPages - 1) {
-    items.push('...');
-  }
-
-  // Always show the last page if totalPages > 1
-  if (totalPages > 1) {
-    items.push(totalPages);
-  }
-
-  return items;
-};
-// ---------------------------------
 
 export default function CoursesPage() {
   const [view, setView] = useState<'grid' | 'list'>('list')
   const [coursesData, setCoursesData] = useState<Course[]>([])
   const [displayedCourses, setDisplayedCourses] = useState<Course[]>([])
+  
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<Error | null>(null)
-  const [filters, setFilters] = useState<FilterState>({})
+  const [filters, setFilters] = useState<FilterState>({
+    it_non_it: null,
+    coding_non_coding: null,
+    category_id: null,
+    level: null,
+    price_type: null,
+    completion_time: null,
+    min_price: null,
+    max_price: null
+  });
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6); // Show 6 courses per page (adjust as needed)
-  // ------------------------
+  const [itemsPerPage] = useState(10); // Changed to 10 items per page
+  const [totalCourses, setTotalCourses] = useState(0);
+
 
   const fetchAllCourses = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await getCourses();
-      setCoursesData(response);
-      setDisplayedCourses(response);
-      setCurrentPage(1); // Reset to page 1 when fetching all
+      let skip = (currentPage - 1) * itemsPerPage;
+      const response = await getCourses(skip, itemsPerPage);
+      if (response) {
+        setCoursesData(response); 
+        setDisplayedCourses(response);
+      } else {
+        setCoursesData([]); 
+        setDisplayedCourses([]);
+      }
+      // For now, we'll assume there are 100 total courses. In a real app, this should come from the API
+      setTotalCourses(100);
     } catch (err) {
       const errorMessage = err instanceof Error ? err : new Error('An error occurred while fetching courses');
       setError(errorMessage);
       console.error('Error fetching all courses:', errorMessage);
+      setCoursesData([]); 
+      setDisplayedCourses([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   const getAttFiltersFromSidebar = useCallback((newFilters: FilterState) => {
     console.log("Filters from sidebar:", newFilters);
-    // Use setState with callback to ensure safe updates
-    setFilters(prev => {
-      const cleanFilters = Object.fromEntries(
-        Object.entries(newFilters).filter(([_, value]) => value != null)
-      );
-      return cleanFilters;
-    });
+    // Clean up filters before setting them
+    const cleanedFilters = {
+      it_non_it: newFilters.it_non_it || null,
+      coding_non_coding: newFilters.coding_non_coding || null,
+      category_id: newFilters.category_id || null,
+      level: newFilters.level || null,
+      price_type: newFilters.price_type || null,
+      completion_time: newFilters.completion_time || null,
+      min_price: typeof newFilters.min_price === 'number' ? newFilters.min_price : null,
+      max_price: typeof newFilters.max_price === 'number' ? newFilters.max_price : null
+    };
+    
+    setFilters(cleanedFilters);
     setCurrentPage(1);
   }, []);
 
@@ -121,18 +99,36 @@ export default function CoursesPage() {
       try {
         setIsLoading(true);
         setError(null);
+        let skip = (currentPage - 1) * itemsPerPage;
         let response;
 
-        if (Object.keys(filters).length > 0) {
+        // Only fetch filtered courses if there are actual filters with non-null values
+        const hasActiveFilters = Object.values(filters).some(value => value !== null);
+        
+        if (hasActiveFilters) {
           console.log("Sending filters to API:", filters);
-          response = await getFilteredCourses(filters);
+          // Remove null values before sending to API
+          const apiFilters = Object.fromEntries(
+            Object.entries(filters).filter(([_, value]) => value !== null)
+          );
+          response = await getFilteredCourses(apiFilters, skip, itemsPerPage);
         } else {
-          response = await getCourses();
+          // Skip fetching if no filters are applied - let the initial load handle it
+          return;
         }
 
         if (response) {
-          setCoursesData(response);
-          setDisplayedCourses(response);
+          // Handle both array and object responses
+          if (Array.isArray(response)) {
+            setCoursesData(response);
+            setDisplayedCourses(response);
+            setTotalCourses(response.length);
+          } else {
+            const courses = response.courses || [];
+            setCoursesData(courses);
+            setDisplayedCourses(courses);
+            setTotalCourses(response.total || courses.length);
+          }
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching courses';
@@ -143,8 +139,11 @@ export default function CoursesPage() {
       }
     };
 
-    fetchFilteredOrAllCourses();
-  }, [filters]);
+    // Only run if there are actual filters with values
+    if (Object.values(filters).some(value => value !== null)) {
+      fetchFilteredOrAllCourses();
+    }
+  }, [filters, currentPage, itemsPerPage]);
 
   const handleSearch = useCallback((query: string) => {
     setCurrentPage(1); // Reset page on search
@@ -162,22 +161,6 @@ export default function CoursesPage() {
     setDisplayedCourses(filtered)
   }, [coursesData]) // Depend on base coursesData
 
-  // --- Pagination Calculations ---
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentCourses = displayedCourses.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(displayedCourses.length / itemsPerPage);
-  const paginationItems = getPaginationItems(currentPage, totalPages); // Generate items to display
-  // -----------------------------
-
-  // --- Pagination Handlers ---
-  const handlePageChange = (pageNumber: number) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // Optional: scroll to top on page change
-    }
-  };
-  // ---------------------------
 
   return (
     <div className="min-h-screen relative bg-gradient-to-b from-[#E4F7F7] to-white pb-16"> {/* Added padding bottom */}
@@ -265,15 +248,15 @@ export default function CoursesPage() {
                 : 'flex flex-col gap-4'
                 }`}>
                 {isLoading ? (
-                  <div className="flex items-center justify-center p-8 col-span-2"> {/* Ensure loading spans columns */}
+                  <div className="flex items-center justify-center p-8 col-span-2">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#02BABA]"></div>
                   </div>
-                ) : currentCourses.length === 0 ? ( // Check currentCourses for empty state
-                  <div className="text-center p-8 text-gray-500 col-span-2"> {/* Ensure empty state spans columns */}
+                ) : (!displayedCourses || displayedCourses.length === 0) ? (
+                  <div className="text-center p-8 text-gray-500 col-span-2">
                     No courses found matching your criteria.
                   </div>
                 ) : (
-                  currentCourses.map((course, index) => (
+                  displayedCourses.map((course, index) => (
                     <CourseCard
                       key={`course-${course?.id ?? index}`}
                       course={course}
@@ -283,32 +266,55 @@ export default function CoursesPage() {
                 )}
               </div>
 
-              {/* --- New Pagination Controls --- */}
-              {!isLoading && totalPages > 1 && (
-                <div className="flex justify-center items-center mt-8 space-x-4"> {/* Increased spacing */}
-                  {paginationItems.map((item, index) =>
-                    item === '...' ? (
-                      <span key={`ellipsis-${index}`} className="text-gray-500 px-2">
-                        ...
-                      </span>
-                    ) : (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 disabled:opacity-50"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                
+                {Array.from({ length: Math.ceil(totalCourses / itemsPerPage) }).map((_, index) => {
+                  const pageNumber = index + 1;
+                  // Show only 5 pages at a time
+                  if (
+                    pageNumber === 1 ||
+                    pageNumber === Math.ceil(totalCourses / itemsPerPage) ||
+                    (pageNumber >= currentPage - 2 && pageNumber <= currentPage + 2)
+                  ) {
+                    return (
                       <button
-                        key={item}
-                        onClick={() => handlePageChange(item as number)}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          currentPage === item
-                            ? 'bg-[#50C4D8] text-white' // Active page style from image
-                            : 'text-gray-700 hover:bg-gray-100' // Inactive page style
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`w-10 h-10 rounded-full ${
+                          currentPage === pageNumber
+                            ? 'bg-[#16197C] text-white'
+                            : 'border border-gray-300'
                         }`}
                       >
-                        {item}
+                        {pageNumber}
                       </button>
-                    )
-                  )}
-                </div>
-              )}
-              {/* --------------------------- */}
+                    );
+                  }
+                  // Add ellipsis
+                  if (
+                    pageNumber === currentPage - 3 ||
+                    pageNumber === currentPage + 3
+                  ) {
+                    return <span key={pageNumber}>...</span>;
+                  }
+                  return null;
+                })}
 
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCourses / itemsPerPage), prev + 1))}
+                  disabled={currentPage === Math.ceil(totalCourses / itemsPerPage)}
+                  className="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 disabled:opacity-50"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

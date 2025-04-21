@@ -82,10 +82,10 @@ export function CourseCard({ course, view }: CourseCardProps) {
           {/* Price */}
           <div className="flex items-center gap-2">
             <span className="text-[#02BABA] text-2xl font-bold">
-              ${course.price || '49'}
+              ${course.price}
             </span>
             <span className="text-gray-400 text-sm line-through">
-              ${course.original_price || '89'}
+              ${course.original_price}
             </span>
           </div>
 

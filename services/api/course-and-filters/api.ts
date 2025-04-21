@@ -89,9 +89,9 @@ export const getAllFilters = async () => {
   };
 };
 
-export const getCourses = async (): Promise<Course[]> => {
+export const getCourses = async (skip: number, limit: number): Promise<Course[]> => {
   try {
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/courses`);
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/courses?skip=${skip}&limit=${limit}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching courses:', error);
@@ -100,8 +100,8 @@ export const getCourses = async (): Promise<Course[]> => {
 };
 
 interface FilterState {
-  it_non_it?: string;
-  coding_non_coding?: string;
+  it_non_it?: boolean;
+  coding_non_coding?: boolean;
   category_id?: number;
   level?: string;
   price_type?: string;
@@ -110,10 +110,10 @@ interface FilterState {
   max_price?: number;
 }
 
-export const getFilteredCourses = async (filters: FilterState) => {
+export const getFilteredCourses = async (filters: FilterState, skip: number, limit: number) => {
   try {
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/courses/filter`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/courses/filter?skip=${skip}&limit=${limit}`,
       filters,
       {
         headers: {
