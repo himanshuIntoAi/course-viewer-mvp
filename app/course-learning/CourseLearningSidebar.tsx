@@ -1,215 +1,510 @@
 "use client";
 
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { FiSearch, FiCheckCircle, FiChevronLeft, FiClock } from 'react-icons/fi';
-import { YouTubePlaylist, YouTubeVideo } from '../utils/youtubeApi';
-import { ZoomPlaylist, ZoomVideo } from '../utils/zoomApi';
-import { getAllVideoProgress } from '../utils/videoProgress';
-import { Playlist, Video } from './page';
+import { 
+  ChevronDown, 
+  ChevronRight, 
+  FileText, 
+  Zap, 
+  Brain, 
+  Target, 
+  Gamepad2, 
+  Check, 
+  X, 
+  Settings,
+  LayoutGrid
+} from 'lucide-react';
+import Image from 'next/image';
 
 interface Props {
-  playlists: Playlist[];
-  currentPlaylist: number;
-  currentVideoIndex: number;
-  onVideoSelect: (video: Video, playlistIndex: number, videoIndex: number) => void;
+  onContentSelect?: (content: any) => void;
 }
 
 export interface SidebarRef {
   updateProgress: (videoId: string, progress: number, completed: boolean) => void;
 }
 
-const CircularProgress: React.FC<{ progress: number; isCompleted: boolean }> = ({ progress, isCompleted }) => {
-  const radius = 12;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
+enum ComponentType {
+  FLASHCARDS = 'flashcards',
+  MINDMAP = 'mindmap',
+  QUIZ = 'quiz',
+  MEMORY_GAME = 'memory_game'
+}
 
-  return (
-    <div className="relative w-8 h-8 flex items-center justify-center">
-      <svg className="transform -rotate-90 w-8 h-8">
-        {/* Background circle */}
-        <circle
-          cx="16"
-          cy="16"
-          r={radius}
-          stroke="#E2E8F0"
-          strokeWidth="3"
-          fill="none"
-        />
-        {/* Progress circle */}
-        {!isCompleted && progress > 0 && (
-          <circle
-            cx="16"
-            cy="16"
-            r={radius}
-            stroke="#02BABA"
-            strokeWidth="3"
-            fill="none"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-          />
-        )}
-        {/* Completed checkmark circle */}
-        {isCompleted && (
-          <circle
-            cx="16"
-            cy="16"
-            r={radius}
-            stroke="#02BABA"
-            strokeWidth="3"
-            fill="#02BABA"
-          />
-        )}
-      </svg>
-      {/* Checkmark for completed videos */}
-      {isCompleted && (
-        <FiCheckCircle className="absolute w-4 h-4 text-white" />
-      )}
-      {/* Progress percentage for in-progress videos */}
-      {!isCompleted && progress > 0 && (
-        <span className="absolute text-xs font-medium text-[#02BABA]">
-          {Math.round(progress)}%
-        </span>
-      )}
-    </div>
-  );
-};
+interface CourseComponent {
+  id: string;
+  title: string;
+  type: ComponentType;
+}
 
-const CourseLearningSidebar = forwardRef<SidebarRef, Props>(({ 
-  playlists,
-  currentPlaylist,
-  currentVideoIndex,
-  onVideoSelect
-}, ref) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [videoProgress, setVideoProgress] = useState<{ [key: string]: { progress: number; completed: boolean } }>({});
+interface Lesson {
+  id: string;
+  title: string;
+}
 
-  // Load video progress from local storage
-  useEffect(() => {
-    const progress = getAllVideoProgress();
-    const formattedProgress = Object.entries(progress).reduce((acc, [videoId, data]) => {
-      acc[videoId] = { progress: data.progress, completed: data.completed };
-      return acc;
-    }, {} as { [key: string]: { progress: number; completed: boolean } });
-    setVideoProgress(formattedProgress);
-  }, []);
+interface CourseSection {
+  id: string;
+  title: string;
+  isExpanded: boolean;
+  lessons: Lesson[];
+  components: CourseComponent[];
+}
+
+interface EditingItem {
+  type: 'lesson' | 'component' | 'section';
+  id: string;
+}
+
+// Dummy data for demonstration
+const initialCourseSections: CourseSection[] = [
+  {
+    id: 'section-1',
+    title: 'Introduction to Python',
+    isExpanded: true,
+    lessons: [
+      { id: 'lesson-1-1', title: 'History and Features of Python' },
+      { id: 'lesson-1-2', title: 'Your First Python Program' }
+    ],
+    components: [
+      { id: 'comp-1-1', title: 'Flash Cards', type: ComponentType.FLASHCARDS },
+      { id: 'comp-1-2', title: 'Mind Map', type: ComponentType.MINDMAP },
+      { id: 'comp-1-3', title: 'Quiz', type: ComponentType.QUIZ },
+      { id: 'comp-1-4', title: 'Memory Game', type: ComponentType.MEMORY_GAME }
+    ]
+  },
+  {
+    id: 'section-2',
+    title: 'Data Types and Variables',
+    isExpanded: false,
+    lessons: [
+      { id: 'lesson-2-1', title: 'Understanding Data Types' },
+      { id: 'lesson-2-2', title: 'Working with Variables' },
+      { id: 'lesson-2-3', title: 'Type Conversion' }
+    ],
+    components: [
+      { id: 'comp-2-1', title: 'Data Types Quiz', type: ComponentType.QUIZ },
+      { id: 'comp-2-2', title: 'Variables Flash Cards', type: ComponentType.FLASHCARDS }
+    ]
+  },
+  {
+    id: 'section-3',
+    title: 'Control Structures',
+    isExpanded: false,
+    lessons: [
+      { id: 'lesson-3-1', title: 'If Statements' },
+      { id: 'lesson-3-2', title: 'Loops and Iteration' }
+    ],
+    components: [
+      { id: 'comp-3-1', title: 'Control Flow Mind Map', type: ComponentType.MINDMAP }
+    ]
+  },
+  {
+    id: 'section-4',
+    title: 'Functions and Modules',
+    isExpanded: false,
+    lessons: [
+      { id: 'lesson-4-1', title: 'Creating Functions' },
+      { id: 'lesson-4-2', title: 'Working with Modules' }
+    ],
+    components: []
+  },
+  {
+    id: 'section-5',
+    title: 'Object-Oriented Programming',
+    isExpanded: false,
+    lessons: [
+      { id: 'lesson-5-1', title: 'Classes and Objects' },
+      { id: 'lesson-5-2', title: 'Inheritance' }
+    ],
+    components: [
+      { id: 'comp-5-1', title: 'OOP Concepts Quiz', type: ComponentType.QUIZ }
+    ]
+  }
+];
+
+const CourseLearningSidebar = forwardRef<SidebarRef, Props>(({ onContentSelect }, ref) => {
+  const [courseSections, setCourseSections] = useState<CourseSection[]>(initialCourseSections);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [selectedComponent, setSelectedComponent] = useState<CourseComponent | null>(null);
+  const [selectedSection, setSelectedSection] = useState<CourseSection | null>(null);
+
+  const [editingItem, setEditingItem] = useState<EditingItem | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [showPublishSettings, setShowPublishSettings] = useState(false);
+  const [isContentLoading, setIsContentLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
+  const [activeView, setActiveView] = useState<'lesson' | 'component'>('lesson');
 
   // Expose updateProgress method via ref
   useImperativeHandle(ref, () => ({
     updateProgress: (videoId: string, progress: number, completed: boolean) => {
-      setVideoProgress(prev => ({
-        ...prev,
-        [videoId]: { progress, completed }
-      }));
+      // Handle progress updates if needed
     }
   }));
 
-  const filteredPlaylists = playlists.map(playlist => ({
-    ...playlist,
-    videos: playlist.videos.filter(video =>
-      video.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })).filter(playlist => playlist.videos.length > 0);
+  const toggleSection = (sectionId: string) => {
+    setCourseSections(prevSections =>
+      prevSections.map(section =>
+        section.id === sectionId
+          ? { ...section, isExpanded: !section.isExpanded }
+          : section
+      )
+    );
+  };
 
-  const isZoomVideo = (video: Video): video is ZoomVideo => {
-    return 'playbackUrl' in video;
+  const handleLessonSelect = (lesson: Lesson, section: CourseSection) => {
+    setSelectedLesson(lesson);
+    setSelectedComponent(null);
+    setSelectedSection(section);
+    setActiveView('lesson');
+    
+    // Call the content select callback with dummy content
+    onContentSelect?.({
+      type: 'lesson',
+      id: lesson.id,
+      title: lesson.title,
+      content: `This is dummy content for lesson: ${lesson.title}. In the actual implementation, this would contain the real lesson content.`
+    });
+  };
+
+  const handleComponentSelect = (component: CourseComponent) => {
+    setSelectedComponent(component);
+    setSelectedLesson(null);
+    setActiveView('component');
+    
+    // Call the content select callback with dummy content
+    onContentSelect?.({
+      type: 'component',
+      id: component.id,
+      title: component.title,
+      componentType: component.type,
+      content: `This is dummy content for ${component.type}: ${component.title}. In the actual implementation, this would render the appropriate component.`
+    });
+  };
+
+  const startEditing = (type: 'lesson' | 'component' | 'section', id: string, currentValue: string) => {
+    setEditingItem({ type, id });
+    setEditingValue(currentValue);
+  };
+
+  const saveEdit = () => {
+    if (!editingItem) return;
+    
+    setCourseSections(prevSections =>
+      prevSections.map(section => {
+        if (editingItem.type === 'section' && section.id === editingItem.id) {
+          return { ...section, title: editingValue };
+        }
+        
+        if (editingItem.type === 'lesson') {
+          return {
+            ...section,
+            lessons: section.lessons.map(lesson =>
+              lesson.id === editingItem.id
+                ? { ...lesson, title: editingValue }
+                : lesson
+            )
+          };
+        }
+        
+        if (editingItem.type === 'component') {
+          return {
+            ...section,
+            components: section.components.map(component =>
+              component.id === editingItem.id
+                ? { ...component, title: editingValue }
+                : component
+            )
+          };
+        }
+        
+        return section;
+      })
+    );
+    
+    setEditingItem(null);
+    setEditingValue('');
+  };
+
+  const cancelEditing = () => {
+    setEditingItem(null);
+    setEditingValue('');
+  };
+
+  const handleEditLesson = (sectionId: string, lessonId: string) => {
+    const section = courseSections.find(s => s.id === sectionId);
+    const lesson = section?.lessons.find(l => l.id === lessonId);
+    if (lesson) {
+      setSelectedLesson(lesson);
+      setSelectedSection(section!);
+      setActiveView('lesson');
+    }
+  };
+
+  const getComponentIcon = (type: ComponentType) => {
+    switch (type) {
+      case ComponentType.FLASHCARDS:
+        return <Zap size={14} className={selectedComponent?.type === type ? 'text-blue-600' : 'text-blue-400'} />;
+      case ComponentType.MINDMAP:
+        return <Brain size={14} className={selectedComponent?.type === type ? 'text-green-600' : 'text-green-400'} />;
+      case ComponentType.QUIZ:
+        return <Target size={14} className={selectedComponent?.type === type ? 'text-purple-600' : 'text-purple-400'} />;
+      case ComponentType.MEMORY_GAME:
+        return <Gamepad2 size={14} className={selectedComponent?.type === type ? 'text-red-600' : 'text-red-400'} />;
+      default:
+        return <FileText size={14} className="text-gray-400" />;
+    }
   };
 
   return (
-    <aside className="w-full md:w-90 bg-white border-r border-gray-200 flex flex-col h-full p-6">
-      <button className="flex items-center text-gray-500 mb-6 hover:text-primary-600">
-        <FiChevronLeft className="mr-2" />
-        <span className="text-sm font-medium">Back</span>
+    <aside className="w-full md:w-96 bg-white border-r border-gray-200 flex flex-col h-full">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200 flex-shrink-0">
+        <h2 className="text-lg font-semibold text-gray-900">Course Outline</h2>
+      </div>
+
+      {/* Scrollable Course Sections */}
+      <div className="flex-1 overflow-y-auto p-4 relative min-h-0">
+        {courseSections.length === 0 && !isContentLoading && !initialLoading ? (
+          <div className="text-center py-8">
+            <LayoutGrid size={32} className="mx-auto text-gray-300 mb-4" />
+            <p className="text-sm text-gray-500 mb-1">No course content yet.</p>
+            <p className="text-xs text-gray-400">Start by creating a course in the chat!</p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {courseSections.map((section) => (
+              <div key={section.id}>
+                <div
+                  onClick={() => toggleSection(section.id)}
+                  className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 rounded-lg group cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      toggleSection(section.id);
+                    }
+                  }}
+                >
+                  <div className="flex items-center space-x-2 flex-grow">
+                    {section.isExpanded ? (
+                      <ChevronDown size={20} className="text-gray-600" />
+                    ) : (
+                      <ChevronRight size={20} className="text-gray-600" />
+                    )}
+                    <span className="text-sm font-medium text-gray-900" style={{fontSize: '14px'}}>{section.title}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100">
+                    <button className="p-2.5 hover:bg-gray-100 rounded bg-gray-50 flex items-center justify-center" style={{ minWidth: '36px', minHeight: '36px' }} onClick={(e) => { 
+                      e.stopPropagation(); 
+                      const clickedSection = courseSections.find(s => s.id === section.id);
+                      if (clickedSection) {
+                        setSelectedSection(clickedSection);
+                        setSelectedLesson(null); 
+                        setSelectedComponent(null);
+                        setActiveView('lesson');
+                      }
+                    }}>
+                      <Image 
+                        src="/ai_course_builder_icons/edit.png" 
+                        alt="Edit Topic" 
+                        width={20}
+                        height={20}
+                        className="opacity-90 hover:opacity-100"
+                      />
       </button>
-      <h2 className="text-2xl font-bold text-[#16197C] mb-2 leading-tight">Complete Web<br />Designing Course</h2>
-      <span className="text-sm text-black mb-4">Course Content</span>
-      <div className='flex items-center w-full justify-between'>
-        <div className="relative mb-4 w-full mr-2">
+
+                  </div>
+                </div>
+
+                {section.isExpanded && (
+                  <div className="ml-6 space-y-1 mt-1">
+                    {section.lessons.map((lesson) => (
+                      <div
+                        key={lesson.id}
+                        onClick={() => handleLessonSelect(lesson, section)}
+                        className={`w-full flex items-center justify-between p-2 rounded-md group ${
+                          selectedLesson?.id === lesson.id
+                            ? 'bg-[#ebebeb] text-gray-900'
+                            : 'hover:bg-gray-50 text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2 flex-1">
+                          <FileText size={14} className={selectedLesson?.id === lesson.id ? 'text-gray-700' : 'text-gray-400'} />
+                          {editingItem?.type === 'lesson' && editingItem.id === lesson.id ? (
           <input
             type="text"
-            placeholder="Search Videos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-2 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-200 text-sm"
-          />
-          <FiSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black" />
-        </div>
-        <img src='/images/list-filter.svg' className='text-black mt-[-14px] w-5 h-5' alt="Filter" />
-      </div>
-      <div className="flex gap-2 mb-4">
-        <button className="bg-[#02BABA] text-white px-2 py-1 rounded-full text-xs font-medium">Quizzes</button>
-        <button className="bg-[#02BABA] text-white px-2 py-1 rounded-full text-xs font-medium">Mind Mapping</button>
-        <button className="bg-[#02BABA] text-white px-2 py-1 rounded-full text-xs font-medium">Flash Cards</button>
-      </div>
-      <div className="overflow-y-auto flex-1 pr-2">
-        {filteredPlaylists.map((playlist, playlistIndex) => (
-          <div key={playlist.id} className="mb-4">
-            <div className="flex items-center mb-1 text-sm">
-              <span className={`font-semibold text-[13px] mr-1 ${
-                playlistIndex === currentPlaylist ? 'text-[#02BABA]' : 'text-black'
-              }`}>
-                {playlist.title}
-              </span>
-              <span className='text-[10px] text-[#02BABA] bg-[#F6F6F6] px-1 py-1 rounded-md'>
-                {playlist.videos.filter(video => videoProgress[video.id]?.completed).length}/{playlist.videos.length}
-              </span>
-            </div>
-            
-            <ul className="ml-2 mt-1">
-              {playlist.videos.map((video, videoIndex) => {
-                const progress = videoProgress[video.id] || { progress: 0, completed: false };
-                const isZoom = isZoomVideo(video);
-                
-                return (
-                  <li
-                    key={video.id}
-                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg mb-1 ${
-                      playlistIndex === currentPlaylist && videoIndex === currentVideoIndex
-                        ? 'bg-[#02BABA] text-white'
-                        : 'hover:bg-[#02BABA24] text-gray-700'
-                    } cursor-pointer transition-colors duration-200`}
-                    onClick={() => onVideoSelect(video, playlistIndex, videoIndex)}
-                  >
-                    <div className="flex items-center flex-1 min-w-0 mr-2">
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-sm truncate pr-2">{video.title}</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex items-center">
-                            <FiClock className={`w-3 h-3 ${
-                              playlistIndex === currentPlaylist && videoIndex === currentVideoIndex
-                                ? 'text-white'
-                                : 'text-gray-400'
-                            }`} />
-                            <span className={`text-xs ml-1 ${
-                              playlistIndex === currentPlaylist && videoIndex === currentVideoIndex
-                                ? 'text-white'
-                                : 'text-gray-400'
-                            }`}>
-                              {video.duration}
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              className="flex-1 text-sm px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              style={{fontSize: '14px'}}
+                              autoFocus
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  saveEdit();
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  cancelEditing();
+                                }
+                              }}
+                            />
+                          ) : (
+                            <span 
+                              className="text-sm cursor-pointer flex-1" 
+                              style={{fontSize: '14px'}}
+                              onClick={() => handleLessonSelect(lesson, section)}
+                            >
+                              {lesson.title}
                             </span>
+                          )}
+        </div>
+                        <div className={`flex items-center space-x-1 ${editingItem?.type === 'lesson' && editingItem.id === lesson.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          {editingItem?.type === 'lesson' && editingItem.id === lesson.id ? (
+                            <>
+                              <button
+                                onClick={saveEdit}
+                                className="p-1 hover:bg-green-100 text-green-600 rounded cursor-pointer"
+                                title="Save"
+                              >
+                                <Check size={12} />
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="p-1 hover:bg-red-100 text-red-600 rounded cursor-pointer"
+                                title="Cancel"
+                              >
+                                <X size={12} />
+                              </button>
+                            </>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <button
+                                className="p-1.5 hover:bg-gray-100 rounded cursor-pointer bg-gray-50" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditLesson(section.id, lesson.id);
+                                }}
+                                title="Edit lesson content"
+                              >
+                                <Image 
+                                  src="/ai_course_builder_icons/edit.png" 
+                                  alt="Edit Lesson" 
+                                  width={20}
+                                  height={20}
+                                  className="opacity-90 hover:opacity-100"
+                                />
+                              </button>
+
+      </div>
+                          )}
+      </div>
+            </div>
+                    ))}
+                    
+                    {/* Course Components */}
+                    {section.components && section.components.map((component) => (
+                      <div
+                        key={component.id}
+                        className={`w-full flex items-center justify-between p-2 rounded-md group ${
+                          selectedComponent?.id === component.id
+                            ? 'bg-blue-50 text-blue-900 border border-blue-200'
+                            : 'hover:bg-gray-50 text-gray-700'
+                        }`}
+                  >
+                        <div className="flex items-center space-x-2 flex-1">
+                          {getComponentIcon(component.type)}
+                          {editingItem?.type === 'component' && editingItem.id === component.id ? (
+                            <input
+                              type="text"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              className="flex-1 text-sm px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              style={{fontSize: '14px'}}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  saveEdit();
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  cancelEditing();
+                                }
+                              }}
+                            />
+                          ) : (
+                            <span 
+                              className="text-sm cursor-pointer flex-1" 
+                              style={{fontSize: '14px'}}
+                              onClick={() => handleComponentSelect(component)}
+                            >
+                              {component.title}
+                            </span>
+                          )}
+                        </div>
+                        <div className={`flex items-center space-x-1 ${editingItem?.type === 'component' && editingItem.id === component.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          {editingItem?.type === 'component' && editingItem.id === component.id ? (
+                            <>
+                              <button
+                                onClick={saveEdit}
+                                className="p-1 hover:bg-green-100 text-green-600 rounded cursor-pointer"
+                                title="Save"
+                              >
+                                <Check size={12} />
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="p-1 hover:bg-red-100 text-red-600 rounded cursor-pointer"
+                                title="Cancel"
+                              >
+                                <X size={12} />
+                              </button>
+                            </>
+                          ) : (
+                            <div className="flex items-center space-x-1">
+                              <button
+                                className="p-1 hover:bg-gray-100 rounded cursor-pointer" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditing('component', component.id, component.title);
+                                }}
+                                title="Edit component name"
+                              >
+                                <Image 
+                                  src="/ai_course_builder_icons/edit.png" 
+                                  alt="Edit Component" 
+                                  width={20}
+                                  height={20}
+                                  className="opacity-60 hover:opacity-100"
+                                />
+                              </button>
+
                           </div>
-                          {isZoom && (
-                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded">Zoom</span>
                           )}
                         </div>
                       </div>
-                      <CircularProgress 
-                        progress={progress.progress} 
-                        isCompleted={progress.completed}
-                      />
+                    ))}
+                    
+
+                  </div>
+                )}
                     </div>
-                  </li>
-                );
-              })}
-            </ul>
-            <hr className='border-gray-200' />
+            ))}
           </div>
-        ))}
+        )}
+
+       
       </div>
-      <div className="mt-4">
-        <button className="flex items-center gap-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-lg shadow-sm hover:bg-primary-100 w-full">
-          <span className="text-lg">🤖</span>
-          <span className="text-sm font-medium">Hey, Ask me anything!</span>
+
+      {/* Fixed Footer with Publish Settings */}
+      <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
+        <button 
+          onClick={() => setShowPublishSettings(true)}
+          className="w-full flex items-center justify-center space-x-2 py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium"
+        >
+          <Settings size={16} />
+          <span>Publish Settings</span>
         </button>
       </div>
     </aside>

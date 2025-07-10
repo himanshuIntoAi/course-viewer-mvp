@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* Apply Inter font to all QuizBuilder components */
+.quiz-builder,
+.quiz-builder *,
+.quiz-container,
+.quiz-container *,
+.question-editor,
+.question-editor *,
+.quiz-player,
+.quiz-player *,
+.quiz-preview,
+.quiz-preview *,
+.sortable-quiz-item,
+.sortable-quiz-item *,
+.quiz-question,
+.quiz-question *,
+.quiz-options,
+.quiz-options *,
+.quiz-form,
+.quiz-form *,
+.quiz-modal,
+.quiz-modal *,
+.quiz-popup,
+.quiz-popup * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Ensure quiz builder components inherit Inter font */
+[class*="quiz"],
+[class*="quiz"] *,
+[class*="question"],
+[class*="question"] *,
+[class*="answer"],
+[class*="answer"] *,
+[class*="option"],
+[class*="option"] *,
+[id*="quiz"],
+[id*="quiz"] *,
+[id*="question"],
+[id*="question"] * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply to dnd-kit components used in quiz */
+.dndkit-sortable-item,
+.dndkit-sortable-item *,
+.dndkit-droppable,
+.dndkit-droppable *,
+.dndkit-draggable,
+.dndkit-draggable * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply to any div, button, input, textarea, select within quiz components */
+div[class*="quiz"] *,
+button[class*="quiz"] *,
+input[class*="quiz"] *,
+textarea[class*="quiz"] *,
+select[class*="quiz"] *,
+form[class*="quiz"] *,
+span[class*="quiz"] *,
+p[class*="quiz"] *,
+h1[class*="quiz"] *,
+h2[class*="quiz"] *,
+h3[class*="quiz"] *,
+h4[class*="quiz"] *,
+h5[class*="quiz"] *,
+h6[class*="quiz"] *,
+label[class*="quiz"] *,
+ul[class*="quiz"] *,
+li[class*="quiz"] * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+} 

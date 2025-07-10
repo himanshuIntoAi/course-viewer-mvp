@@ -1,0 +1,1563 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+.cardContainer {
+  width: 300px;
+  height: 220px;
+  margin: 0 auto;
+  perspective: 1000px;
+  border-radius: 15px;
+  background: transparent;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply Inter font to all flash card elements */
+.cardContainer *,
+.container *,
+.searchSection *,
+.controls *,
+.grid *,
+.fullScreenOverlay *,
+.formOverlay *,
+.card *,
+.content *,
+.front *,
+.back * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* AIChatBot specific card container styles */
+:global(.chatbot-container) .cardContainer,
+:global(.chatbot-floating) .cardContainer {
+  width: 100%;
+  max-width: 260px;
+  height: 200px;
+  margin: 0 auto;
+}
+
+/* Ensure full height for content */
+:global(.chatbot-container) .front,
+:global(.chatbot-container) .back,
+:global(.chatbot-floating) .front,
+:global(.chatbot-floating) .back {
+  max-width: 100%;
+}
+
+/* Adjust card content for smaller screens */
+:global(.chatbot-container) .content,
+:global(.chatbot-floating) .content {
+  padding: 16px;
+  font-size: 15px;
+}
+
+/* Make sure topic buttons stay in view */
+.topicSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+:global(.chatbot-container) .topicSelector,
+:global(.chatbot-floating) .topicSelector {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+:global(.chatbot-container) .topicButton,
+:global(.chatbot-floating) .topicButton {
+  padding: 6px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Make cards responsive */
+@media (max-width: 768px) {
+  .cardContainer {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .fullScreen {
+    width: 90vw;
+    height: 90vh;
+    margin: 5vh auto;
+  }
+
+  .content {
+    font-size: 16px;  /* Slightly smaller font for mobile */
+  }
+
+  .fullScreen .content {
+    font-size: 24px;  /* Adjust fullscreen font for mobile */
+    padding: 20px;
+  }
+}
+
+/* Adjust for very small screens */
+@media (max-width: 320px) {
+  .cardContainer {
+    height: 180px;  /* Slightly shorter cards */
+  }
+
+  .content {
+    font-size: 15px;
+  }
+
+  .moreButton {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+.flipped {
+  transform: rotateY(180deg);
+}
+
+.front,
+.back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: var(--card-gradient);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  color: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform-style: preserve-3d;
+}
+
+.front {
+  transform: rotateY(0deg);
+}
+
+.back {
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+}
+
+.frontOverlay,
+.backOverlay {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.2)
+  );
+  border-radius: 15px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.card:hover .front,
+.card:hover .back {
+  filter: brightness(1.05);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25);
+}
+
+.checkbox {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+}
+
+.content {
+  padding: 24px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #000000;
+  word-wrap: break-word;
+  max-width: 100%;
+  font-weight: 700;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.moreButton {
+  background-color: rgba(0, 112, 243, 0.8);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-left: 4px;
+  display: inline;
+  line-height: 1;
+  vertical-align: baseline;
+  position: relative;
+  top: -1px;
+}
+
+.moreButton:hover {
+  background-color: rgba(0, 112, 243, 1);
+  transform: translateY(-1px);
+}
+
+.fullScreen {
+  width: 80vw;
+  height: 70vh;
+  margin: 0;
+  perspective: 2000px;
+}
+
+.fullScreen .card {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.fullScreen .content {
+  padding: 30px;
+  max-height: calc(70vh - 60px);
+  overflow-y: auto;
+  font-size: 28px;
+  line-height: 1.4;
+  color: #000000;
+  font-weight: 700;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.fullScreen .front,
+.fullScreen .back {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .cardContainer.fullScreen {
+    width: 90vw;
+    height: 60vh;
+  }
+
+  .fullScreen .content {
+    font-size: 20px;
+    padding: 30px;
+  }
+}
+
+/* Add a custom scrollbar for the content in fullscreen mode */
+.fullScreen .content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fullScreen .content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.fullScreen .content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.fullScreen .content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.fullScreen .content {
+  font-size: 28px;
+}
+
+.deleteButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: rgba(255, 68, 68, 0.7);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.cardContainer:hover .deleteButton {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background-color: rgba(255, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+.fadeOut {
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.iconButton:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.iconButton svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* Style for the liked state */
+.iconButton.liked {
+  color: #e11d48; /* A nice red color */
+  opacity: 1;
+}
+
+/* Ensure the SVG fill also changes */
+.iconButton.liked svg {
+  fill: #e11d48;
+}
+
+/* Style for the saved/bookmarked state */
+.iconButton.saved {
+  color: #1e40af; /* Dark blue color */
+  opacity: 1;
+}
+
+/* Ensure the SVG fill also changes */
+.iconButton.saved svg {
+  fill: #1e40af;
+}
+
+/* Define styles for the actual hover icon container */
+.hoverIconsContainer {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Center icons vertically */
+  gap: 15px; /* Adjust gap as needed */
+  opacity: 0; /* Initially hidden */
+  transition: opacity 0.3s ease;
+  pointer-events: none; /* Prevent interaction when hidden */
+  z-index: 3; /* Ensure it's above content/overlay */
+}
+
+/* Show icons on card hover */
+.card:hover .hoverIconsContainer {
+  opacity: 1;
+  pointer-events: auto; /* Allow interaction when visible */
+}
+
+/* Ensure hoverIcons div takes up space */
+.hoverIcons {
+  display: flex;
+  gap: inherit; /* Inherit gap from container */
+}
+
+/* Keep these transform resets if needed, otherwise remove */
+.front .hoverIconsContainer,
+.back .hoverIconsContainer {
+  transform: none;
+}
+
+.front .hoverIcons,
+.back .hoverIcons {
+  transform: none;
+}
+
+.saveButtonContainer {
+  position: relative;
+}
+
+.listPopup {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  min-width: 150px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.listPopupHeader {
+  padding: 12px 16px;
+  background: #f8fafc;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.listItem {
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.listItem:hover {
+  background-color: #f3f4f6;
+}
+
+.listItem.selected,
+.listItem:has(.savedIndicator) {
+  background-color: #e5edff;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.savedIndicator {
+  color: #2563eb;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transform: translateX(-10px);
+  animation: slideIn 0.2s ease forwards;
+}
+
+.savedIndicator::before {
+  content: '✓';
+  font-size: 16px;
+}
+
+/* Add this new animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.cardContainer.fullScreen {
+  width: 60vw;
+  height: 50vh;
+  max-width: 920px;
+  max-height: 520px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1002;
+  background: transparent;
+  border-radius: 15px;
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.cardContainer.fullScreen:hover {
+  transform: scale(1.02);
+}
+
+/* Override any dimming effects for fullscreen cards */
+.cardContainer.fullScreen .front,
+.cardContainer.fullScreen .back {
+  filter: brightness(1.05) !important; /* Always keep bright */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+.cardContainer.fullScreen:hover .front,
+.cardContainer.fullScreen:hover .back {
+  filter: brightness(1.1) !important; /* Even brighter on hover */
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25) !important;
+}
+
+.fullScreen .card {
+  width: 100%;
+  height: 100%;
+  font-size: 24px;
+  background: transparent;
+  border-radius: 15px;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.fullScreen .card:hover .front,
+.fullScreen .card:hover .back {
+  filter: brightness(1.1) !important; /* Slightly brighter on hover */
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25) !important;
+}
+
+.fullScreen .front,
+.fullScreen .back {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-gradient);
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  filter: brightness(1.05) !important; /* Keep cards bright in fullscreen */
+}
+
+.fullScreen .content {
+  padding: 30px;
+  max-height: calc(70vh - 60px);
+  overflow-y: auto;
+  font-size: 28px;
+  line-height: 1.4;
+}
+
+/* Ensure hover icons are visible in fullscreen */
+.fullScreen .hoverIconsContainer {
+  opacity: 1;
+  bottom: 20px;
+}
+
+/* Add better mobile support */
+@media (max-width: 480px) {
+  .cardContainer.fullScreen {
+    width: 95vw;
+    height: 60vh;
+  }
+
+  .fullScreen .content {
+    font-size: 20px;
+    padding: 20px;
+  }
+
+  .hoverIconsContainer {
+    bottom: 5px;
+  }
+
+  .iconButton {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Add these styles to your existing FlashCard.module.css */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Container adjustments for AIChatBot integration */
+:global(.chatbot-container) .container,
+:global(.chatbot-floating) .container {
+  padding: 15px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Make sure the container adapts to the available space */
+:global(.chatbot-container) .container {
+  height: calc(100% - 30px);
+}
+
+:global(.chatbot-floating) .container {
+  height: calc(100% - 30px);
+  max-height: calc(100% - 30px);
+}
+
+/* Adjust search section and controls for chatbot */
+:global(.chatbot-container) .searchSection,
+:global(.chatbot-floating) .searchSection {
+  margin-bottom: 10px;
+}
+
+:global(.chatbot-container) .controls,
+:global(.chatbot-floating) .controls {
+  gap: 8px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 15px;
+  }
+  
+  :global(.chatbot-container) .container,
+  :global(.chatbot-floating) .container {
+    padding: 10px;
+  }
+  
+  :global(.chatbot-container) .searchSection,
+  :global(.chatbot-floating) .searchSection {
+    margin-bottom: 8px;
+  }
+  
+  :global(.chatbot-container) .searchInput,
+  :global(.chatbot-floating) .searchInput {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+.searchSection {
+  margin-bottom: 20px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: #3b82f6;
+}
+
+.topicSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.topicButton {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.topicButton:hover {
+  background: #e5e7eb;
+}
+
+.topicButton.active {
+  background: #3b82f6;
+  color: white;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.playButton,
+.addButton,
+.selectedButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.playButton {
+  background: #3b82f6;
+  color: white;
+}
+
+.playButton:hover {
+  background: #2563eb;
+}
+
+.playButton:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.addButton {
+  background: #10b981;
+  color: white;
+}
+
+.addButton:hover {
+  background: #059669;
+}
+
+.selectedButton {
+  background: #8b5cf6;
+  color: white;
+}
+
+.selectedButton:hover {
+  background: #7c3aed;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 40px;
+  padding: 20px 0;
+  width: 100%;
+}
+
+/* Container adjustments for AIChatBot integration */
+:global(.chatbot-container) .grid,
+:global(.chatbot-floating) .grid {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 35px;
+  padding: 15px 0;
+  width: 100%;
+}
+
+/* Media queries for responsive grid */
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 30px;
+  }
+  
+  :global(.chatbot-container) .grid,
+  :global(.chatbot-floating) .grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 10px 0;
+  }
+  
+  :global(.chatbot-container) .grid,
+  :global(.chatbot-floating) .grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .controls {
+    flex-direction: column;
+  }
+
+  .playButton,
+  .addButton,
+  .selectedButton {
+    width: 100%;
+  }
+
+  .topicSelector {
+    justify-content: center;
+  }
+}
+
+/* Update/add these styles in your FlashCard.module.css */
+
+.fullScreenOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  animation: fadeIn 0.3s ease forwards;
+  overflow: hidden;
+  padding: 0;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Adjust z-index and positioning in the chatbot context - OVERRIDE to make truly fullscreen */
+:global(.chatbot-container) .fullScreenOverlay,
+:global(.chatbot-floating) .fullScreenOverlay {
+  position: fixed !important; /* Force fixed positioning to break out of chatbot container */
+  z-index: 9999 !important; /* High z-index to appear above everything */
+  padding: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Ensure proper overflow handling - optimize for true fullscreen */
+:global(.chatbot-container) .fullScreenContent,
+:global(.chatbot-floating) .fullScreenContent {
+  overflow: visible !important;
+  width: 100% !important;
+  height: 100vh !important;
+  display: grid !important;
+  grid-template-rows: auto auto 1fr auto !important;
+  grid-template-areas: 
+    "header"
+    "progress" 
+    "card"
+    "controls" !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+}
+
+.fullScreenContent {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  transform: scale(0.9);
+  opacity: 0;
+  animation: popIn 0.3s ease forwards;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-areas: 
+    "header"
+    "progress" 
+    "card"
+    "controls";
+  gap: 0;
+  margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Style the close button */
+.fullScreenContent .closeButton {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 32px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.fullScreenContent .closeButton:hover {
+  transform: scale(1.1);
+}
+
+/* New prominent close button for fullscreen mode - repositioned */
+.fullscreenCloseButton {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 1004;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  margin-left: 10px;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  transform-origin: center;
+  position: relative;
+}
+
+.fullscreenCloseButton:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+/* Add title and counter styles for fullscreen mode */
+.fullscreenHeader {
+  grid-area: header;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  color: white;
+  margin-bottom: 0;
+  position: relative;
+  z-index: 1004;
+  padding: 5px 0;
+  overflow: visible;
+}
+
+.fullscreenTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.cardCounter {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 20px;
+  padding: 5px;
+}
+
+/* Adjust for chatbot context */
+:global(.chatbot-container) .fullscreenHeader,
+:global(.chatbot-floating) .fullscreenHeader {
+  margin-bottom: 8px;
+}
+
+:global(.chatbot-container) .fullscreenTitle,
+:global(.chatbot-floating) .fullscreenTitle {
+  font-size: 18px;
+}
+
+:global(.chatbot-container) .cardCounter,
+:global(.chatbot-floating) .cardCounter {
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+@media (max-width: 640px) {
+  .fullscreenTitle {
+    font-size: 16px;
+  }
+  
+  .cardCounter {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+}
+
+/* Progress bar styles */
+.progressBar {
+  grid-area: progress;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1003;
+  display: flex;
+  gap: 4px;
+  margin: 10px 0;
+}
+
+.progressSegment {
+  height: 100%;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.progressFill {
+  height: 100%;
+  background: #ffffff;
+  border-radius: 2px;
+  position: relative;
+  transition: width 0.05s linear;
+  width: 0;
+}
+
+.segmentCompleted .progressFill {
+  width: 100% !important;
+  transition: width 0.3s ease-out;
+}
+
+.progressFill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Card area centering */
+.fullScreenContent > *:nth-child(3) {
+  grid-area: card;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Fullscreen controls */
+.fullScreenContent .controls {
+  grid-area: controls;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 0;
+}
+
+.fullScreenContent .controls button {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.fullScreenContent .controls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.fullScreenContent .controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Fullscreen animations */
+.fullScreenOverlay.closing {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+.closing .fullScreenContent {
+  animation: popOut 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes popOut {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* AIChatBot specific styles for responsive layouts */
+:global(.chatbot-container) .fullScreenOverlay {
+  position: absolute;
+  height: 100%;
+  overflow-y: auto;
+}
+
+:global(.chatbot-floating) .fullScreenOverlay {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+:global(.chatbot-container) .fullScreenContent {
+  width: 90%;
+  max-width: 90%;
+}
+
+:global(.chatbot-floating) .fullScreenContent {
+  width: 90%;
+  max-width: 90%;
+  margin: 5vh auto;
+}
+
+:global(.chatbot-container) .cardContainer.fullScreen {
+  width: 60vw !important;
+  max-width: 920px !important;
+  height: 50vh !important;
+  max-height: 520px !important;
+}
+
+:global(.chatbot-floating) .cardContainer.fullScreen {
+  width: 60vw !important;
+  max-width: 920px !important;
+  height: 50vh !important;
+  max-height: 520px !important;
+}
+
+@media (max-width: 768px) {
+  .cardContainer {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .fullScreen {
+    width: 90vw;
+    height: 90vh;
+    margin: 5vh auto;
+  }
+
+  .content {
+    font-size: 16px;  /* Slightly smaller font for mobile */
+  }
+
+  .fullScreen .content {
+    font-size: 24px;  /* Adjust fullscreen font for mobile */
+    padding: 20px;
+  }
+  
+  :global(.chatbot-container) .cardContainer.fullScreen,
+  :global(.chatbot-floating) .cardContainer.fullScreen {
+    width: 80vw !important;
+    max-width: 80vw !important;
+    height: 50vh !important;
+  }
+  
+  :global(.chatbot-container) .fullScreenContent,
+  :global(.chatbot-floating) .fullScreenContent {
+    width: 90% !important;
+    max-width: 90% !important;
+  }
+}
+
+/* Enhanced Form Styles */
+.formOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  backdrop-filter: blur(3px);
+}
+
+.formContent {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.enhancedForm {
+  max-width: 900px;
+  width: 90%;
+  max-height: 85vh;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.formHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: #f0f9ff;
+  border-bottom: 1px solid #e0f2fe;
+  border-radius: 8px 8px 0 0;
+}
+
+.formHeader h2 {
+  margin: 0;
+  color: #0284c7;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.formLayout {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+@media (min-width: 768px) {
+  .formLayout {
+    flex-direction: row;
+    max-height: calc(85vh - 60px);
+  }
+}
+
+.formSection {
+  flex: 1;
+  padding-right: 16px;
+}
+
+.previewSection {
+  flex: 1;
+  padding-left: 16px;
+  border-left: 1px solid #e0f2fe;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+@media (max-width: 767px) {
+  .previewSection {
+    border-left: none;
+    border-top: 1px solid #e0f2fe;
+    padding-left: 0;
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+}
+
+.previewTitle {
+  margin: 0 0 16px 0;
+  color: #0284c7;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.labelText {
+  display: block;
+  font-weight: 500;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.enhancedTextarea {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+  resize: vertical;
+}
+
+.enhancedTextarea:focus {
+  border-color: #38bdf8;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+}
+
+.topicSelect {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.95rem;
+  background-color: #fff;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+.topicSelect:focus {
+  border-color: #38bdf8;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+}
+
+.charCount {
+  display: block;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.submitButton, .cancelButton, .previewButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.submitButton {
+  background-color: #0ea5e9;
+  color: white;
+  margin-left: 8px;
+}
+
+.submitButton:hover {
+  background-color: #0284c7;
+}
+
+.cancelButton {
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+.cancelButton:hover {
+  background-color: #e2e8f0;
+}
+
+.previewButton {
+  background-color: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #e0f2fe;
+}
+
+.previewButton:hover {
+  background-color: #e0f2fe;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+}
+
+.closeButton:hover {
+  color: #0ea5e9;
+}
+
+.cardPreviewContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 640px) {
+  .cardPreviewContainer {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.cardPreviewWrapper {
+  width: 220px;
+  height: 150px;
+  perspective: 1000px;
+  margin: 0 auto;
+  cursor: pointer;
+}
+
+.cardPreviewInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.cardPreviewInner.flipped {
+  transform: rotateY(180deg);
+}
+
+.cardPreview {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.frontPreview {
+  background: #f0f9ff;
+  z-index: 2;
+}
+
+.backPreview {
+  background: #e0f2fe;
+  transform: rotateY(180deg);
+}
+
+.frontPreview::after {
+  content: 'FRONT';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.backPreview::after {
+  content: 'BACK';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.cardPreviewWrapper:hover .cardPreview {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.previewContent {
+  padding: 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  color: #000;
+  max-width: 100%;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.previewHelp {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 12px;
+}

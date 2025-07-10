@@ -92,4 +92,139 @@
 /* Hide YouTube iframe border */
 iframe {
   border: none !important;
+}
+
+/* Transcribe Window Styles */
+.transcribe-window {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 50;
+}
+
+.transcribe-window.open {
+  transform: translateX(0);
+}
+
+.transcribe-content {
+  padding: 20px;
+  color: white;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.transcribe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.transcribe-close {
+  color: white;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.transcribe-close:hover {
+  color: #02BABA;
+}
+
+.transcribe-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  background: rgba(2, 186, 186, 0.2);
+  border: 1px solid #02BABA;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.transcribe-button:hover {
+  background: rgba(2, 186, 186, 0.3);
+}
+
+.transcribe-button.active {
+  background: #02BABA;
+}
+
+.jupyter-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  background: rgba(247, 141, 45, 0.2);
+  border: 1px solid #F78D2D;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.jupyter-button:hover {
+  background: rgba(247, 141, 45, 0.3);
+}
+
+.jupyter-button svg {
+  color: #F78D2D;
+}
+
+/* Jupyter Window Styles */
+.jupyter-window {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 600px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 50;
+}
+
+.jupyter-window.open {
+  transform: translateX(0);
+}
+
+.jupyter-content {
+  height: calc(100% - 60px);
+  background: white;
+}
+
+.jupyter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: 60px;
+}
+
+.jupyter-close {
+  color: white;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.jupyter-close:hover {
+  color: #F78D2D;
+}
+
+.jupyter-button.active {
+  background: #F78D2D;
+}
+
+.jupyter-button.active svg {
+  color: white;
 } 

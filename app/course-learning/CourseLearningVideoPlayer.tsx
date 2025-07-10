@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { FiPlay, FiPause, FiMaximize, FiVolume2, FiVolumeX } from 'react-icons/fi';
+import { FiPlay, FiPause, FiMaximize, FiVolume2, FiVolumeX, FiX } from 'react-icons/fi';
 import { BsSpeedometer2 } from 'react-icons/bs';
 import { MdHighQuality } from 'react-icons/md';
+import { HiOutlineTranslate } from 'react-icons/hi';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import { SiJupyter } from 'react-icons/si';
 import { getVideoProgress, updateVideoProgress } from '../utils/videoProgress';
 import Hls from 'hls.js';
 import './VideoPlayer.css';
@@ -11,6 +14,7 @@ import { VideoSource } from './page';
 
 interface VideoPlayerProps {
   videoId: string;
+  title: string;
   thumbnailUrl: string;
   playbackUrl?: string;
   source: VideoSource;
@@ -25,6 +29,17 @@ interface QualityLevel {
   name: string;
 }
 
+interface TranscriptionStatus {
+  status: 'idle' | 'loading' | 'generating' | 'completed' | 'error';
+  data?: {
+    start: number;
+    end: number;
+    text: string;
+  }[];
+  error?: string;
+  videoName?: string;
+}
+
 declare global {
   interface Window {
     YT: any;
@@ -37,6 +52,7 @@ const BUFFER_DURATION = 30; // Buffer 30 seconds ahead
 
 const CourseLearningVideoPlayer: React.FC<VideoPlayerProps> = ({ 
   videoId, 
+  title,
   thumbnailUrl,
   playbackUrl,
   source,
@@ -72,6 +88,18 @@ const CourseLearningVideoPlayer: React.FC<VideoPlayerProps> = ({
   const currentSegmentRef = useRef<number>(0);
   const lastPlaybackTime = useRef<number>(0);
   const qualitySwitchStartTime = useRef<number>(0);
+  const [showTranscribe, setShowTranscribe] = useState(false);
+  const [transcription, setTranscription] = useState<TranscriptionStatus>({
+    status: 'idle',
+    data: []
+  });
+
+  // Add new state for quality and language
+  const [transcriptionQuality, setTranscriptionQuality] = useState('240p');
+  const [transcriptionLanguage, setTranscriptionLanguage] = useState('en');
+
+  // Add new state for Jupyter Notebook
+  const [showJupyter, setShowJupyter] = useState(false);
 
   // Initialize video player based on source and type
   useEffect(() => {
@@ -461,6 +489,211 @@ const CourseLearningVideoPlayer: React.FC<VideoPlayerProps> = ({
     }, 500);
   };
 
+  const generateTranscription = async () => {
+    try {
+      setTranscription({ status: 'loading' });
+      
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/v1/courselearning/transcribe/${title}?quality=${transcriptionQuality}&language=${transcriptionLanguage}`, 
+        {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        }
+      );
+
+      console.log('Transcription API response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('Transcription API error:', errorData);
+        
+        let errorMessage = 'Failed to generate transcription. ';
+        if (response.status === 404) {
+          errorMessage += 'Video not found.';
+        } else if (response.status === 429) {
+          errorMessage += 'Too many requests. Please try again later.';
+        } else if (response.status >= 500) {
+          errorMessage += 'Server error. Please try again later.';
+        } else {
+          errorMessage += errorData?.detail || 'Please try again later.';
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('Transcription initiated successfully:', data);
+      
+      // Update transcription status based on API response
+      if (data.status === 'success' && data.segments) {
+        setTranscription({
+          status: 'completed',
+          data: data.segments,
+          videoName: data.video_name
+        });
+      } else {
+        setTranscription({
+          status: 'generating',
+          data: [
+            { start: 0, end: 0, text: "✨ AI transcription process has started..." },
+            { start: 0, end: 0, text: "⏳ This might take a few minutes as we process the entire video." },
+            { start: 0, end: 0, text: "🎬 You can continue watching while we prepare the transcription." },
+            { start: 0, end: 0, text: "📝 We'll notify you when it's ready!" }
+          ]
+        });
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+      setTranscription({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Failed to generate transcription. Please try again later.'
+      });
+    }
+  };
+
+  const handleTranscribeClick = () => {
+    setShowTranscribe(!showTranscribe);
+    if (transcription.status === 'idle') {
+      generateTranscription();
+    }
+  };
+
+  const formatTimestamp = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const renderTranscriptionContent = () => {
+    switch (transcription.status) {
+      case 'loading':
+        return (
+          <div className="flex flex-col items-center justify-center h-full space-y-4">
+            <AiOutlineLoading3Quarters className="w-8 h-8 text-[#02BABA] animate-spin" />
+            <p className="text-sm text-center">Initiating transcription process...</p>
+          </div>
+        );
+
+      case 'generating':
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-6">
+              <AiOutlineLoading3Quarters className="w-5 h-5 text-[#02BABA] animate-spin" />
+              <span className="text-[#02BABA] font-medium">AI is generating transcription</span>
+            </div>
+            {transcription.data?.map((segment, index) => (
+              <p key={index} className="text-sm text-gray-300">{segment.text}</p>
+            ))}
+          </div>
+        );
+
+      case 'completed':
+        return (
+          <div className="space-y-4">
+            {transcription.videoName && (
+              <div className="text-[#02BABA] font-medium mb-4">
+                {transcription.videoName}
+              </div>
+            )}
+            {transcription.data?.map((segment, index) => (
+              <p key={index} className="text-sm group hover:bg-gray-800/50 p-2 rounded cursor-pointer"
+                 onClick={() => {
+                   if (videoRef.current) {
+                     videoRef.current.currentTime = segment.start;
+                     videoRef.current.play().catch(console.error);
+                   }
+                 }}>
+                <span className="text-[#02BABA] font-mono text-xs">
+                  [{formatTimestamp(segment.start)}]
+                </span>
+                <span className="ml-2">{segment.text}</span>
+              </p>
+            ))}
+          </div>
+        );
+
+      case 'error':
+        return (
+          <div className="flex flex-col items-center justify-center h-full space-y-4 p-6">
+            <div className="text-red-400 bg-red-400/10 p-4 rounded-lg">
+              <p className="text-sm text-center">{transcription.error}</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={generateTranscription}
+                className="px-4 py-2 bg-[#02BABA] text-white rounded-md text-sm hover:bg-opacity-90 flex items-center gap-2"
+              >
+                <span>Try Again</span>
+              </button>
+              <button
+                onClick={() => setShowTranscribe(false)}
+                className="px-4 py-2 text-gray-400 text-sm hover:text-white transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="flex flex-col space-y-6 p-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm text-gray-300">Quality</label>
+                <select
+                  value={transcriptionQuality}
+                  onChange={(e) => setTranscriptionQuality(e.target.value)}
+                  className="w-full bg-gray-800 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#02BABA]"
+                >
+                  <option value="240p">240p</option>
+                  <option value="360p">360p</option>
+                  <option value="480p">480p</option>
+                  <option value="720p">720p</option>
+                  <option value="1080p">1080p</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-gray-300">Language</label>
+                <select
+                  value={transcriptionLanguage}
+                  onChange={(e) => setTranscriptionLanguage(e.target.value)}
+                  className="w-full bg-gray-800 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#02BABA]"
+                >
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="it">Italian</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="nl">Dutch</option>
+                  <option value="pl">Polish</option>
+                  <option value="ru">Russian</option>
+                  <option value="ja">Japanese</option>
+                  <option value="ko">Korean</option>
+                  <option value="zh">Chinese</option>
+                </select>
+              </div>
+            </div>
+            <button
+              onClick={generateTranscription}
+              className="w-full px-4 py-2 bg-[#02BABA] text-white rounded-md text-sm hover:bg-opacity-90 flex items-center justify-center gap-2"
+            >
+              <span>Generate Transcription</span>
+            </button>
+          </div>
+        );
+    }
+  };
+
+  const handleJupyterClick = () => {
+    setShowJupyter(!showJupyter);
+  };
+
   return (
     <div 
       ref={containerRef}
@@ -667,6 +900,29 @@ const CourseLearningVideoPlayer: React.FC<VideoPlayerProps> = ({
                     )}
                   </div>
 
+                  {/* Jupyter Notebook Button */}
+                  <button
+                    onClick={handleJupyterClick}
+                    className={`jupyter-button ${showJupyter ? 'active' : ''}`}
+                    title="Open Jupyter Notebook"
+                  >
+                    <SiJupyter className="w-5 h-5" />
+                    <span className="text-sm">Jupyter</span>
+                  </button>
+
+                  {/* Transcribe Button */}
+                  <button
+                    onClick={handleTranscribeClick}
+                    className={`transcribe-button ${showTranscribe ? 'active' : ''}`}
+                  >
+                    {transcription.status === 'loading' || transcription.status === 'generating' ? (
+                      <AiOutlineLoading3Quarters className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <HiOutlineTranslate className="w-5 h-5" />
+                    )}
+                    <span className="text-sm">Transcribe</span>
+                  </button>
+
                   {/* Fullscreen */}
                   <button
                     onClick={toggleFullscreen}
@@ -687,6 +943,42 @@ const CourseLearningVideoPlayer: React.FC<VideoPlayerProps> = ({
           )}
         </>
       )}
+
+      {/* Transcribe Window */}
+      <div className={`transcribe-window ${showTranscribe ? 'open' : ''}`}>
+        <div className="transcribe-header">
+          <h3 className="text-white text-lg font-medium">Transcription</h3>
+          <button 
+            className="transcribe-close"
+            onClick={() => setShowTranscribe(false)}
+          >
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="transcribe-content">
+          {renderTranscriptionContent()}
+        </div>
+      </div>
+
+      {/* Jupyter Notebook Window */}
+      <div className={`jupyter-window ${showJupyter ? 'open' : ''}`}>
+        <div className="jupyter-header">
+          <h3 className="text-white text-lg font-medium">Jupyter Notebook</h3>
+          <button 
+            className="jupyter-close"
+            onClick={() => setShowJupyter(false)}
+          >
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="jupyter-content">
+          <iframe
+            src="http://48.217.184.72:8888/notebooks/intro.ipynb"
+            className="w-full h-full border-none"
+            title="Jupyter Notebook"
+          />
+        </div>
+      </div>
     </div>
   );
 };
