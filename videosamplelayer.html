@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>HLS Azure Player</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+  <h2>Course Video Player</h2>
+  <video id="video" controls width="720" height="400">
+    <source src="https://couasisto01.blob.core.windows.net/zoom-recordings/zoom_test meet 2_20250520_135334.mp4"  >
+  </video>
+  <div id="status"></div>
+  <div id="urlCheck"></div>
+
+  <!-- <script>
+    const video = document.getElementById('video');
+    const status = document.getElementById('status');
+    const urlCheck = document.getElementById('urlCheck');
+    const videoSrc = 'https://couasisto01.blob.core.windows.net/zoom-recordings/L1/master.m3u8';
+
+    // First verify the URL is accessible
+    async function checkUrl() {
+      try {
+        const response = await fetch(videoSrc, { method: 'HEAD' });
+        updateStatus(`URL Status: ${response.status} ${response.statusText}`);
+        updateStatus(`Content-Type: ${response.headers.get('content-type')}`);
+        return response.ok;
+      } catch (error) {
+        updateStatus(`URL Error: ${error.message}`);
+        return false;
+      }
+    }
+
+    function updateStatus(message) {
+      console.log(message);
+      status.innerHTML += `<p>${message}</p>`;
+    }
+
+    async function initPlayer() {
+      updateStatus('Checking URL accessibility...');
+      const isUrlAccessible = await checkUrl();
+      
+      if (!isUrlAccessible) {
+        updateStatus('URL is not accessible. Please check Azure Storage settings and CORS configuration.');
+        return;
+      }
+
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          debug: true,
+          xhrSetup: function(xhr, url) {
+            // Log all XHR requests
+            updateStatus(`Requesting: ${url}`);
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState === 4) {
+                updateStatus(`Response for ${url}: ${xhr.status}`);
+              }
+            };
+          }
+        });
+        
+        // Add error handling
+        hls.on(Hls.Events.ERROR, function(event, data) {
+          updateStatus(`HLS Error: ${data.type} - ${data.details}`);
+          console.error('HLS error:', data);
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                updateStatus('Fatal network error encountered, trying to recover...');
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                updateStatus('Fatal media error encountered, trying to recover...');
+                hls.recoverMediaError();
+                break;
+              default:
+                updateStatus('Fatal error, cannot recover');
+                hls.destroy();
+                break;
+            }
+          }
+        });
+
+        updateStatus('Starting to load video source...');
+        hls.loadSource(videoSrc);
+        hls.attachMedia(video);
+
+        // Listen to manifest parsing
+        hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+          updateStatus(`Manifest parsed, found ${data.levels.length} quality levels`);
+          console.log("Available quality levels:", data.levels);
+          video.play().catch(e => updateStatus(`Error playing video: ${e.message}`));
+        });
+
+        // Listen to level loading
+        hls.on(Hls.Events.LEVEL_LOADED, function(event, data) {
+          updateStatus('Level loaded successfully');
+        });
+
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        updateStatus('Using native HLS support');
+        video.src = videoSrc;
+        video.addEventListener('error', function(e) {
+          updateStatus(`Video error: ${video.error.message}`);
+        });
+      } else {
+        updateStatus('HLS is not supported in your browser');
+      }
+    }
+
+    // Start the player initialization
+    initPlayer();
+  </script> -->
+</body>
+</html>

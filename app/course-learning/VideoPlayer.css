@@ -1,0 +1,230 @@
+/* Volume Control Container */
+.volume-control {
+  position: relative;
+  display: inline-block;
+}
+
+.volume-slider-container {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+}
+
+/* Volume Slider Styles */
+.volume-slider {
+  -webkit-appearance: none;
+  width: 100px;
+  height: 4px;
+  border-radius: 2px;
+  background: #ffffff;
+  outline: none;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  margin: 20px 0;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #02BABA;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #02BABA;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.2s ease-in-out;
+}
+
+.volume-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Volume percentage display */
+.volume-percentage {
+  color: white;
+  font-size: 12px;
+}
+
+/* Triangle pointer at bottom */
+.volume-slider-container::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(28, 28, 28, 0.9);
+}
+
+/* For Firefox specifically */
+@supports (-moz-appearance: none) {
+  .volume-slider {
+    height: 100px;
+  }
+}
+
+/* Hide YouTube iframe border */
+iframe {
+  border: none !important;
+}
+
+/* Transcribe Window Styles */
+.transcribe-window {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 50;
+}
+
+.transcribe-window.open {
+  transform: translateX(0);
+}
+
+.transcribe-content {
+  padding: 20px;
+  color: white;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.transcribe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.transcribe-close {
+  color: white;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.transcribe-close:hover {
+  color: #02BABA;
+}
+
+.transcribe-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  background: rgba(2, 186, 186, 0.2);
+  border: 1px solid #02BABA;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.transcribe-button:hover {
+  background: rgba(2, 186, 186, 0.3);
+}
+
+.transcribe-button.active {
+  background: #02BABA;
+}
+
+.jupyter-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  background: rgba(247, 141, 45, 0.2);
+  border: 1px solid #F78D2D;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.jupyter-button:hover {
+  background: rgba(247, 141, 45, 0.3);
+}
+
+.jupyter-button svg {
+  color: #F78D2D;
+}
+
+/* Jupyter Window Styles */
+.jupyter-window {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 600px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 50;
+}
+
+.jupyter-window.open {
+  transform: translateX(0);
+}
+
+.jupyter-content {
+  height: calc(100% - 60px);
+  background: white;
+}
+
+.jupyter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: 60px;
+}
+
+.jupyter-close {
+  color: white;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.jupyter-close:hover {
+  color: #F78D2D;
+}
+
+.jupyter-button.active {
+  background: #F78D2D;
+}
+
+.jupyter-button.active svg {
+  color: white;
+} 

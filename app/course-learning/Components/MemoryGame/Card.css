@@ -1,0 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+.card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    cursor: pointer;
+    perspective: 1000px;
+    box-sizing: border-box;
+    max-width: 80px;
+    max-height: 80px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply Inter font to all card elements */
+.card *,
+.front *,
+.back *,
+.card-inner * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    transform-origin: center;
+}
+
+.flipped {
+    transform: rotateY(180deg);
+}
+
+.front,
+.back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+.front {
+    background-color: white;
+    transform: rotateY(180deg);
+    color: #333;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px;
+    word-break: break-word;
+    line-height: 1.2;
+}
+
+/* Styles for matched cards with colored backgrounds */
+.front.matched {
+    transition: background-color 0.5s ease;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Color variations for matched cards */
+.front.matched-color-1 {
+    background-color: #FF6B6B;
+    color: white;
+}
+
+.front.matched-color-2 {
+    background-color: #4ECDC4;
+    color: white;
+}
+
+.front.matched-color-3 {
+    background-color: #FFD93D;
+    color: #333;
+}
+
+.front.matched-color-4 {
+    background-color: #6C63FF;
+    color: white;
+}
+
+.back {
+    background-color: #4361ee;
+    color: white;
+    background-size: cover;
+    background-position: center;
+    transition: background-color 0.3s ease;
+}
+
+.back:hover {
+    background-color: #3a0ca3;
+}
+
+.back-icon {
+    width: 60%;
+    height: 60%;
+    background-image: url('/images/question-mark.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 1;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+/* Different colors for cards */
+.card:nth-child(4n+1) .back {
+    background-color: #FF6B6B;
+}
+.card:nth-child(4n+1) .back:hover {
+    background-color: #FF5252;
+}
+
+.card:nth-child(4n+2) .back {
+    background-color: #4ECDC4;
+}
+.card:nth-child(4n+2) .back:hover {
+    background-color: #45B7AF;
+}
+
+.card:nth-child(4n+3) .back {
+    background-color: #FFD93D;
+}
+.card:nth-child(4n+3) .back:hover {
+    background-color: #FFC107;
+}
+
+.card:nth-child(4n+4) .back {
+    background-color: #6C63FF;
+}
+.card:nth-child(4n+4) .back:hover {
+    background-color: #5A52E0;
+}
+
+/* Responsive styles for small screens and floating view */
+@media (max-width: 500px), 
+       (max-height: 600px) {
+    .front {
+        font-size: 12px;
+        padding: 4px;
+    }
+    
+    .back-icon {
+        width: 50%;
+        height: 50%;
+    }
+}
+
+/* Specific styles for the chatbot floating view */
+.chatbot-floating .card {
+    max-width: 70px;
+    max-height: 70px;
+}
+
+.chatbot-floating .front {
+    font-size: 11px;
+    padding: 3px;
+} 

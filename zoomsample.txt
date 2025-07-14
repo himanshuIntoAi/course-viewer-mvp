@@ -1,0 +1,3 @@
+secretToken = asQYbYaXSbay52HDA2ZFaw
+
+verification token = Vwq7Mga5RZCli0XkPE0lbw

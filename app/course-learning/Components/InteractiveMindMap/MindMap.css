@@ -1,0 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* Apply Inter font to all InteractiveMindMap components */
+.mind-map,
+.mind-map *,
+.mind-map-container,
+.mind-map-container *,
+.mind-map-content,
+.mind-map-content *,
+.graph-renderer,
+.graph-renderer *,
+.mind-map-node,
+.mind-map-node *,
+.react-flow,
+.react-flow *,
+.react-flow__node,
+.react-flow__node *,
+.react-flow__edge,
+.react-flow__edge *,
+.react-flow__controls,
+.react-flow__controls *,
+.react-flow__minimap,
+.react-flow__minimap *,
+.react-flow__background,
+.react-flow__background *,
+.mind-map-popup,
+.mind-map-popup *,
+.mind-map-modal,
+.mind-map-modal * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Ensure mind map components inherit Inter font */
+[class*="mind"],
+[class*="mind"] *,
+[class*="map"],
+[class*="map"] *,
+[class*="node"],
+[class*="node"] *,
+[class*="edge"],
+[class*="edge"] *,
+[class*="graph"],
+[class*="graph"] *,
+[class*="flow"],
+[class*="flow"] *,
+[id*="mind"],
+[id*="mind"] *,
+[id*="map"],
+[id*="map"] *,
+[id*="node"],
+[id*="node"] *,
+[id*="graph"],
+[id*="graph"] * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply to ReactFlow specific components */
+.react-flow__node-default,
+.react-flow__node-default *,
+.react-flow__node-input,
+.react-flow__node-input *,
+.react-flow__node-output,
+.react-flow__node-output *,
+.react-flow__handle,
+.react-flow__handle *,
+.react-flow__attribution,
+.react-flow__attribution *,
+.react-flow__panel,
+.react-flow__panel *,
+.react-flow__resize-control,
+.react-flow__resize-control * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply to custom node components */
+.custom-node,
+.custom-node *,
+.custom-edge,
+.custom-edge *,
+.node-content,
+.node-content *,
+.node-label,
+.node-label *,
+.node-button,
+.node-button *,
+.edge-label,
+.edge-label * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply to control buttons and interface elements */
+.controls,
+.controls *,
+.color-picker,
+.color-picker *,
+.line-color-picker,
+.line-color-picker *,
+.canvas-style-buttons,
+.canvas-style-buttons *,
+.manual-edit-buttons,
+.manual-edit-buttons * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply to any div, button, input, textarea, select within mind map components */
+div[class*="mind"] *,
+div[class*="map"] *,
+div[class*="node"] *,
+div[class*="graph"] *,
+button[class*="mind"] *,
+button[class*="map"] *,
+button[class*="node"] *,
+button[class*="graph"] *,
+input[class*="mind"] *,
+input[class*="map"] *,
+input[class*="node"] *,
+input[class*="graph"] *,
+textarea[class*="mind"] *,
+textarea[class*="map"] *,
+textarea[class*="node"] *,
+textarea[class*="graph"] *,
+select[class*="mind"] *,
+select[class*="map"] *,
+select[class*="node"] *,
+select[class*="graph"] *,
+span[class*="mind"] *,
+span[class*="map"] *,
+span[class*="node"] *,
+span[class*="graph"] *,
+p[class*="mind"] *,
+p[class*="map"] *,
+p[class*="node"] *,
+p[class*="graph"] *,
+h1[class*="mind"] *,
+h1[class*="map"] *,
+h1[class*="node"] *,
+h1[class*="graph"] *,
+h2[class*="mind"] *,
+h2[class*="map"] *,
+h2[class*="node"] *,
+h2[class*="graph"] *,
+h3[class*="mind"] *,
+h3[class*="map"] *,
+h3[class*="node"] *,
+h3[class*="graph"] *,
+label[class*="mind"] *,
+label[class*="map"] *,
+label[class*="node"] *,
+label[class*="graph"] *,
+ul[class*="mind"] *,
+ul[class*="map"] *,
+ul[class*="node"] *,
+ul[class*="graph"] *,
+li[class*="mind"] *,
+li[class*="map"] *,
+li[class*="node"] *,
+li[class*="graph"] * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+} 

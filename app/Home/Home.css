@@ -1,0 +1,6 @@
+.bdr {
+  border-top: 5px solid rgba(2, 186, 186, 1);
+  border-left: 5px solid rgba(2, 186, 186, 1);
+  border-bottom: 5px solid rgba(2, 186, 186, 1);
+  border-right: none; /* Optional: ensures no border on the right */
+}

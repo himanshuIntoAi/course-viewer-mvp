@@ -1,0 +1,305 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+.memory-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  max-height: 100%;
+  padding: 10px 5px;
+  max-width: 800px;
+  margin: 0 auto;
+  overflow: auto;
+  box-sizing: border-box;
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply Inter font to all memory game elements */
+.memory-game *,
+.game-container *,
+.card-grid *,
+.side-panel *,
+.difficulty-selector *,
+.game-info *,
+.turns *,
+.high-scores *,
+.header * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.game-container {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex: 1;
+  padding: 0 5px;
+  margin-top: 10px;
+  position: relative;
+  overflow: visible;
+}
+
+.header {
+  text-align: center;
+  padding: 8px 0 12px;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(45deg, 
+    rgba(255, 107, 107, 1),
+    rgba(78, 205, 196, 1),
+    rgba(255, 217, 61, 1),
+    rgba(108, 99, 255, 1)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 120px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.difficulty-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.difficulty-selector button {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Different colors for each button */
+.difficulty-selector button:nth-child(1) {
+  background-color: #FF6B6B;
+}
+.difficulty-selector button:nth-child(1):hover {
+  background-color: #FF5252;
+}
+.difficulty-selector button:nth-child(1).active {
+  background-color: #FF5252;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #FF5252;
+}
+
+.difficulty-selector button:nth-child(2) {
+  background-color: #4ECDC4;
+}
+.difficulty-selector button:nth-child(2):hover {
+  background-color: #45B7AF;
+}
+.difficulty-selector button:nth-child(2).active {
+  background-color: #45B7AF;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #45B7AF;
+}
+
+.difficulty-selector button:nth-child(3) {
+  background-color: #6C63FF;
+}
+.difficulty-selector button:nth-child(3):hover {
+  background-color: #5A52E0;
+}
+.difficulty-selector button:nth-child(3).active {
+  background-color: #5A52E0;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #5A52E0;
+}
+
+.difficulty-selector button:nth-child(4) {
+  background-color: #FF4081;
+}
+.difficulty-selector button:nth-child(4):hover {
+  background-color: #F50057;
+}
+.difficulty-selector button:nth-child(4).active {
+  background-color: #F50057;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #F50057;
+}
+
+.card-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 0;
+  perspective: 1000px;
+  margin-left: auto;
+  margin-right: 0;
+  position: relative;
+  flex-grow: 1;
+  justify-content: center;
+  align-content: center;
+  left: auto;
+  transform: none;
+  min-width: 150px;
+  min-height: 150px;
+  grid-auto-rows: 80px;
+}
+
+/* Square grid layouts based on column count */
+.card-grid.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(60px, 80px));
+  /* 2x2 grid = 4 cards */
+}
+
+.card-grid.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(45px, 80px));
+  /* Can handle 4x3, 4x4, and 4x6 layouts */
+}
+
+/* New layout for 6 columns */
+.card-grid.grid-cols-6 {
+  grid-template-columns: repeat(6, minmax(40px, 70px)); /* Adjust min/max for 6 columns */
+  /* Should handle 6x4 grid = 24 cards */
+}
+
+/* Keep these for backward compatibility */
+.card-grid.easy {
+  grid-template-columns: repeat(2, minmax(60px, 80px));
+}
+
+.card-grid.medium {
+  grid-template-columns: repeat(4, minmax(45px, 70px));
+}
+
+.card-grid.hard {
+  grid-template-columns: repeat(4, minmax(40px, 70px));
+}
+
+.card-grid.hardest {
+  grid-template-columns: repeat(4, minmax(35px, 65px));
+}
+
+.game-info {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.turns {
+  font-size: 1.2rem;
+  color: #666;
+  text-align: center;
+  font-weight: 500;
+}
+
+.turns-label {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.high-scores {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.high-scores h3 {
+  font-size: 0.9rem;
+  color: #333;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.high-scores div {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 2px 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+@media (max-width: 768px) {
+  .game-container {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .side-panel {
+    width: 100px;
+    max-width: 30%;
+    margin-bottom: 0;
+  }
+
+  .difficulty-selector {
+    flex-direction: column;
+  }
+
+  .difficulty-selector button {
+    font-size: 11px;
+    padding: 6px;
+  }
+
+  .card-grid.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(50px, 70px));
+  }
+  
+  .card-grid.grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(35px, 60px));
+  }
+}
+
+@media (max-width: 500px) {
+  .card-grid.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(40px, 60px));
+  }
+  
+  .card-grid.grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(28px, 45px));
+  }
+  
+  .side-panel {
+    font-size: 0.9rem;
+    width: 90px;
+  }
+}
+
+.chatbot-floating .memory-game {
+  padding: 5px;
+  height: auto;
+  overflow-y: auto;
+}
+
+.chatbot-floating .game-container {
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chatbot-floating .side-panel {
+  width: 100px;
+  padding: 8px;
+}
+
+.chatbot-floating .card-grid {
+  margin-right: 10px;
+} 

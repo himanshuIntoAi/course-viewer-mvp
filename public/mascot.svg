@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="220" height="220" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main Circle -->
+  <circle cx="60" cy="60" r="50" fill="white" opacity="0.1"/>
+  
+  <!-- Brain Circuit Pattern -->
+  <path d="M40 45C40 45 50 35 60 35C70 35 80 45 80 45" 
+        stroke="white" 
+        stroke-width="3" 
+        stroke-linecap="round"/>
+  
+  <path d="M35 60C35 60 45 50 60 50C75 50 85 60 85 60" 
+        stroke="white" 
+        stroke-width="3" 
+        stroke-linecap="round"/>
+  
+  <path d="M40 75C40 75 50 65 60 65C70 65 80 75 80 75" 
+        stroke="white" 
+        stroke-width="3" 
+        stroke-linecap="round"/>
+  
+  <!-- Connection Points -->
+  <circle cx="60" cy="35" r="4" fill="white"/>
+  <circle cx="60" cy="50" r="4" fill="white"/>
+  <circle cx="60" cy="65" r="4" fill="white"/>
+  
+  <!-- Side Points -->
+  <circle cx="40" cy="45" r="3" fill="white"/>
+  <circle cx="80" cy="45" r="3" fill="white"/>
+  <circle cx="35" cy="60" r="3" fill="white"/>
+  <circle cx="85" cy="60" r="3" fill="white"/>
+  <circle cx="40" cy="75" r="3" fill="white"/>
+  <circle cx="80" cy="75" r="3" fill="white"/>
+  
+  <!-- Pulse Animation -->
+  <circle cx="60" cy="60" r="45" 
+          stroke="white" 
+          stroke-width="2" 
+          stroke-dasharray="4 4"
+          opacity="0.8">
+    <animateTransform
+      attributeName="transform"
+      type="rotate"
+      from="0 60 60"
+      to="360 60 60"
+      dur="10s"
+      repeatCount="indefinite"/>
+  </circle>
+</svg> 
