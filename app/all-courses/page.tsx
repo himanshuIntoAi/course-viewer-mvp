@@ -6,13 +6,13 @@ import { CoursesTopSection } from "../../components/all-courses-top-section/cour
 import Navbar from "../../components/navbar/navbar"
 import { useState, useEffect, useCallback } from 'react'
 import { getCourses } from "@/services/api/course-and-filters/api"
-import { Grid, List, ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { getFilteredCourses } from "@/services/api/course-and-filters/api"
 import { Course } from "@/services/types/course/course"
 
 interface FilterState {
-  it_non_it: string | null;
-  coding_non_coding: string | null;
+  it_non_it: boolean | null;
+  coding_non_coding: boolean | null;
   category_id: number | null;
   level: string | null;
   price_type: string | null;
@@ -50,7 +50,7 @@ export default function CoursesPage() {
     try {
       setIsLoading(true);
       setError(null);
-      let skip = (currentPage - 1) * itemsPerPage;
+      const skip = (currentPage - 1) * itemsPerPage;
       const response = await getCourses(skip, itemsPerPage);
       if (response) {
         setCoursesData(response); 
@@ -99,7 +99,7 @@ export default function CoursesPage() {
       try {
         setIsLoading(true);
         setError(null);
-        let skip = (currentPage - 1) * itemsPerPage;
+        const skip = (currentPage - 1) * itemsPerPage;
         let response;
 
         // Only fetch filtered courses if there are actual filters with non-null values
@@ -109,7 +109,7 @@ export default function CoursesPage() {
           console.log("Sending filters to API:", filters);
           // Remove null values before sending to API
           const apiFilters = Object.fromEntries(
-            Object.entries(filters).filter(([_, value]) => value !== null)
+            Object.entries(filters).filter(([, value]) => value !== null)
           );
           response = await getFilteredCourses(apiFilters, skip, itemsPerPage);
         } else {

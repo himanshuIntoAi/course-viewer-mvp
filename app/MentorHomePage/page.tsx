@@ -1,18 +1,16 @@
 "use client"
 import React from 'react'
-import Navbar from '@/components/navbar/navbar'
 import HomeSignupComponent from '@/components/home-signup/home-signup'
 import TrendingCourses from '@/components/TrendingCourses/TrendingCourses'
 import BestWayToLearn from '@/components/best-way-to-learn/bestWayToLearn'
 import Footer from '@/components/footer/footer'
 import { useEffect, useState } from 'react';
-import"../MentorHomePage/Mentor.css";
+// import"../MentorHomePage/Mentor.css";
 
 import Image from 'next/image'
 
 import { GraduationCap, Wallet } from 'lucide-react'
 import NavbarMentor from '@/components/NavbarMentor/page'
-import rightarrow from"@/app/Images/right arrow.png";
 
 
 const MentorHomePage = () => {
@@ -50,7 +48,7 @@ const MentorHomePage = () => {
                             <div>
                                 <button className='bg-white flex items-center text-gray-800 px-6 py-3 rounded-full shadow-lg text-sm w-[15vw]  '>
                                     <span className='text-left'>Personalise Learning Pathway</span>
-                                    <Image src={rightarrow} alt="right-arrow" width={50} height={24} className='' />
+                                    {/* <Image src={rightarrow} alt="right-arrow" width={50} height={24} className='' /> */}
                                 </button>
                             </div>
                         </div>

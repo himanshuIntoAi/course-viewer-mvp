@@ -1,13 +1,13 @@
 "use client"
 import Navbar from "@/components/navbar/navbar";
 import CourseDetails from "@/components/course-details/course-details";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Footer from "@/components/footer/footer";
 import { useParams } from "next/navigation";
 import { Course } from "@/services/types/course/course";
 import { getCourseData } from "@/services/api/course/api";
 
-const page = () => {
+const Page = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ const page = () => {
 
 
   
-  const fetchCourseData = async () => {
+  const fetchCourseData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -29,11 +29,11 @@ const page = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [courseId]);
 
   useEffect(() => {
     fetchCourseData();
-  }, [courseId]);
+  }, [fetchCourseData]);
 
   if (isLoading) {
     return (
@@ -85,4 +85,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;
