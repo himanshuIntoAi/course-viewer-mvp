@@ -1,10 +1,10 @@
 // Check for API URL environment variable
 if (!process.env.NEXT_PUBLIC_API_URL) {
-  throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
+  console.warn('NEXT_PUBLIC_API_URL environment variable is not set. Using fallback URL.');
 }
 
-// Set the API URL without normalization
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+// Set the API URL with fallback
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://cou-ip-bkend-dev.vercel.app';
 console.log('Initialized API_BASE_URL:', API_BASE_URL);
 
 // Types
