@@ -6,7 +6,7 @@ import Footer from "@/components/footer/footer";
 import { useParams } from "next/navigation";
 import { Course } from "@/services/types/course/course";
 import { getCourseData } from "@/services/api/course/api";
-
+import Image from "next/image";
 const Page = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,12 +61,12 @@ const Page = () => {
 
   return (
     <div className="relative from-[#E4F7F7] to-white">
-      <img 
+      <Image 
         src="/design-left.svg" 
         alt="" 
         className="absolute top-0 left-0 w-1/6 z-[1]" 
       />
-      <img 
+      <Image 
         src="/design-right.svg" 
         alt="" 
         className="absolute top-0 right-0 w-1/6 z-[1]" 
@@ -75,7 +75,7 @@ const Page = () => {
       <div className="pt-[60px]">
         <CourseDetails course={course} />
       </div>
-      <img 
+      <Image 
         src="/curved-line.png" 
         alt="" 
         className="w-full h-auto mt-40" 

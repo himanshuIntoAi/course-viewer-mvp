@@ -1,8 +1,8 @@
 import React from 'react'
-import Image from 'next/image'
 import { ArrowUp } from 'lucide-react'
 import { FaFacebook, FaLinkedin } from 'react-icons/fa6'
 import { FaInstagram } from 'react-icons/fa'
+import Image from 'next/image'
 // Comment out the problematic image import
 // import lineImage from "@/app/Images/line.png";
 
@@ -16,11 +16,11 @@ const footer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div>
                         <div className="text-2xl font-bold mb-4">
-                            <img 
+                            <Image 
                                 src="https://media-hosting.imagekit.io/486d96e5c4884013/cloud-ou-logo%202%20(1).png?Expires=1837837741&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=Jlz5FYLwNiKpjMO2acZ6grc1W6aoAYj3A7mJb9JXM8eJ6HrxnFpcftq5c3ZpamDuMHIoS9PpeiYyCHqQJWhwzZ4NR742fjHVsr7cURzd9f0UAZXoqfzKtNKwS7bWrB98kClLOSffqOAQFGpKBMTtVW3qEDvRbO9s4G~nTdn2Uo0GvY7AZT7tt~OEDtBVcVfutn5QYJis~mvEJvoJnjpxapR1OS2HdcsHrTlkYo1QTrqIjZB8T78CvfhlIoorXKvvgGijxC6kQTvRR8cIsQ0UombSB2Iqwi2yTvzRq1tKxJ2GK1zruR~KJVlQ512xbr7QIIthRZVJ3uB~AtaseTVVaQ" 
                                 alt="logo" 
-                                width="120" 
-                                height="100" 
+                                width={120} 
+                                height={100} 
                             />
                         </div>
                         <div className="flex gap-4 mt-4">
@@ -40,7 +40,7 @@ const footer = () => {
                             <li><a href="#" className="hover:text-gray-900">Who we are?</a></li>
                             <li><a href="#" className="hover:text-gray-900">Blogs</a></li>
                             <li><a href="#" className="hover:text-gray-900">Community</a></li>
-                            <li><a href="#" className="hover:text-gray-900">FAQ's</a></li>
+                            <li><a href="#" className="hover:text-gray-900">FAQ&apos;s</a></li>
                         </ul>
                     </div>
                     

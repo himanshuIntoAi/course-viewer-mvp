@@ -288,16 +288,24 @@ const MindMap: React.FC<MindMapProps> = ({
   initialData,
   defaultCollapsed = true,
 }) => {
+  console.log('[MindMap] Component initialized with initialData:', initialData);
+  
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
-  const [data, setData] = useState<MindMapData>(() => initialData || getDefaultData());
+  const [data, setData] = useState<MindMapData>(() => {
+    console.log('[MindMap] Setting initial data state. initialData:', initialData);
+    const result = initialData || getDefaultData();
+    console.log('[MindMap] Initial data state result:', result);
+    return result;
+  });
   const [inputText, setInputText] = useState<string>("");
   const [layout, setLayout] = useState<"vertical" | "horizontal">("horizontal");
   const [generationTrigger, setGenerationTrigger] = useState<number>(0); // New state for triggering generation
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(
     () => {
       console.log('[MindMap] Initializing collapsedNodes state. DefaultCollapsed prop:', defaultCollapsed, 'Initial data state:', data);
-      const initialCollapsed = calculateDefaultCollapsedSet(data, defaultCollapsed, "MindMap initial state setup");
-      console.log('[MindMap] Initial collapsed set:', initialCollapsed);
+      // Force all nodes to be expanded initially for better user experience
+      const initialCollapsed = new Set<string>();
+      console.log('[MindMap] Initial collapsed set (forcing expanded):', initialCollapsed);
       return initialCollapsed;
     }
   );
@@ -463,31 +471,49 @@ const MindMap: React.FC<MindMapProps> = ({
             );
           }
         }
-      } else {
-        console.log('[MindMap] No saved content found. Using initialData.');
-        if (initialData && initialData.nodes && initialData.nodes.length > 0) {
-          handleSetData(initialData);
-          // Potentially serialize initialData to inputText if needed
-          // setInputText(serializeMindMapToText(initialData)); 
-          setCollapsedNodes(
-            calculateDefaultCollapsedSet(initialData, defaultCollapsed, "initialData load")
-          );
-        } else {
-          handleSetData(getDefaultData());
-          setInputText("");
-          setCollapsedNodes(
-            calculateDefaultCollapsedSet(getDefaultData(), defaultCollapsed, "default data load")
-          );
+                      } else {
+          console.log('[MindMap] No saved content found. Using initialData.');
+          if (initialData && initialData.nodes && initialData.nodes.length > 0) {
+            handleSetData(initialData);
+            // Potentially serialize initialData to inputText if needed
+            // setInputText(serializeMindMapToText(initialData)); 
+            // Force all nodes to be expanded for better visibility
+            setCollapsedNodes(new Set<string>());
+            console.log('[MindMap] InitialData load: Forcing all nodes to be expanded');
+          } else {
+            handleSetData(getDefaultData());
+            setInputText("");
+            setCollapsedNodes(new Set<string>());
+            console.log('[MindMap] Default data load: Forcing all nodes to be expanded');
+          }
         }
-      }
     } catch (error) {
       console.error('[MindMap] Error loading saved content:', error);
       // Fallback to default if loading fails
       handleSetData(initialData || getDefaultData());
       setInputText("");
-      setCollapsedNodes(calculateDefaultCollapsedSet(initialData || getDefaultData(), defaultCollapsed, "error fallback"));
+      // Force all nodes to be expanded even in error fallback
+      setCollapsedNodes(new Set<string>());
+      console.log('[MindMap] Error fallback: Forcing all nodes to be expanded');
     }
     setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+  }, [initialData, defaultCollapsed, handleSetData]);
+
+  // Effect to handle initialData changes after initial load
+  useEffect(() => {
+    if (!loadInitiatedRef.current) return; // Skip if initial load hasn't happened yet
+    
+    console.log('[MindMap] Effect: initialData changed after initial load. initialData:', initialData);
+    console.log('[MindMap] Effect: initialData nodes count:', initialData?.nodes?.length);
+    console.log('[MindMap] Effect: initialData links count:', initialData?.links?.length);
+    
+    if (initialData && initialData.nodes && initialData.nodes.length > 0) {
+      console.log('[MindMap] Effect: Setting new initialData');
+      handleSetData(initialData);
+      // Force all nodes to be expanded for better visibility
+      setCollapsedNodes(new Set<string>());
+      console.log('[MindMap] Effect: Forcing all nodes to be expanded');
+    }
   }, [initialData, defaultCollapsed, handleSetData]);
 
   // Effect to save to localStorage when data, inputText, or layout changes
@@ -529,7 +555,9 @@ const MindMap: React.FC<MindMapProps> = ({
           // Optionally, reset to initialData or a default empty state
           setData(initialData || getDefaultData());
           setInputText(''); // Clear inputText as well
-          setCollapsedNodes(calculateDefaultCollapsedSet(initialData || getDefaultData(), defaultCollapsed, "Storage Event Cleared"));
+          // Force all nodes to be expanded
+          setCollapsedNodes(new Set<string>());
+          console.log('[MindMap] Storage Event Cleared: Forcing all nodes to be expanded');
           loadInitiatedRef.current = true; // Ensure future saves are allowed
           lastSavedValueRef.current = null; // Reset last saved value
           return;
@@ -552,7 +580,9 @@ const MindMap: React.FC<MindMapProps> = ({
 
           setInputText(loadedContent.inputText || ''); 
           setData(loadedContent.data || getDefaultData());
-          setCollapsedNodes(calculateDefaultCollapsedSet(loadedContent.data, defaultCollapsed, "Storage Event Load"));
+          // Force all nodes to be expanded
+          setCollapsedNodes(new Set<string>());
+          console.log('[MindMap] Storage Event Load: Forcing all nodes to be expanded');
           
           // Update generationTrigger to potentially reflect remote changes, if needed, or reset.
           // For now, let's ensure it doesn't cause an immediate re-generation unless inputText changed significantly.
@@ -564,7 +594,9 @@ const MindMap: React.FC<MindMapProps> = ({
           // Fallback to a safe state if parsing fails
           setData(getDefaultData());
           setInputText('');
-          setCollapsedNodes(calculateDefaultCollapsedSet(getDefaultData(), defaultCollapsed, "Storage Event Parse Error"));
+          // Force all nodes to be expanded even in parse error fallback
+          setCollapsedNodes(new Set<string>());
+          console.log('[MindMap] Storage Event Parse Error: Forcing all nodes to be expanded');
         }
         // Update lastSavedValueRef AFTER processing the foreign change, 
         // so future saves by this instance are correctly managed.

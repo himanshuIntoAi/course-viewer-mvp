@@ -1,8 +1,6 @@
 "use client"
-import { StarRating } from "../star-rating/star-rating"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { useState } from 'react'
 import { Course } from "@/services/types/course/course"
 import { Bookmark, Star } from 'lucide-react'
 
@@ -11,14 +9,7 @@ interface CourseCardProps {
   view: 'grid' | 'list'
 }
 
-// Helper function to format date consistently
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
 export function CourseCard({ course, view }: CourseCardProps) {
-  const [imageError, setImageError] = useState(false);
   const router = useRouter();
 
   // Handler for navigating to course detail page
@@ -47,11 +38,12 @@ export function CourseCard({ course, view }: CourseCardProps) {
     >
       {/* Course Image Section */}
       <div className={`${view === 'list' ? 'w-[320px] rounded-2xl' : 'w-full'} overflow-hidden`}>
-        <img
+        <Image
           src={"https://foundr.com/wp-content/uploads/2021/09/Best-online-course-platforms.png"}
           alt={course.title}
+          width={320}
+          height={180}
           className="object-cover w-full h-full aspect-video"
-          onError={() => setImageError(true)}
         />
       </div>
 

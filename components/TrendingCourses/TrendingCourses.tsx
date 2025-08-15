@@ -61,7 +61,6 @@ const TrendingCourses = () => {
   // Suppose you want 3 courses visible, so
   // if you have 6 total courses, you'll have 2 pages in the "slider"
   const itemsPerSlide = 3;
-  const totalSlides = Math.ceil(displayedCourses.length / itemsPerSlide);
 
   // Slice out the courses for the current slide only
   const startIndex = currentSlide * itemsPerSlide;

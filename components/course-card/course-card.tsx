@@ -1,10 +1,8 @@
-import Link from "next/link";
-import axios from "axios";
 import { useState } from "react";
 import { Course, CartItem } from "@/services/types/course/course";
 import React from "react";
 import { addToCart } from "@/services/api/cart/api";
-
+import Image from "next/image";
 interface CourseCardProps {
     course: Course;
     setShowCart: (show: boolean) => void;
@@ -21,8 +19,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, setShowCart }) => {
             try {
                 const user = JSON.parse(userString);
                 setUserId(user.id);
-            } catch (error) {
-                console.error("Error parsing user data from localStorage:", error);
+            } catch {
+                console.error("Error parsing user data from localStorage");
             }
         }
     }, [])
@@ -41,7 +39,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, setShowCart }) => {
         try {
             await addToCart(cartData);
             alert("Course successfully added to cart!");
-        } catch (error) {
+        } catch {
             // console.error("Error adding to cart:");
             // alert("Failed to add course to cart");
         }
@@ -52,7 +50,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, setShowCart }) => {
         <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden sticky top-[0px]" style={{ height: "max-content" }}>
             {/* Top Image/Heading Section */}
             <div className="">
-                <img
+                <Image
                     src="/course-card-img.svg"
                     alt="Web Design Course"
                     className="h-44 w-full object-cover"

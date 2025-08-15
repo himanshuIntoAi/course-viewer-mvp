@@ -520,7 +520,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
         </div>
 
       </div>
-      {showConfetti && <Confetti isActive={showConfetti} />}
+      {showConfetti && <Confetti active={showConfetti} />}
     </div>
   );
 };

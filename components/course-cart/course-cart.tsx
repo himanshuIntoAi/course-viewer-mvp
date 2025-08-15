@@ -1,13 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getCartItems } from '@/services/api/cart/api';
-import axios from 'axios';
+import { CartItem } from '@/services/types/course/course';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
-const CourseCart = ({showCart , setShowCart}) => {
+interface CourseCartProps {
+  showCart: boolean;
+  setShowCart: (show: boolean) => void;
+}
+
+const CourseCart = ({ showCart, setShowCart }: CourseCartProps) => {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
-  const [user_id , setUserId] = useState<string | null>(null);
+  const [user_id, setUserId] = useState<string | null>(null);
+
+  const fetchCartItems = useCallback(async () => {
+    if (user_id) {
+      try {
+        const data = await getCartItems(user_id);
+        setCartItems(data);
+        const total = data.reduce((acc: number, item: CartItem) => acc + (item.course_price || 0), 0);
+        setTotalPrice(total);
+      } catch (error) {
+        console.error("Error fetching cart items:", error);
+      }
+    }
+  }, [user_id]);
 
   useEffect(() => {
     const userString = localStorage.getItem("user");
@@ -21,22 +40,9 @@ const CourseCart = ({showCart , setShowCart}) => {
     }
   }, []);
 
-  const fetchCartItems = async () => {
-    if (user_id) {
-      try {
-        const data = await getCartItems(user_id);
-        setCartItems(data);
-        const total = data.reduce((acc: number, item: any) => acc + item.course_price, 0);
-        setTotalPrice(total);
-      } catch (error) {
-        console.error("Error fetching cart items:", error);
-      }
-    }
-  };
-
   useEffect(() => {
     fetchCartItems();
-  }, [showCart]);
+  }, [showCart, fetchCartItems]);
 
   return (
     showCart && ( 
@@ -64,7 +70,7 @@ const CourseCart = ({showCart , setShowCart}) => {
       {/* Course Item */}
       {cartItems.map((item , index) => (
         <div className="flex items-start mb-5" key={index}>
-          <img src={item.course_image} alt="Course Thumbnail" className="w-20 h-14 object-cover rounded mr-4" />
+          <Image src={item.image_url || "/course-card-img.svg"} alt="Course Thumbnail" width={80} height={56} className="w-20 h-14 object-cover rounded mr-4" />
           <div>
             <h3 className="text-base font-medium mb-1">{item.course_title}</h3>
             <div className="flex items-center space-x-2">

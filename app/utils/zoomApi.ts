@@ -14,41 +14,6 @@ export interface ZoomPlaylist {
   videos: ZoomVideo[];
 }
 
-// Zoom API configuration
-const ZOOM_ACCOUNT_ID = process.env.NEXT_PUBLIC_ZOOM_ACCOUNT_ID;
-const ZOOM_CLIENT_ID = process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID;
-const ZOOM_CLIENT_SECRET = process.env.NEXT_PUBLIC_ZOOM_CLIENT_SECRET;
-const ZOOM_API_BASE_URL = process.env.NEXT_PUBLIC_ZOOM_API_BASE_URL || 'https://api.zoom.us/v2';
-const ZOOM_USER_ID = process.env.NEXT_PUBLIC_ZOOM_USER_ID || 'me';
-
-// Get OAuth Access Token
-async function getZoomAccessToken(): Promise<string> {
-  try {
-    const response = await fetch('/api/zoom/auth', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(`Failed to get Zoom access token: ${response.status} ${response.statusText}${errorData ? ` - ${JSON.stringify(errorData)}` : ''}`);
-    }
-
-    const data = await response.json();
-    if (!data.access_token) {
-      throw new Error('No access token in Zoom response');
-    }
-
-    return data.access_token;
-  } catch (error) {
-    console.error('Error getting Zoom access token:', error);
-    throw new Error(`Failed to authenticate with Zoom: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
 export async function getZoomRecordings(): Promise<ZoomPlaylist[]> {
   try {
     const response = await fetch('/api/zoom/recordings');
@@ -63,8 +28,8 @@ export async function getZoomRecordings(): Promise<ZoomPlaylist[]> {
     // Group recordings by date (as playlists)
     const recordingsByMonth: { [key: string]: ZoomVideo[] } = {};
     
-    data.meetings.forEach((meeting: any) => {
-      meeting.recording_files.forEach((recording: any) => {
+    data.meetings.forEach((meeting: { start_time: string; topic: string; password?: string; recording_files: Array<{ id: string; file_type: string; duration: number; share_url?: string; download_url: string; password?: string }> }) => {
+      meeting.recording_files.forEach((recording: { id: string; file_type: string; duration: number; share_url?: string; download_url: string; password?: string }) => {
         if (recording.file_type === 'MP4') {  // Only include video recordings
           const date = new Date(meeting.start_time);
           const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;

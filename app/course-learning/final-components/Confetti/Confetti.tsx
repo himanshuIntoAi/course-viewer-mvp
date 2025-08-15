@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 interface ConfettiProps {
   active?: boolean;
@@ -30,7 +30,7 @@ const Confetti: React.FC<ConfettiProps> = ({
     color: string;
   }>>([]);
 
-  const defaultConfig = {
+  const defaultConfig = useMemo(() => ({
     angle: 90,
     spread: 45,
     startVelocity: 45,
@@ -43,7 +43,7 @@ const Confetti: React.FC<ConfettiProps> = ({
     perspective: '500px',
     colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'],
     ...config
-  };
+  }), [config]);
 
   useEffect(() => {
     if (active) {
@@ -65,7 +65,7 @@ const Confetti: React.FC<ConfettiProps> = ({
     } else {
       setParticles([]);
     }
-  }, [active, defaultConfig.duration, defaultConfig.elementCount]);
+  }, [active, defaultConfig.duration, defaultConfig.elementCount, defaultConfig.colors]);
 
   if (!active || particles.length === 0) {
     return null;

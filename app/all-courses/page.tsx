@@ -9,6 +9,7 @@ import { getCourses } from "@/services/api/course-and-filters/api"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { getFilteredCourses } from "@/services/api/course-and-filters/api"
 import { Course } from "@/services/types/course/course"
+import Image from "next/image"
 
 interface FilterState {
   it_non_it: boolean | null;
@@ -166,12 +167,12 @@ export default function CoursesPage() {
     <div className="min-h-screen relative bg-gradient-to-b from-[#E4F7F7] to-white pb-16"> {/* Added padding bottom */}
       {/* Stars container - positioned behind navbar */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <img
+        <Image
           src="/images/header-left-stars.png"
           className="absolute top-0 left-0 w-[40px] h-[40px] opacity-60"
           alt="Decorative left stars"
         />
-        <img
+        <Image
           src="/images/header-right-stars.png"
           className="absolute top-0 right-0 w-[40px] h-[40px] opacity-60"
           alt="Decorative right stars"
@@ -184,7 +185,7 @@ export default function CoursesPage() {
       </div>
 
       <div className="flex flex-col">
-        <CoursesTopSection onSearch={handleSearch} />
+        <CoursesTopSection />
 
         <div className="container mx-auto px-4 mt-8">
 
@@ -197,7 +198,7 @@ export default function CoursesPage() {
             <div className="flex-1">
               <div className="flex items-center justify-between w-full gap-4">
                 {/* Left icon */}
-                <img 
+                <Image 
                   src="/images/panel-right-open.svg" 
                   className="w-6 h-6"
                   alt="Panel toggle"
@@ -211,7 +212,7 @@ export default function CoursesPage() {
                     className="w-full border-none bg-transparent outline-none placeholder:text-gray-[#4F4F4F]"  
                     onChange={(e) => handleSearch(e.target.value)} // Connect search input
                   />
-                  <img 
+                  <Image 
                     src="/images/search-icon.svg" 
                     className="w-8 h-8 scale-130"
                     alt="Search"
@@ -233,8 +234,8 @@ export default function CoursesPage() {
                 <button className="px-4 py-2 rounded-[10px] w-[25%] bg-[#16197C] text-white outline-none">Free Courses</button>
               </div>
               <div className="flex mb-5 border-2 border-gray-300 rounded-full w-fit py-1 px-2">
-                <button className={`flex items-center mr-5 px-3 py-1 rounded-full ${view === 'grid' ? 'bg-gray-200' : ''}`} onClick={() => setView('grid')} > <img src="/images/grid-icon.svg" alt="Grid" className="w-4 h-4 mr-2" /> Grid </button>
-                <button className={`flex items-center border-l border-gray-300 pl-5 px-3 py-1 rounded-full ${view === 'list' ? 'bg-gray-200' : ''}`} onClick={() => setView('list')} > <img src="/images/list-icon.svg" alt="List" className="w-4 h-4 mr-2" /> List </button>
+                <button className={`flex items-center mr-5 px-3 py-1 rounded-full ${view === 'grid' ? 'bg-gray-200' : ''}`} onClick={() => setView('grid')} > <Image src="/images/grid-icon.svg" alt="Grid" className="w-4 h-4 mr-2" /> Grid </button>
+                <button className={`flex items-center border-l border-gray-300 pl-5 px-3 py-1 rounded-full ${view === 'list' ? 'bg-gray-200' : ''}`} onClick={() => setView('list')} > <Image src="/images/list-icon.svg" alt="List" className="w-4 h-4 mr-2" /> List </button>
               </div>
 
               {error && (

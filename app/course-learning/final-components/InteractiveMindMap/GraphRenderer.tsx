@@ -26,10 +26,6 @@ import { toPng } from 'html-to-image';
 import 'reactflow/dist/style.css'; // Uncomment this to ensure styles are properly loaded
 import './MindMap.css';
 
-// Define global constants for consistent positioning
-const ROOT_X = 0; // Root node's X position 
-const ROOT_Y = 0; // Root node's Y position
-
 // Global variable for line style that can be accessed by all components
 let globalLineStyle: "solid" | "dashed" | "animated" | "dashed-arrow" = "solid";
 
@@ -653,135 +649,37 @@ const getDescendants = (nodeId: string, nodes: GraphData['nodes'], links: GraphD
   return descendants;
 };
 
-// Helper: Get all children (IDs) of a node - for layout algorithm
-const getAllChildrenForLayout = (nodeId: string, allLinks: GraphData['links']): string[] => {
-    return allLinks
-        .filter(link => link.source === nodeId)
-        .map(link => link.target);
-};
-
-// Helper: Get visible children (IDs) of a node - for layout algorithm
-const getVisibleChildrenForLayout = (nodeId: string, allLinks: GraphData['links'], collapsedNodes: Set<string>): string[] => {
-    if (collapsedNodes.has(nodeId)) return [];
-    return getAllChildrenForLayout(nodeId, allLinks);
-};
-
-// Dynamic, top-down vertical mind map layout
+// Simple grid-based layout for mindmaps - more robust than hierarchical
 const calculateNodePositions = (
-    nodesData: GraphData['nodes'], // Renamed to avoid conflict with reactflow 'nodes'
-    links: GraphData['links'],
-    collapsedNodes: Set<string>
+    nodesData: GraphData['nodes']
 ) => {
     const nodePositions = new Map<string, { x: number; y: number }>();
     if (!nodesData || nodesData.length === 0) return nodePositions;
 
-    // Use global ROOT_X, ROOT_Y
-    // const ROOT_X = 0; // Defined globally
-    // const ROOT_Y = 0; // Defined globally
+    console.log('[calculateNodePositions] Starting layout calculation for', nodesData.length, 'nodes');
 
-    const VERTICAL_SPACING_BETWEEN_LEVELS = 120;
-    const HORIZONTAL_SPACING_SIBLINGS_NORMAL = 30;
-    const NODE_BASE_WIDTH = 150; // Assumed base width of a single node (e.g., for leaves or if label is short)
-                                 // Consider making this dynamic based on label length in future enhancements.
-
-    const rootId = "1";
-
-    const subtreeWidths = new Map<string, { width: number, nodeCount: number }>();
-
-    // Phase 1: Compute the total horizontal width required by each node and its visible descendants
-    const computeSubtreeHorizontalWidth = (nodeId: string): { width: number, nodeCount: number } => {
-        if (subtreeWidths.has(nodeId)) return subtreeWidths.get(nodeId)!;
-
-        const visibleChildren = getVisibleChildrenForLayout(nodeId, links, collapsedNodes);
-        const node = nodesData.find(n => n.id === nodeId);
-        const currentLabel = node ? node.name : "Node"; // Fallback label
-
-        // Estimate node width based on label length (simple estimation)
-        // This could be more precise if actual rendered width was available
-        const estimatedNodeSelfWidth = Math.max(NODE_BASE_WIDTH, currentLabel.length * 8 + 40); // Approx 8px per char + padding
-
-        if (visibleChildren.length === 0) {
-            const leafExtent = { width: estimatedNodeSelfWidth, nodeCount: 1 };
-            subtreeWidths.set(nodeId, leafExtent);
-            return leafExtent;
-        }
-
-        let totalWidthForChildrenSubtrees = 0;
-        let descendantNodeCount = 1;
-
-        for (const childId of visibleChildren) {
-            const childExtent = computeSubtreeHorizontalWidth(childId);
-            totalWidthForChildrenSubtrees += childExtent.width;
-            descendantNodeCount += childExtent.nodeCount;
-        }
-
-        const totalHorizontalSpaceForChildrenBlocks = totalWidthForChildrenSubtrees +
-            Math.max(0, visibleChildren.length - 1) * HORIZONTAL_SPACING_SIBLINGS_NORMAL;
+    // Simple grid layout parameters
+    const NODE_SPACING_X = 200; // Horizontal spacing between nodes
+    const NODE_SPACING_Y = 120; // Vertical spacing between nodes
+    const NODES_PER_ROW = 3; // Maximum nodes per row
+    
+    // Calculate positions in a grid pattern
+    nodesData.forEach((node, index) => {
+        const row = Math.floor(index / NODES_PER_ROW);
+        const col = index % NODES_PER_ROW;
         
-        const finalWidth = Math.max(estimatedNodeSelfWidth, totalHorizontalSpaceForChildrenBlocks);
-        const extent = { width: finalWidth, nodeCount: descendantNodeCount };
-        subtreeWidths.set(nodeId, extent);
-        return extent;
-    };
-
-    const rootNodeExists = nodesData.find(n => n.id === rootId);
-    if (rootNodeExists) {
-        computeSubtreeHorizontalWidth(rootId);
-    }
-    nodesData.forEach(node => {
-        if (!subtreeWidths.has(node.id)) {
-            computeSubtreeHorizontalWidth(node.id);
-        }
+        // Center the grid horizontally
+        const centerOffset = ((nodesData.length - 1) % NODES_PER_ROW) * NODE_SPACING_X / 2;
+        
+        const x = (col * NODE_SPACING_X) - centerOffset;
+        const y = row * NODE_SPACING_Y;
+        
+        console.log(`[calculateNodePositions] Node ${node.id} (${node.name}) positioned at row ${row}, col ${col}: x=${x}, y=${y}`);
+        
+        nodePositions.set(node.id, { x, y });
     });
 
-    // Phase 2: Position nodes recursively
-    const positionNodesRecursively = (nodeId: string, currentY: number, startXForParentBlock: number) => {
-        const { width: mySubtreeTotalWidth } = subtreeWidths.get(nodeId) || { width: NODE_BASE_WIDTH, nodeCount: 1 };
-        const visibleChildren = getVisibleChildrenForLayout(nodeId, links, collapsedNodes);
-
-        const myX = startXForParentBlock + mySubtreeTotalWidth / 2;
-        nodePositions.set(nodeId, { x: myX, y: currentY });
-
-        if (visibleChildren.length > 0) {
-            const childrenY = currentY + VERTICAL_SPACING_BETWEEN_LEVELS;
-            
-            // Calculate the actual combined width of direct children's subtrees
-            let childrenSubtreesCombinedWidth = 0;
-            visibleChildren.forEach(childId => {
-                const { width: childSubtreeWidth } = subtreeWidths.get(childId) || { width: NODE_BASE_WIDTH, nodeCount: 1 };
-                childrenSubtreesCombinedWidth += childSubtreeWidth;
-            });
-            childrenSubtreesCombinedWidth += Math.max(0, visibleChildren.length - 1) * HORIZONTAL_SPACING_SIBLINGS_NORMAL;
-
-            // Start X for the first child, ensuring the block of children is centered under the parent
-            let currentChildStartX = myX - childrenSubtreesCombinedWidth / 2;
-
-            for (const childId of visibleChildren) {
-                const { width: childSubtreeActualWidth } = subtreeWidths.get(childId) || { width: NODE_BASE_WIDTH, nodeCount: 1 };
-                positionNodesRecursively(childId, childrenY, currentChildStartX);
-                currentChildStartX += childSubtreeActualWidth + HORIZONTAL_SPACING_SIBLINGS_NORMAL;
-            }
-        }
-    };
-
-    if (rootNodeExists) {
-        const { width: rootTotalWidth } = subtreeWidths.get(rootId) || { width: NODE_BASE_WIDTH, nodeCount: 1 };
-        positionNodesRecursively(rootId, ROOT_Y, ROOT_X - rootTotalWidth / 2);
-    } else if (nodesData.length > 0) {
-        // Fallback for graph without a root "1" or disconnected graph.
-        // This may need more sophisticated handling for multiple roots.
-        // For now, position the first node.
-        const firstNodeId = nodesData[0].id;
-        if(nodesData.find(n => n.id === firstNodeId)){ // ensure firstNodeId is actually in nodesData
-            const { width: firstNodeTotalWidth } = subtreeWidths.get(firstNodeId) || { width: NODE_BASE_WIDTH, nodeCount: 1 };
-             if (firstNodeTotalWidth !== undefined) { // Check if width is defined
-                positionNodesRecursively(firstNodeId, ROOT_Y, ROOT_X - firstNodeTotalWidth / 2);
-            } else {
-                console.warn(`[GraphRenderer] Width for node ${firstNodeId} is undefined. Skipping positioning.`);
-            }
-        }
-    }
-    
+    console.log('[calculateNodePositions] Final positions:', Object.fromEntries(nodePositions));
     return nodePositions;
 };
 
@@ -812,6 +710,10 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
   lineColorMode = "default",
   customLineColor = "#CBD5E0",
 }) => {
+  console.log('[GraphRenderer] Component received data:', data);
+  console.log('[GraphRenderer] Data nodes count:', data?.nodes?.length);
+  console.log('[GraphRenderer] Data links count:', data?.links?.length);
+  
   // Update the global lineStyle
   globalLineStyle = lineStyle;
 
@@ -945,22 +847,23 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
     // `resetLayout` explicitly clears nodePositionsRef to force full recalculation.
 
     console.log('[GraphRenderer] Main useEffect: Recalculating all node positions.');
-    const calculatedPositions = calculateNodePositions(graphData.nodes, graphData.links, collapsedNodes);
+    console.log('[GraphRenderer] Graph data for positioning:', {
+      nodes: graphData.nodes.map(n => ({ id: n.id, name: n.name, level: n.level })),
+      links: graphData.links.map(l => ({ source: l.source, target: l.target })),
+      collapsedNodes: Array.from(collapsedNodes)
+    });
+    const calculatedPositions = calculateNodePositions(graphData.nodes);
+    console.log('[GraphRenderer] Calculated positions:', Object.fromEntries(calculatedPositions));
     
     const tempGeneratedColors = new Map<string, string>(); // For nodes without a cached color
     const finalNodesArray: Node[] = []; // Changed name to avoid conflict with state 'nodes'
     const newPositionCache: NodePositionCache[] = [];
     
     graphData.nodes.forEach((graphNode) => {
-      let isVisible = true;
-      // Check visibility based on collapsed parents
-      // This uses the existing getDescendants, which is fine.
-      for (const collapsedId of collapsedNodes) { 
-        if (getDescendants(collapsedId, graphData.nodes, graphData.links).has(graphNode.id)) { 
-          isVisible = false; 
-          break; 
-        } 
-      }
+      // With grid layout, all nodes are always visible
+      const isVisible = true;
+      
+      console.log(`[GraphRenderer] Node ${graphNode.id} (${graphNode.name}) - isVisible: ${isVisible}`);
       
       if (isVisible) {
         const cachedNodeInfo = nodePositionsRef.current.find(cn => cn.id === graphNode.id);
@@ -1155,7 +1058,7 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
       isInitialRender.current = true; // MODIFIED: Treat as initial render for fitView purposes
 
       // Use prop collapsedNodes
-      const newPositionsMap = calculateNodePositions(graphData.nodes, graphData.links, collapsedNodes);
+      const newPositionsMap = calculateNodePositions(graphData.nodes);
       
       // Generate colors map
       const newColorsMap = new Map<string, string>();

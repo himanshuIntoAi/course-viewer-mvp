@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 
 // Define TypeScript interfaces for the API response
 interface FilterOption {
@@ -117,7 +117,7 @@ export const Sidebar: React.FC<{ filtersPassingFunction: (filters: FilterState) 
     
     // Remove null values and ensure proper types
     const cleanFilters = Object.fromEntries(
-      Object.entries(updatedFilters).filter(([_, value]) => value !== null)
+      Object.entries(updatedFilters).filter(([, value]) => value !== null)
     );
 
     // Cast the cleaned filters back to FilterState with proper types

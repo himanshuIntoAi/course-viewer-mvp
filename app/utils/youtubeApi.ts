@@ -53,21 +53,21 @@ export async function getChannelPlaylists(channelId: string): Promise<YouTubePla
     );
 
     const playlists = await Promise.all(
-      playlistResponse.data.items.map(async (playlist: any) => {
+      playlistResponse.data.items.map(async (playlist: { id: string; snippet: { title: string } }) => {
         // Get videos for each playlist
         const playlistItemsResponse = await axios.get(
           `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlist.id}&maxResults=50&key=${YOUTUBE_API_KEY}`
         );
 
         // Get video details including duration
-        const videoIds = playlistItemsResponse.data.items.map((item: any) => item.snippet.resourceId.videoId).join(',');
+        const videoIds = playlistItemsResponse.data.items.map((item: { snippet: { resourceId: { videoId: string } } }) => item.snippet.resourceId.videoId).join(',');
         const videoDetailsResponse = await axios.get(
           `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`
         );
 
         // Create a map of video details
         const videoDetailsMap = new Map<string, VideoDetails>(
-          videoDetailsResponse.data.items.map((item: any) => [
+          videoDetailsResponse.data.items.map((item: { id: string; contentDetails: { duration: string }; snippet: { thumbnails: { high?: { url: string }; default?: { url: string } } } }) => [
             item.id,
             {
               duration: formatDuration(item.contentDetails.duration),
@@ -77,7 +77,7 @@ export async function getChannelPlaylists(channelId: string): Promise<YouTubePla
         );
 
         // Map playlist items to our video format
-        const videos: YouTubeVideo[] = playlistItemsResponse.data.items.map((item: any) => {
+        const videos: YouTubeVideo[] = playlistItemsResponse.data.items.map((item: { snippet: { resourceId: { videoId: string }; title: string; description: string; thumbnails: { high?: { url: string }; default?: { url: string } } } }) => {
           const videoId = item.snippet.resourceId.videoId;
           const defaultDetails: VideoDetails = { duration: '0:00', thumbnailUrl: '' };
           const videoDetails = videoDetailsMap.get(videoId) || defaultDetails;

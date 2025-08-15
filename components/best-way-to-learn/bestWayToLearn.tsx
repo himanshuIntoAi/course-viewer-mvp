@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import Image from "next/image";
 // Commenting out all problematic image imports
 // import BusinessPlan from "@/app/Images/Business Plan.png";
 import { BrainCircuit, PencilRulerIcon } from "lucide-react";
@@ -8,12 +7,7 @@ import { BrainCircuit, PencilRulerIcon } from "lucide-react";
 // import image2 from "@/app/Images/image2.png";
 
 export default function BestWayToLearn() {
-    const [frontImage, setFrontImage] = useState(0);
     const [activeTabIndex, setActiveTabIndex] = useState(-1);
-
-    const handleImageClick = () => {
-        setFrontImage((prev) => (prev === 0 ? 1 : 0));
-    };
 
     const handleToggleButton = (e: React.MouseEvent<HTMLButtonElement>, index: number) => {
         e.stopPropagation();

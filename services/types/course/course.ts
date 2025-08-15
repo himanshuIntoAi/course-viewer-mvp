@@ -24,6 +24,9 @@ export interface Course {
     is_flagship: boolean;
     active: boolean;
     ratings: number;
+    rating?: number; // Individual rating for display
+    total_reviews?: number; // Total number of reviews
+    original_price?: number; // Original price before discount
     price: number;
     mentor_id?: number;
     instructor?: User;

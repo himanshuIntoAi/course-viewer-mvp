@@ -1,22 +1,10 @@
 "use client"
 import React from 'react';
-import { Search, Filter, SparklesIcon } from 'lucide-react';
-import { useState } from 'react';
-import Image from 'next/image';
+import { SparklesIcon } from 'lucide-react';
 // import heroImage from '../public/explore_course_images/redesigned-hero-image-removebg-preview.png';
+import Image from 'next/image';
 
-interface CoursesTopSectionProps {
-  onSearch: (query: string) => void
-}
-
-export const CoursesTopSection: React.FC<CoursesTopSectionProps> = ({ onSearch }) => {
-  const [searchQuery, setSearchQuery] = useState("")
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setSearchQuery(value)
-    onSearch(value)
-  }
+export const CoursesTopSection: React.FC = () => {
 
   return (
     <div className=" relative overflow-hidden">
@@ -29,14 +17,14 @@ export const CoursesTopSection: React.FC<CoursesTopSectionProps> = ({ onSearch }
               <div className="absolute w-[400px] h-[400px]">
                 <div className="relative w-full h-full" style={{display: 'flex', alignItems: 'center' , position: 'relative'}}>
                   {/* Outer curve - navy blue */}
-                  <img src="/images/Ellipse 2.png" alt="hero-image-courses"  style={{position: 'absolute', top: '32px', left: '68px', zIndex: 101, transform: 'rotate(8deg)'}} />
-                  <img src="/images/Ellipse 1.png" alt="hero-image-courses"  style={{position: 'absolute', top: '-5px', left: '0', transform: 'rotate(-6deg)', scale: '0.7'}} />
-                  <img src="/images/Ellipse 3.png" alt="hero-image-courses"  style={{position: 'absolute', zIndex: 100, top: '32px', left: '54px' }} />
+                  <Image src="/images/Ellipse 2.png" alt="hero-image-courses"  style={{position: 'absolute', top: '32px', left: '68px', zIndex: 101, transform: 'rotate(8deg)'}} />
+                  <Image src="/images/Ellipse 1.png" alt="hero-image-courses"  style={{position: 'absolute', top: '-5px', left: '0', transform: 'rotate(-6deg)', scale: '0.7'}} />
+                  <Image src="/images/Ellipse 3.png" alt="hero-image-courses"  style={{position: 'absolute', zIndex: 100, top: '32px', left: '54px' }} />
                 </div>
               </div>
 
               {/* Person image */}
-              <img
+                <Image
 
                 src="/images/hero-image-courses.png"
                 style={{ width: '100%', height: '100%' }}

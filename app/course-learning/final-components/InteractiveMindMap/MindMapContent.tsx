@@ -90,6 +90,9 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
   togglePopup,
   triggerGenerateFromText,
 }) => {
+  console.log('[MindMapContent] Component received data:', data);
+  console.log('[MindMapContent] Data nodes count:', data?.nodes?.length);
+  console.log('[MindMapContent] Data links count:', data?.links?.length);
   const reactFlowInstance = useReactFlow();
   const [showExportOptions, setShowExportOptions] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
