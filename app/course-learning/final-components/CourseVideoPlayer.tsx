@@ -78,7 +78,7 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
     }
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ip-hm-course-view-api-mvp.vercel.app';
       const apiUrl = `${baseUrl}/api/v1/course-learning/hls/${videoPath}/master.m3u8`;
       
       console.log('Fetching video URL from:', apiUrl);
@@ -137,7 +137,7 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
       
       // Create a temporary videoPath for the API call
       const tempVideoPath = pathPart;
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ip-hm-course-view-api-mvp.vercel.app';
       const apiUrl = `${baseUrl}/api/v1/course-learning/hls/${tempVideoPath}/master.m3u8`;
       
       console.log('Fallback API URL:', apiUrl);

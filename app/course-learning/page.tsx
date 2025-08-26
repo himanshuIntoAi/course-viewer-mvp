@@ -171,7 +171,7 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
         setError(null);
         
         // Get all flashcards for the course
-        const flashcardsResponse = await fetch(`http://127.0.0.1:8000/api/v1/course-learning/courses/${courseId}/flashcards/`);
+        const flashcardsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/flashcards/`);
         
         if (!flashcardsResponse.ok) {
           throw new Error(`Failed to fetch flashcards: ${flashcardsResponse.status} ${flashcardsResponse.statusText}`);
@@ -363,7 +363,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
         
         // Get all mindmaps for the course
         console.log('Fetching mindmaps from API...');
-        const mindmapsResponse = await fetch(`http://127.0.0.1:8000/api/v1/course-learning/courses/${courseId}/mindmaps/`);
+        const mindmapsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/mindmaps/`);
         
         if (!mindmapsResponse.ok) {
           throw new Error(`Failed to fetch mindmaps: ${mindmapsResponse.status} ${mindmapsResponse.statusText}`);
@@ -607,7 +607,7 @@ const SimpleQuiz = ({ topic, topicId, courseId }: { topic: string; topicId: numb
         setError(null);
         
         // First, get all quizzes for the course
-        const quizzesResponse = await fetch(`http://127.0.0.1:8000/api/v1/course-learning/courses/${courseId}/quizzes/`);
+        const quizzesResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/quizzes/`);
         
         if (!quizzesResponse.ok) {
           throw new Error('Failed to fetch quizzes');
@@ -641,7 +641,7 @@ const SimpleQuiz = ({ topic, topicId, courseId }: { topic: string; topicId: numb
         if (selectedQuiz) {
           
           // Now fetch questions for this quiz
-          const questionsResponse = await fetch(`http://127.0.0.1:8000/api/v1/course-learning/quizzes/${selectedQuiz.id}/questions/`);
+          const questionsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/quizzes/${selectedQuiz.id}/questions/`);
           
           if (!questionsResponse.ok) {
             throw new Error('Failed to fetch questions');
@@ -844,7 +844,7 @@ const MemoryGameWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
         setError(null);
         
         // First, get all memory games for the course
-        const memoryGamesResponse = await fetch(`http://127.0.0.1:8000/api/v1/course-learning/courses/${courseId}/memory-games/`);
+        const memoryGamesResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/memory-games/`);
         
         if (!memoryGamesResponse.ok) {
           throw new Error('Failed to fetch memory games');
@@ -871,7 +871,7 @@ const MemoryGameWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
         
         if (selectedMemoryGame) {
           // Now fetch the memory game pairs
-          const pairsResponse = await fetch(`http://127.0.0.1:8000/api/v1/memory-game-pairs/game/${selectedMemoryGame.id}`);
+          const pairsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/memory-game-pairs/game/${selectedMemoryGame.id}`);
           
           if (!pairsResponse.ok) {
             throw new Error('Failed to fetch memory game pairs');
@@ -1020,7 +1020,7 @@ export default function CourseLearningPage() {
         setLoading(true);
         console.log('Fetching lesson data for ID:', selectedLessonId);
         
-        const lessonResponse = await fetch(`http://127.0.0.1:8000/api/v1/course-learning/courses/${courseId}/lessons/`);
+        const lessonResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`);
         console.log('Lesson API response status:', lessonResponse.status);
         
         if (lessonResponse.ok) {
@@ -1110,7 +1110,7 @@ export default function CourseLearningPage() {
   const testVideoAPI = async () => {
     try {
       console.log('Testing video API...');
-      const response = await fetch('http://127.0.0.1:8000/api/v1/course-learning/hls/lesson1/master.m3u8', {
+      const response = await fetch('https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/hls/lesson1/master.m3u8', {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
