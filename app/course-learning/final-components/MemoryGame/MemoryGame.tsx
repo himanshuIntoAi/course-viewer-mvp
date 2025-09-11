@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Maximize2 } from 'lucide-react';
 import Card, { CardType } from './Card';
 import Confetti from '../Confetti/Confetti';
 import './MemoryGame.css';
+
+// Note: config import removed as we're using environment variables directly
 
 interface HighScores {
   easy: number;
@@ -37,6 +41,11 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
   });
   const [gameTitle, setGameTitle] = useState(topicProp || 'Memory Game');
   const [sourceCardPairs, setSourceCardPairs] = useState<Array<{ text: string; pair: string }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const portalRef = useRef<HTMLDivElement | null>(null);
   const didInitialLoad = useRef(false);
 
   // Default card pairs if none are provided
@@ -59,7 +68,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
     { text: 'Webpack', pair: 'A static module bundler' }
   ], []);
 
-  // Card count for different difficulties
+  // Card count for different difficulties - Use all available pairs up to difficulty limit
   const getDifficultyCardCount = useCallback((difficulty: 'easy' | 'medium' | 'hard' | 'hardest'): number => {
     switch (difficulty) {
       case 'easy':
@@ -69,7 +78,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
       case 'hard':
         return 8; // 4x4 grid = 16 cards = 8 pairs
       case 'hardest':
-        return 12; // 4x6 grid = 24 cards = 12 pairs
+        return 12; // 4x6 grid = 24 cards = 12 pairs (use all available pairs)
       default:
         return 2;
     }
@@ -79,16 +88,23 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
   const getGridLayoutClass = useCallback((difficulty: 'easy' | 'medium' | 'hard' | 'hardest'): string => {
     switch (difficulty) {
       case 'easy':
-        return 'grid-cols-2'; // 2x2 grid
+        return 'grid-cols-2'; // 2x2 grid = 4 cards (2 pairs)
       case 'medium':
-        return 'grid-cols-4'; // 4x3 grid
+        return 'grid-cols-4'; // 4x3 grid = 12 cards (6 pairs)
       case 'hard':
-        return 'grid-cols-4'; // 4x4 grid
+        return 'grid-cols-4'; // 4x4 grid = 16 cards (8 pairs)
       case 'hardest':
-        return 'grid-cols-6'; // Changed from grid-cols-4 to grid-cols-6 for 6x4 grid
+        return 'grid-cols-6'; // 6x4 grid = 24 cards (12 pairs)
       default:
         return 'grid-cols-2';
     }
+  }, []);
+
+  // Calculate grid rows based on number of cards and difficulty
+  const getGridRows = useCallback((cardCount: number, difficulty: 'easy' | 'medium' | 'hard' | 'hardest'): string => {
+    const cols = difficulty === 'easy' ? 2 : difficulty === 'hardest' ? 6 : 4;
+    const rows = Math.ceil(cardCount / cols);
+    return `repeat(${rows}, 120px)`;
   }, []);
 
   // Function to shuffle cards and create pairs
@@ -102,13 +118,13 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
     console.log(`[MemoryGame] Shuffling ${currentSourcePairs.length} source pairs for difficulty: ${difficulty}`);
     console.log('[MemoryGame] Source pairs being shuffled:', JSON.stringify(currentSourcePairs, null, 2));
     
-    const cardCount = getDifficultyCardCount(difficulty);
+    const maxPairsForDifficulty = getDifficultyCardCount(difficulty);
     
-    // Ensure we don't request more pairs than available
-    const pairsToUse = Math.min(cardCount, currentSourcePairs.length);
-    console.log(`[MemoryGame] Using ${pairsToUse} pairs for ${difficulty} difficulty`);
+    // Use all available pairs up to the difficulty limit (12 pairs max)
+    const pairsToUse = Math.min(maxPairsForDifficulty, currentSourcePairs.length);
+    console.log(`[MemoryGame] Using ${pairsToUse} pairs for ${difficulty} difficulty (max: ${maxPairsForDifficulty}, available: ${currentSourcePairs.length})`);
     
-    // Fix: Create a deep copy to avoid reference issues
+    // Create a deep copy and shuffle all available pairs
     const pairsToShuffle = [...currentSourcePairs]
       .sort(() => Math.random() - 0.5)
       .slice(0, pairsToUse);
@@ -158,102 +174,348 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
     setDisabled(false);
   }, [getDifficultyCardCount]);
 
-  // Define loadFromStorage function outside useEffect but use useCallback
-  const loadFromStorage = useCallback(() => {
-    console.log('[MemoryGame] Attempting to load from localStorage...');
+  // Load memory game data from API or localStorage
+  const loadMemoryGameData = useCallback(async () => {
+    console.log('[MemoryGame] Attempting to load memory game data...');
+    setIsLoading(true);
+    setError(null);
+    
     let loadedPairs: Array<{ text: string; pair: string }> = [];
-    let loadedTitle = topicProp || 'Memory Game'; // Use topic prop as initial title if available
-    const storedData = localStorage.getItem('memoryGameContent');
+    let loadedTitle = topicProp || 'Memory Game';
 
-    if (storedData) {
-      try {
-        const parsedStorage = JSON.parse(storedData);
-        const gameData = parsedStorage.data || parsedStorage; // Handle { data: ... } wrapper
+    // First check if cardsProp is provided (for new/updated memory games)
+    if (cardsProp && Array.isArray(cardsProp) && cardsProp.length > 0) {
+      console.log('[MemoryGame] Using cardsProp data:', cardsProp);
+      
+      // Process cardsProp data to create pairs
+      const termCards: Record<string, string> = {};
+      const defCards: Record<string, string> = {};
 
-        if (gameData && gameData.topic && Array.isArray(gameData.cards) && gameData.cards.length > 0) {
-          console.log('[MemoryGame] Found valid data in localStorage:', gameData);
-          loadedTitle = gameData.topic;
-
-          // Process localStorage cards using the same term_X/def_X pattern
-          const termCards: Record<string, string> = {};
-          const defCards: Record<string, string> = {};
-
-          gameData.cards.forEach((card: { id?: string; content?: string }) => {
-            if (!card.id || !card.content) {
-              console.warn('[MemoryGame] Skipping card with missing id or content:', card);
-              return;
-            }
-            
-            // Extract the pair index from card id
-            const idParts = card.id.split('_');
-            const pairIndex = idParts.length > 1 ? idParts[1] : '';
-            
-            if (!pairIndex) {
-              console.warn('[MemoryGame] Card has invalid id format (missing index):', card.id);
-              return;
-            }
-            
-            if (card.id.startsWith('term_')) {
-              termCards[pairIndex] = card.content;
-              console.log(`[MemoryGame] Found term_${pairIndex}: ${card.content}`);
-            } else if (card.id.startsWith('def_')) {
-              defCards[pairIndex] = card.content;
-              console.log(`[MemoryGame] Found def_${pairIndex}: ${card.content}`);
-            } else {
-              console.warn('[MemoryGame] Card has unrecognized id format (not term_ or def_):', card.id);
-            }
-          });
-          
-          // Create pairs from matching indexes
-          console.log('[MemoryGame] Term cards:', termCards);
-          console.log('[MemoryGame] Def cards:', defCards);
-          
-          Object.keys(termCards).forEach(index => {
-            if (defCards[index]) {
-              loadedPairs.push({
-                text: termCards[index],
-                pair: defCards[index]
-              });
-              console.log(`[MemoryGame] Created pair ${index}: ${termCards[index]} <-> ${defCards[index]}`);
-            } else {
-              console.warn(`[MemoryGame] Missing definition for term_${index}: ${termCards[index]}`);
-            }
-          });
-          
-          console.log('[MemoryGame] Created pairs from localStorage:', loadedPairs);
-
+      cardsProp.forEach((card: { id?: string; content?: string }) => {
+        if (!card.id || !card.content) {
+          console.warn('[MemoryGame] Skipping card with missing id or content:', card);
+          return;
+        }
+        
+        // Extract the pair index from card id
+        const idParts = card.id.split('_');
+        const pairIndex = idParts.length > 1 ? idParts[1] : '';
+        
+        if (!pairIndex) {
+          console.warn('[MemoryGame] Card has invalid id format (missing index):', card.id);
+          return;
+        }
+        
+        if (card.id.startsWith('term_')) {
+          termCards[pairIndex] = card.content;
+          console.log(`[MemoryGame] Found term_${pairIndex}: ${card.content}`);
+        } else if (card.id.startsWith('def_')) {
+          defCards[pairIndex] = card.content;
+          console.log(`[MemoryGame] Found def_${pairIndex}: ${card.content}`);
         } else {
-          console.warn('[MemoryGame] localStorage data invalid or empty. Still using defaults.');
+          console.warn('[MemoryGame] Card has unrecognized id format (not term_ or def_):', card.id);
+        }
+      });
+      
+      // Create pairs from matching indexes
+      Object.keys(termCards).forEach(index => {
+        if (defCards[index]) {
+          loadedPairs.push({
+            text: termCards[index],
+            pair: defCards[index]
+          });
+          console.log(`[MemoryGame] Created pair ${index}: ${termCards[index]} <-> ${defCards[index]}`);
+        } else {
+          console.warn(`[MemoryGame] Missing definition for term_${index}: ${termCards[index]}`);
+        }
+      });
+      
+      if (loadedPairs.length > 0) {
+        console.log(`[MemoryGame] Successfully loaded ${loadedPairs.length} pairs from cardsProp`);
+        setGameTitle(loadedTitle);
+        setSourceCardPairs(loadedPairs);
+        setIsLoading(false);
+        shuffleAndSetCards(difficulty, loadedPairs);
+        return;
+      }
+    }
+
+    try {
+      // First try to load from API
+      const courseId = window.currentCourseId || localStorage.getItem('currentCourseId'); // Reserved for future use
+      const topicId = localStorage.getItem('currentTopicId');
+      
+      if (topicId) {
+        // Use the correct backend endpoint directly
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://ai-chatbot-v5-backend-docker.azurewebsites.net'}/api/course/components/memory-games/${topicId}`;
+        
+        console.log(`[MemoryGame] Fetching from API: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl);
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`[MemoryGame] API response:`, result);
+          
+          // Support both shapes: { data: [...] } and { memory_games: [...] }
+          const gamesArray = Array.isArray(result?.data)
+            ? result.data
+            : (Array.isArray(result?.memory_games) ? result.memory_games : []);
+
+          if (result.success && gamesArray.length > 0) {
+            const memoryGame = gamesArray[0]; // Use the first memory game
+            
+            if (memoryGame && Array.isArray(memoryGame.cards) && memoryGame.cards.length > 0) {
+              console.log(`[MemoryGame] Successfully loaded ${memoryGame.cards.length} cards from API`);
+              
+              // Check if we have enough pairs (should have at least 12 pairs = 24 cards)
+              const cardCount = memoryGame.cards.length;
+              const pairCount = Math.floor(cardCount / 2);
+              console.log(`[MemoryGame] Memory game has ${cardCount} cards (${pairCount} pairs)`);
+              
+              if (pairCount < 12) {
+                console.warn(`[MemoryGame] Insufficient pairs (${pairCount}), trying fallback generation...`);
+                throw new Error(`Insufficient pairs: ${pairCount}`);
+              }
+              
+              loadedTitle = memoryGame.topic || loadedTitle;
+
+              // Process API cards using the same term_X/def_X pattern
+              const termCards: Record<string, string> = {};
+              const defCards: Record<string, string> = {};
+
+              memoryGame.cards.forEach((card: { id?: string; content?: string }) => {
+                if (!card.id || !card.content) {
+                  console.warn('[MemoryGame] Skipping card with missing id or content:', card);
+                  return;
+                }
+                
+                // Extract the pair index from card id
+                const idParts = card.id.split('_');
+                const pairIndex = idParts.length > 1 ? idParts[1] : '';
+                
+                if (!pairIndex) {
+                  console.warn('[MemoryGame] Card has invalid id format (missing index):', card.id);
+                  return;
+                }
+                
+                if (card.id.startsWith('term_')) {
+                  termCards[pairIndex] = card.content;
+                  console.log(`[MemoryGame] Found term_${pairIndex}: ${card.content}`);
+                } else if (card.id.startsWith('def_')) {
+                  defCards[pairIndex] = card.content;
+                  console.log(`[MemoryGame] Found def_${pairIndex}: ${card.content}`);
+                } else {
+                  console.warn('[MemoryGame] Card has unrecognized id format (not term_ or def_):', card.id);
+                }
+              });
+          
+              // Create pairs from matching indexes
+              Object.keys(termCards).forEach(index => {
+                if (defCards[index]) {
+                  loadedPairs.push({
+                    text: termCards[index],
+                    pair: defCards[index]
+                  });
+                  console.log(`[MemoryGame] Created pair ${index}: ${termCards[index]} <-> ${defCards[index]}`);
+                } else {
+                  console.warn(`[MemoryGame] Missing definition for term_${index}: ${termCards[index]}`);
+                }
+              });
+              
+              // Save to localStorage for caching
+              localStorage.setItem('memoryGameContent', JSON.stringify({
+                pairs: loadedPairs,
+                topic: loadedTitle,
+                timestamp: Date.now()
+              }));
+              
+              setGameTitle(loadedTitle);
+              setSourceCardPairs(loadedPairs);
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            console.log('[MemoryGame] No existing memory games found, will try generation fallback...');
+          }
+        } else {
+          console.log(`[MemoryGame] API request failed with status: ${response.status}, trying fallback...`);
+          const errorText = await response.text();
+          console.log(`[MemoryGame] API error response:`, errorText);
+        }
+      } else {
+        console.log('[MemoryGame] No topicId available, skipping direct API call and using fallback...');
+      }
+    } catch (apiError) {
+        console.warn('[MemoryGame] API failed or insufficient pairs, falling back to localStorage:', apiError);
+        
+        // If the error is about insufficient pairs, try to force regeneration
+        if (apiError instanceof Error && apiError.message && apiError.message.includes('Insufficient pairs')) {
+          console.log('[MemoryGame] Attempting to force regeneration due to insufficient pairs...');
+          try {
+            // Force regeneration by calling the generation endpoint directly
+            const courseId = window.currentCourseId || localStorage.getItem('currentCourseId');
+            const topicId = localStorage.getItem('currentTopicId');
+            
+            if (courseId && topicId) {
+              const regenerateUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://ai-chatbot-v5-backend-docker.azurewebsites.net'}/api/course/content/generate`;
+              const regenerateResponse = await fetch(regenerateUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  type: 'memory_game',
+                  topic: loadedTitle,
+                  context: {
+                    course_id: parseInt(courseId.toString()),
+                    topic_id: parseInt(topicId.toString()),
+                    course_context: `Memory game for topic: ${loadedTitle}. Generate exactly 12 pairs (24 cards total) with comprehensive content.`
+                  }
+                })
+              });
+              
+              if (regenerateResponse.ok) {
+                const regenerateResult = await regenerateResponse.json();
+                if (regenerateResult.success && regenerateResult.data) {
+                  console.log('[MemoryGame] Successfully regenerated memory game with sufficient pairs');
+                  loadedPairs = [];
+                  
+                  // Process the regenerated data
+                  const termCards: Record<string, string> = {};
+                  const defCards: Record<string, string> = {};
+
+                  regenerateResult.data.cards.forEach((card: { id?: string; content?: string }) => {
+                    if (!card.id || !card.content) return;
+                    
+                    const idParts = card.id.split('_');
+                    const pairIndex = idParts.length > 1 ? idParts[1] : '';
+                    
+                    if (!pairIndex) return;
+                    
+                    if (card.id.startsWith('term_')) {
+                      termCards[pairIndex] = card.content;
+                    } else if (card.id.startsWith('def_')) {
+                      defCards[pairIndex] = card.content;
+                    }
+                  });
+                  
+                  Object.keys(termCards).forEach(index => {
+                    if (defCards[index]) {
+                      loadedPairs.push({
+                        text: termCards[index],
+                        pair: defCards[index]
+                      });
+                    }
+                  });
+                  
+                  console.log(`[MemoryGame] Regenerated ${loadedPairs.length} pairs`);
+                  setGameTitle(loadedTitle);
+                  setSourceCardPairs(loadedPairs);
+                  
+                  if (loadedPairs.length > 0) {
+                    shuffleAndSetCards(difficulty, loadedPairs);
+                  }
+                  return;
+                }
+              }
+            }
+          } catch (regenerateError) {
+            console.warn('[MemoryGame] Regeneration failed, using fallback:', regenerateError);
+          }
+        }
+      
+      // Fallback to localStorage
+      const storedData = localStorage.getItem('memoryGameContent');
+
+      if (storedData) {
+        try {
+          const parsedStorage = JSON.parse(storedData);
+          const gameData = parsedStorage.data || parsedStorage;
+
+          if (gameData && gameData.topic && Array.isArray(gameData.cards) && gameData.cards.length > 0) {
+            console.log('[MemoryGame] Found valid data in localStorage:', gameData);
+            loadedTitle = gameData.topic;
+
+            // Process localStorage cards using the same term_X/def_X pattern
+            const termCards: Record<string, string> = {};
+            const defCards: Record<string, string> = {};
+
+            gameData.cards.forEach((card: { id?: string; content?: string }) => {
+              if (!card.id || !card.content) {
+                console.warn('[MemoryGame] Skipping card with missing id or content:', card);
+                return;
+              }
+              
+              // Extract the pair index from card id
+              const idParts = card.id.split('_');
+              const pairIndex = idParts.length > 1 ? idParts[1] : '';
+              
+              if (!pairIndex) {
+                console.warn('[MemoryGame] Card has invalid id format (missing index):', card.id);
+                return;
+              }
+              
+              if (card.id.startsWith('term_')) {
+                termCards[pairIndex] = card.content;
+                console.log(`[MemoryGame] Found term_${pairIndex}: ${card.content}`);
+              } else if (card.id.startsWith('def_')) {
+                defCards[pairIndex] = card.content;
+                console.log(`[MemoryGame] Found def_${pairIndex}: ${card.content}`);
+              } else {
+                console.warn('[MemoryGame] Card has unrecognized id format (not term_ or def_):', card.id);
+              }
+            });
+            
+            // Create pairs from matching indexes
+            Object.keys(termCards).forEach(index => {
+              if (defCards[index]) {
+                loadedPairs.push({
+                  text: termCards[index],
+                  pair: defCards[index]
+                });
+                console.log(`[MemoryGame] Created pair ${index}: ${termCards[index]} <-> ${defCards[index]}`);
+              } else {
+                console.warn(`[MemoryGame] Missing definition for term_${index}: ${termCards[index]}`);
+              }
+            });
+            
+          } else {
+            console.warn('[MemoryGame] localStorage data invalid or empty. Using defaults.');
+            loadedPairs = defaultCardPairs;
+          }
+        } catch (error) {
+          console.error('[MemoryGame] Error parsing localStorage. Using defaults:', error);
           loadedPairs = defaultCardPairs;
         }
-      } catch (error) {
-        console.error('[MemoryGame] Error parsing localStorage. Using defaults:', error);
+      } else {
+        console.log('[MemoryGame] No data found in localStorage. Using defaults.');
         loadedPairs = defaultCardPairs;
       }
-    } else {
-      console.log('[MemoryGame] No data found in localStorage. Using defaults.');
-      loadedPairs = defaultCardPairs;
+    } finally {
+      setIsLoading(false);
     }
 
     // Update state based on what was loaded
     setGameTitle(loadedTitle);
     setSourceCardPairs(loadedPairs);
 
-    // Shuffle immediately if pairs were successfully loaded (from storage or default)
+    // Shuffle immediately if pairs were successfully loaded
     if (loadedPairs.length > 0) {
-      console.log(`[MemoryGame] loadFromStorage finished with ${loadedPairs.length} pairs. Shuffling for difficulty: ${difficulty}`);
+      console.log(`[MemoryGame] loadMemoryGameData finished with ${loadedPairs.length} pairs. Shuffling for difficulty: ${difficulty}`);
       shuffleAndSetCards(difficulty, loadedPairs);
     } else {
-      console.log('[MemoryGame] loadFromStorage finished, but no pairs found. Not shuffling.');
+      console.log('[MemoryGame] loadMemoryGameData finished, but no pairs found. Not shuffling.');
       setGameCards([]); // Ensure game cards are empty
     }
-  // Dependencies for loadFromStorage
-  }, [defaultCardPairs, difficulty, shuffleAndSetCards, topicProp]);
+  }, [defaultCardPairs, difficulty, shuffleAndSetCards, topicProp, cardsProp]);
 
   // useEffect to handle loading from Props (if provided) - Runs only when props change
   useEffect(() => {
+    console.log('[MemoryGame] Props useEffect triggered. cardsProp:', cardsProp, 'length:', cardsProp?.length);
     if (cardsProp && cardsProp.length > 0) {
       console.log('[MemoryGame] Using card data directly from props:', cardsProp);
+      console.log('[MemoryGame] First card structure:', JSON.stringify(cardsProp[0], null, 2));
       const loadedTitle = topicProp || 'Memory Game (From Props)';
       const loadedPairs: Array<{ text: string; pair: string }> = [];
       const termCards: Record<string, string> = {};
@@ -315,7 +577,45 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
     // This effect *only* runs if the direct props change.
   }, [cardsProp, topicProp, difficulty, shuffleAndSetCards]); // Note: defaultCardPairs not needed here
 
-  // useEffect for initial load from storage IF NO PROPS ARE GIVEN
+  // Portal setup
+  useEffect(() => {
+    setMounted(true);
+    if (!portalRef.current) {
+      portalRef.current = document.createElement('div');
+      portalRef.current.id = 'memory-game-portal';
+      document.body.appendChild(portalRef.current);
+    }
+    return () => {
+      if (portalRef.current && document.body.contains(portalRef.current)) {
+        try {
+          document.body.removeChild(portalRef.current);
+        } catch (error) {
+          console.warn('[MemoryGame] Error removing portal:', error);
+        }
+        portalRef.current = null;
+      }
+    };
+  }, []);
+
+  // Fullscreen body overflow management
+  useEffect(() => {
+    if (isFullScreen) {
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 300);
+    } else {
+      document.body.style.overflow = '';
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 300);
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullScreen]);
+
+  // useEffect for initial load from API/storage IF NO PROPS ARE GIVEN
   useEffect(() => {
     // Prevent Strict Mode double execution of initial load
     if (didInitialLoad.current) {
@@ -325,8 +625,8 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
 
     // Run only if props are NOT provided
     if (!cardsProp || cardsProp.length === 0) {
-        console.log('[MemoryGame] Initial mount (no props). Attempting load from storage...');
-        loadFromStorage(); 
+        console.log('[MemoryGame] Initial mount (no props). Attempting load from API/storage...');
+        loadMemoryGameData(); 
     }
     // Run only ONCE on mount (effectively, due to the ref guard)
     // eslint-disable-next-line react-hooks/exhaustive-deps 
@@ -339,7 +639,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
       // Only react if the key matches AND if this component is NOT using props
       if (event.key === 'memoryGameContent' && (!cardsProp || cardsProp.length === 0)) {
         console.log('[MemoryGame] Detected storage change for memoryGameContent (and not using props). Reloading...');
-        loadFromStorage();
+        loadMemoryGameData();
       }
     };
 
@@ -353,8 +653,8 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
       console.log('[MemoryGame] Storage listener removed.');
     };
 
-  // Re-run listener setup if loadFromStorage function instance changes or if props presence changes
-  }, [loadFromStorage, cardsProp]); 
+  // Re-run listener setup if loadMemoryGameData function instance changes or if props presence changes
+  }, [loadMemoryGameData, cardsProp]); 
 
   const handleChoice = (card: CardType) => {
     console.log('[MemoryGame] Card chosen:', card);
@@ -415,6 +715,16 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
     });
   };
 
+  const toggleFullscreen = useCallback(() => {
+    setIsFullScreen(prev => {
+      const newState = !prev;
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 100);
+      return newState;
+    });
+  }, []);
+
   useEffect(() => {
     const allMatched = gameCards.length > 0 && gameCards.every(card => card.matched);
     if (allMatched) {
@@ -449,14 +759,26 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
     difficulty,
     sourceCardPairsCount: sourceCardPairs.length,
     gameCardsCount: gameCards.length,
-    gameCards: gameCards // Log the actual cards array
+    maxPairsForDifficulty: getDifficultyCardCount(difficulty),
+    actualPairsUsed: Math.floor(gameCards.length / 2),
+    gameCards: gameCards.slice(0, 4) // Log first few cards for debugging
   });
 
   return (
-    <div className="memory-game">
-      <div className="header">
-        <h1>{gameTitle}</h1>
-      </div>
+    <>
+      {!isFullScreen && (
+        <div className="memory-game">
+          <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h1>{gameTitle}</h1>
+            <button
+              onClick={toggleFullscreen}
+              disabled={gameCards.length === 0}
+              className="p-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 shadow-md"
+              title="Open in fullscreen"
+            >
+              <Maximize2 size={20} color="white" />
+            </button>
+          </div>
       
       <div className="game-container">
         {/* Left Panel for Difficulty */}
@@ -491,17 +813,43 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
 
         {/* Middle Panel for Card Grid */}
         <div className="game-content">
-          <div className={`card-grid ${getGridLayoutClass(difficulty)}`}>
-            {gameCards.map(card => (
-              <Card
-                key={card.id}
-                card={card}
-                handleChoice={handleChoice}
-                flipped={card === choiceOne || card === choiceTwo || card.matched}
-                disabled={disabled}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>Loading memory game data...</p>
+            </div>
+          ) : error ? (
+            <div className="error-container">
+              <p className="error-message">Error: {error}</p>
+              <button 
+                onClick={() => loadMemoryGameData()}
+                className="retry-button"
+              >
+                Retry
+              </button>
+            </div>
+          ) : gameCards.length === 0 ? (
+            <div className="empty-container">
+              <p>No memory game cards available.</p>
+            </div>
+          ) : (
+            <div 
+              className={`card-grid ${getGridLayoutClass(difficulty)}`}
+              style={{
+                gridTemplateRows: getGridRows(gameCards.length, difficulty)
+              }}
+            >
+              {gameCards.map(card => (
+                <Card
+                  key={card.id}
+                  card={card}
+                  handleChoice={handleChoice}
+                  flipped={card === choiceOne || card === choiceTwo || card.matched}
+                  disabled={disabled}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right Panel for Turns and High Scores */}
@@ -519,9 +867,142 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
           </div>
         </div>
 
-      </div>
-      {showConfetti && <Confetti active={showConfetti} />}
-    </div>
+        </div>
+        {showConfetti && <Confetti isActive={showConfetti} />}
+        </div>
+      )}
+      
+      {isFullScreen && mounted && portalRef.current && createPortal(
+        <div 
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70" 
+          style={{ 
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 999999,
+          }}
+          onContextMenu={(e) => e.stopPropagation()}
+        >
+          <div 
+            className="bg-white w-full h-full flex flex-col overflow-hidden"
+            style={{ pointerEvents: 'all' }}
+            onContextMenu={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="memory-game" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px' }}>
+                <h1>{gameTitle}</h1>
+                <button
+                  onClick={toggleFullscreen}
+                  className="fullscreen-button"
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  × Close
+                </button>
+              </div>
+              
+              <div className="game-container" style={{ flex: 1, display: 'flex' }}>
+                {/* Left Panel for Difficulty */}
+                <div className="left-panel"> 
+                  <div className="difficulty-selector">
+                    <button
+                      className={difficulty === 'easy' ? 'active' : ''}
+                      onClick={() => handleDifficultyChange('easy')}
+                    >
+                      Easy (2×2)
+                    </button>
+                    <button
+                      className={difficulty === 'medium' ? 'active' : ''}
+                      onClick={() => handleDifficultyChange('medium')}
+                    >
+                      Medium (4×3)
+                    </button>
+                    <button
+                      className={difficulty === 'hard' ? 'active' : ''}
+                      onClick={() => handleDifficultyChange('hard')}
+                    >
+                      Hard (4×4)
+                    </button>
+                    <button
+                      className={difficulty === 'hardest' ? 'active' : ''}
+                      onClick={() => handleDifficultyChange('hardest')}
+                    >
+                      Hardest (4×6)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Middle Panel for Card Grid */}
+                <div className="game-content">
+                  {isLoading ? (
+                    <div className="loading-container">
+                      <div className="loading-spinner"></div>
+                      <p>Loading memory game data...</p>
+                    </div>
+                  ) : error ? (
+                    <div className="error-container">
+                      <p className="error-message">Error: {error}</p>
+                      <button 
+                        onClick={() => loadMemoryGameData()}
+                        className="retry-button"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : gameCards.length === 0 ? (
+                    <div className="empty-container">
+                      <p>No memory game cards available.</p>
+                    </div>
+                  ) : (
+                    <div 
+                      className={`card-grid ${getGridLayoutClass(difficulty)}`}
+                      style={{
+                        gridTemplateRows: getGridRows(gameCards.length, difficulty)
+                      }}
+                    >
+                      {gameCards.map(card => (
+                        <Card
+                          key={card.id}
+                          card={card}
+                          handleChoice={handleChoice}
+                          flipped={card === choiceOne || card === choiceTwo || card.matched}
+                          disabled={disabled}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Panel for Turns and High Scores */}
+                <div className="right-panel">
+                  <div className="game-info">
+                    <div className="turns-label">Turns</div>
+                    <div className="turns">{turns}</div>
+                  </div>
+                  <div className="high-scores">
+                    <h3>High Scores</h3>
+                    <div>Easy: {highScores.easy === Infinity ? '-' : highScores.easy}</div>
+                    <div>Medium: {highScores.medium === Infinity ? '-' : highScores.medium}</div>
+                    <div>Hard: {highScores.hard === Infinity ? '-' : highScores.hard}</div>
+                    <div>Hardest: {highScores.hardest === Infinity ? '-' : highScores.hardest}</div>
+                  </div>
+                </div>
+              </div>
+              {showConfetti && <Confetti isActive={showConfetti} />}
+            </div>
+          </div>
+        </div>,
+        portalRef.current
+      )}
+    </>
   );
 };
 

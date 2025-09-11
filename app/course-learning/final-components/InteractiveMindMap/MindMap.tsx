@@ -31,12 +31,38 @@ interface MindMapData {
 interface MindMapProps {
   initialData?: MindMapData;
   defaultCollapsed?: boolean;
+  mermaidString?: string;
 }
 
 // Helper function (can be moved to a utils file if shared)
-const generateMindMapFromText = (text: string): MindMapData => {
+const generateMindMapFromText = (text: any): MindMapData => {
   console.log('[MindMap] generateMindMapFromText INPUT TEXT:\n', text); // Log input text
-  const lines = text.split('\n').filter(line => line.trim() !== '');
+  
+  // 🔍 DEBUG: Check for problematic "Topic:" content in input
+  if (typeof text === 'string' && text.includes('Topic:')) {
+    console.warn('🚨 [MindMap] PROBLEMATIC "Topic:" content detected in input:', text);
+    console.warn('🚨 [MindMap] This will be filtered out to prevent cross-contamination');
+  }
+  
+  // ✅ FIXED: Add proper type checking and validation
+  if (!text || typeof text !== 'string') {
+    console.warn('[MindMap] generateMindMapFromText: Input is not a valid string:', typeof text, text);
+    return { nodes: [], links: [] };
+  }
+  
+  // ✅ FIXED: Filter out "Topic:" prefix lines completely to prevent cross-contamination
+  const rawLines = text.split('\n').filter(line => line.trim() !== '');
+  const lines = rawLines.filter(line => {
+    const trimmed = line.trim();
+    // Remove any lines that start with "Topic:" to prevent cross-contamination
+    if (trimmed.startsWith('Topic:')) {
+      console.log(`[MindMap] 🚫 Filtering out problematic "Topic:" line: "${trimmed}"`);
+      return false;
+    }
+    return true;
+  });
+  
+  console.log(`[MindMap] Filtered ${rawLines.length - lines.length} problematic lines, ${lines.length} lines remaining`);
   
   const defaultEmptyData = (): MindMapData => ({ nodes: [], links: [] });
 
@@ -48,12 +74,13 @@ const generateMindMapFromText = (text: string): MindMapData => {
   const nodes: Node[] = [];
   const links: Link[] = [];
   let nodeIdCounter = 1;
-  const levelMap = new Map<number, string>();
+  const levelStack: Array<{ id: string; level: number; indentLevel: number }> = [];
 
   const parseNodeLabel = (text: string): { name: string, isRootSyntax: boolean } => {
     const trimmed = text.trim();
     console.log(`[MindMap] parseNodeLabel INPUT: "${text}", TRIMMED: "${trimmed}"`);
 
+    // ✅ FIXED: Enhanced root node detection for mindmap format
     const rootRegex1 = /^root\s*\(\s*\((.*?)\)\s*\)$/;
     const rootRegex2 = /^root\s*\((.*?)\)$/;
     let rootMatch = trimmed.match(rootRegex1);
@@ -70,29 +97,25 @@ const generateMindMapFromText = (text: string): MindMapData => {
     }
 
     console.log(`[MindMap] parseNodeLabel: Not a root syntax. Processing as regular node.`);
+    
+    // ✅ FIXED: Simplified node name extraction for mindmap format
+    // In mindmap format, nodes are just plain text without brackets or special characters
     let potentialLabel = trimmed;
+    
+    // Remove any remaining special characters that shouldn't be in mindmap format
     potentialLabel = potentialLabel.replace(/::icon\([^\)]+\)/g, '').trim();
     potentialLabel = potentialLabel.replace(/<[^>]+>/g, ' ').trim();
-    potentialLabel = potentialLabel.replace(/\\s\\s+/g, ' ').trim();
-
-    let match = potentialLabel.match(/\\\[([^\\\[\\\]]+)\\]$/);
-    if (match && match[1]) {
-      return { name: match[1].trim(), isRootSyntax: false };
-    }
-
-    match = potentialLabel.match(/\\(\\(([^()]+)\\)\\)$/);
-    if (match && match[1]) {
-      return { name: match[1].trim(), isRootSyntax: false };
-    }
-
-    match = potentialLabel.match(/\\(([^()]+)\\)$/);
-    if (match && match[1]) {
-      return { name: match[1].trim(), isRootSyntax: false };
-    }
+    potentialLabel = potentialLabel.replace(/\s\s+/g, ' ').trim();
     
-    return { name: potentialLabel || "Unnamed Node", isRootSyntax: false };
+    // ✅ FIXED: For mindmap format, just use the trimmed text as the node name
+    // Mindmap nodes are plain text, not wrapped in brackets or special syntax
+    const nodeName = potentialLabel || "Unnamed Node";
+    console.log(`[MindMap] parseNodeLabel: Extracted node name: "${nodeName}"`);
+    
+    return { name: nodeName, isRootSyntax: false };
   };
   
+  // ✅ FIXED: Handle mindmap keyword at the beginning
   const firstLineIsMindmapKeyword = lines[0].trim().toLowerCase() === "mindmap";
   let currentLineIndex = firstLineIsMindmapKeyword ? 1 : 0;
 
@@ -107,7 +130,7 @@ const generateMindMapFromText = (text: string): MindMapData => {
 
   const rootId = "1";
   nodes.push({ id: rootId, name: parsedRootName, group: 1, level: 0 });
-  levelMap.set(0, rootId);
+  levelStack.push({ id: rootId, level: 0, indentLevel: 0 });
   nodeIdCounter = 2;
   
   currentLineIndex++;
@@ -123,32 +146,36 @@ const generateMindMapFromText = (text: string): MindMapData => {
     const currentId = nodeIdCounter.toString();
     nodeIdCounter++;
     
+    // ✅ FIXED: Calculate indentation level (each 4 spaces = 1 level)
     const indentation = line.match(/^(\s*)/)?.[1].length ?? 0;
-    let parentId = rootId;
-    let bestParentLevel = -1;
-    console.log(`[MindMap] Processing line: "${line.substring(0,30)}..." Indentation: ${indentation}. Initial parentId: ${parentId}, levelMap: ${JSON.stringify(Array.from(levelMap.entries()))}`);
-    levelMap.forEach((id, mapIndentation) => {
-        console.log(`[MindMap]  -> Checking levelMap entry: id=${id}, mapIndentation=${mapIndentation}. Current bestParentLevel: ${bestParentLevel}`);
-        if (indentation > mapIndentation && mapIndentation > bestParentLevel) {
-            parentId = id;
-            bestParentLevel = mapIndentation;
-            console.log(`[MindMap]    ==> New parentId found: ${parentId} (was at mapIndentation ${mapIndentation})`);
-        } else {
-            console.log(`[MindMap]    ==> No change. indentation (${indentation}) > mapIndentation (${mapIndentation}) is ${indentation > mapIndentation}. mapIndentation (${mapIndentation}) > bestParentLevel (${bestParentLevel}) is ${mapIndentation > bestParentLevel}.`);
-        }
-    });
+    const indentLevel = Math.floor(indentation / 4);
     
-    const parentNode = nodes.find(n => n.id === parentId);
-    const parentLevelNum = parentNode ? parentNode.level : 0;
+    console.log(`[MindMap] Processing line: "${line.substring(0,30)}..." Indentation: ${indentation}, indentLevel: ${indentLevel}`);
+    
+    // ✅ FIXED: Find parent node based on indentation level
+    while (levelStack.length > 0 && levelStack[levelStack.length - 1].indentLevel >= indentLevel) {
+      levelStack.pop();
+    }
+    
+    let parentId = rootId;
+    if (levelStack.length > 0) {
+      parentId = levelStack[levelStack.length - 1].id;
+        }
+    
+    // const parentNode = nodes.find(n => n.id === parentId);
+    // const parentLevelNum = parentNode ? parentNode.level : 0;
+    const nodeLevel = indentLevel;
 
     nodes.push({
       id: currentId,
       name: nodeName,
-      group: parentLevelNum + 2,
-      level: parentLevelNum + 1
+      group: nodeLevel + 1,
+      level: nodeLevel
     });
     links.push({ source: parentId, target: currentId });
-    levelMap.set(indentation, currentId);
+    levelStack.push({ id: currentId, level: nodeLevel, indentLevel: indentLevel });
+    
+    console.log(`[MindMap] Node created: ${nodeName} (level ${nodeLevel}, parent: ${parentId})`);
   }
   
   if (nodes.length === 0) {
@@ -186,7 +213,21 @@ const calculateDefaultCollapsedSet = (
 
     if (shouldCollapse) {
       parentNodesWithChildren.delete("1"); // Exclude root node from collapsing if shouldCollapse is true
-      console.log(`[MindMap] ${logContext}: Collapsing children of root (node '1' removed from set if present).`);
+      
+      // Only collapse nodes at level 2 and deeper, keep level 1 (direct children of root) expanded
+      const nodesToKeepExpanded = new Set<string>();
+      data.nodes.forEach(node => {
+        if (node.level === 1) { // Direct children of root (level 0)
+          nodesToKeepExpanded.add(node.id);
+        }
+      });
+      
+      // Remove level 1 nodes from the collapsed set so they remain expanded
+      nodesToKeepExpanded.forEach(nodeId => {
+        parentNodesWithChildren.delete(nodeId);
+      });
+      
+      console.log(`[MindMap] ${logContext}: Keeping level 1 nodes expanded, collapsing deeper levels only.`);
     } else {
       // If not collapsing by default, we might want to ensure nothing is collapsed initially,
       // or handle this based on specific requirements. For now, if shouldCollapse is false,
@@ -218,8 +259,12 @@ const PopupContainer: React.FC<{
       document.body.appendChild(portalRef.current);
     }
     return () => {
-      if (portalRef.current) {
+      if (portalRef.current && document.body.contains(portalRef.current)) {
+        try {
         document.body.removeChild(portalRef.current);
+        } catch (error) {
+          console.warn('[PopupContainer] Error removing portal:', error);
+        }
         portalRef.current = null;
       }
     };
@@ -287,34 +332,68 @@ const PopupContainer: React.FC<{
 const MindMap: React.FC<MindMapProps> = ({ 
   initialData,
   defaultCollapsed = true,
+  mermaidString,
 }) => {
-  console.log('[MindMap] Component initialized with initialData:', initialData);
-  
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
-  const [data, setData] = useState<MindMapData>(() => {
-    console.log('[MindMap] Setting initial data state. initialData:', initialData);
-    const result = initialData || getDefaultData();
-    console.log('[MindMap] Initial data state result:', result);
-    return result;
-  });
-  const [inputText, setInputText] = useState<string>("");
+  const [data, setData] = useState<MindMapData>(() => initialData || getDefaultData());
+  // ✅ FIXED: Initialize inputText with mermaidString prop if provided
+  const [inputText, setInputText] = useState<string>(mermaidString || "");
   const [layout, setLayout] = useState<"vertical" | "horizontal">("horizontal");
   const [generationTrigger, setGenerationTrigger] = useState<number>(0); // New state for triggering generation
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(
     () => {
       console.log('[MindMap] Initializing collapsedNodes state. DefaultCollapsed prop:', defaultCollapsed, 'Initial data state:', data);
-      // Force all nodes to be expanded initially for better user experience
-      const initialCollapsed = new Set<string>();
-      console.log('[MindMap] Initial collapsed set (forcing expanded):', initialCollapsed);
+      const initialCollapsed = calculateDefaultCollapsedSet(data, defaultCollapsed, "MindMap initial state setup");
+      console.log('[MindMap] Initial collapsed set:', initialCollapsed);
       return initialCollapsed;
     }
   );
   const loadInitiatedRef = useRef(false);
   const lastSavedValueRef = useRef<string | null>(null);
+  const [lastSavedMermaid, setLastSavedMermaid] = useState<string | null>(null);
+
+  // ✅ FIXED: Effect to update inputText when mermaidString prop changes
+  useEffect(() => {
+    if (mermaidString && typeof mermaidString === 'string' && mermaidString !== inputText) {
+      console.log('[MindMap] mermaidString prop changed, updating inputText:', mermaidString.substring(0, 100) + "...");
+      setInputText(mermaidString);
+      // ✅ FIXED: Trigger generation when mermaidString prop is set
+      setGenerationTrigger(prev => prev + 1);
+    }
+  }, [mermaidString, inputText]); // Keep inputText to properly compare and avoid unnecessary updates
+
+  // ✅ FIXED: Effect to trigger initial generation when component mounts with mermaidString
+  useEffect(() => {
+    if (mermaidString && typeof mermaidString === 'string' && mermaidString.trim() && generationTrigger === 0) {
+      console.log('[MindMap] Initial mount with mermaidString, triggering generation');
+      setGenerationTrigger(1);
+    }
+    loadInitiatedRef.current = true;
+  }, [mermaidString]); // Remove generationTrigger from dependencies to prevent infinite loop
 
   const togglePopup = useCallback(() => {
     setIsPopupOpen(prev => {
       const newState = !prev;
+      
+      if (newState) {
+        // Opening popup - push state to history so back button works
+        window.history.pushState({ mindmapOpen: true }, '', window.location.href);
+        
+        // Listen for back button
+        const handlePopState = (event: PopStateEvent) => {
+          if (!event.state?.mindmapOpen) {
+            setIsPopupOpen(false);
+            window.removeEventListener('popstate', handlePopState);
+          }
+        };
+        window.addEventListener('popstate', handlePopState);
+      } else {
+        // Closing popup - remove the history entry if it was added
+        if (window.history.state?.mindmapOpen) {
+          window.history.back();
+        }
+      }
+      
       setTimeout(() => {
         console.log('[MindMap] Popup state changed to:', newState, ' Dispatching resize.');
         window.dispatchEvent(new Event('resize'));
@@ -343,7 +422,8 @@ const MindMap: React.FC<MindMapProps> = ({
         newCollapsedSet = calculateDefaultCollapsedSet(updatedData, defaultCollapsed, "Root node changed");
       }
       else {
-        console.log('[MindMap] handleSetData: Incremental update, preserving collapsed/expanded state (no change to collapsedNodes from this function).');
+        // Reduced logging for performance
+        // console.log('[MindMap] handleSetData: Incremental update, preserving collapsed/expanded state (no change to collapsedNodes from this function).');
       }
 
       if (newCollapsedSet) {
@@ -374,7 +454,7 @@ const MindMap: React.FC<MindMapProps> = ({
       nodes: prevData.nodes.map(node => ({ ...node, x: undefined, y: undefined })),
     }));
     setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
-  }, [layout, handleSetData]);
+  }, [layout]); // FIXED: Remove handleSetData to prevent render loops
   
   const actualGenerateFromInputTextHandler = useCallback(() => {
     // Now, this handler only updates the trigger.
@@ -390,131 +470,105 @@ const MindMap: React.FC<MindMapProps> = ({
       return;
     }
 
-    console.log('[MindMap] Generation useEffect (main from inputText): Triggered. Generating from inputText:', inputText.substring(0,100) + "...");
+    // Reduced logging for performance
+    // console.log('[MindMap] Generation useEffect (main from inputText): Triggered. Generating from inputText:', inputText.substring(0,100) + "...");
     
+    // ✅ FIXED: Don't clear data when inputText is empty during initialization
+    // Only clear data if we have existing data and the user explicitly cleared the input
     if (!inputText.trim()) {
-        console.log('[MindMap] Generation useEffect (main from inputText): inputText is empty. Data state will be preserved unless explicitly cleared by user or other actions.');
-        // If inputText is cleared, we might want to clear the data. 
-        // This is a design choice. For now, let's assume if inputText is cleared, data is also cleared.
-        // However, to prevent loops, this effect should *only* generate. Clearing should be a separate action.
-        // For now, if input is empty, we effectively do nothing in terms of *generating new data*.
-        // BUT, if there *was* old data, and input is cleared, the user probably expects the map to clear.
-        // This scenario is tricky. Let's assume for now that clearing inputText means clearing the map data via this effect.
-        // This will trigger handleSetData which will then correctly update collapsedNodes.
-        handleSetData({ nodes: [], links: [] });
-        console.log('[MindMap] Generation useEffect (main from inputText): inputText was empty, called handleSetData with empty data.');
+        // Reduced logging for performance
+        // console.log('[MindMap] Generation useEffect (main from inputText): inputText is empty. Preserving existing data to prevent initialization issues.');
+        // Don't clear data automatically - let the user explicitly clear it if needed
         return;
     }
 
     const newGeneratedData = generateMindMapFromText(inputText);
-    console.log('[MindMap] Generation useEffect (main from inputText): Generated new data, calling handleSetData.');
+    // Reduced logging for performance
+    // console.log('[MindMap] Generation useEffect (main from inputText): Generated new data, calling handleSetData.');
     handleSetData(newGeneratedData); 
     
-    console.log('[MindMap] Generation useEffect (main from inputText): Processed.');
+    // Reduced logging for performance
+    // console.log('[MindMap] Generation useEffect (main from inputText): Processed.');
 
     // Dispatch resize after data is set and likely rendered
     setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
-      console.log('[MindMap] Resize event dispatched after Generation useEffect (main from inputText).');
+      // Reduced logging for performance
+      // console.log('[MindMap] Resize event dispatched after Generation useEffect (main from inputText).');
     }, 100);
-  }, [generationTrigger, inputText, handleSetData]); // CORE CHANGE: Simplified dependencies
+  }, [generationTrigger, inputText]); // FIXED: Remove handleSetData to prevent render loops
 
+  // Main data generation and loading effect
   useEffect(() => {
-    if (loadInitiatedRef.current) return;
-    loadInitiatedRef.current = true;
-
-    try {
-      const savedContent = localStorage.getItem('mindmapContent');
-      lastSavedValueRef.current = savedContent;
-      if (savedContent) {
-        console.log('[MindMap] Found saved content:', savedContent.substring(0, 50) + '...');
-        const parsedContent = JSON.parse(savedContent);
-        // Check if parsedContent has a 'data' field that is a string (old format)
-        // or if it's directly a string, or an object (new format)
-        let textToProcess: string;
-        let mindMapDataToSet: MindMapData | null = null;
-
-        if (parsedContent && typeof parsedContent.inputText === 'string' && parsedContent.data && typeof parsedContent.data === 'object') {
-          // New format: { inputText: "...", data: { nodes: [], links: [] }, layout: "..." }
-          textToProcess = parsedContent.inputText;
-          mindMapDataToSet = parsedContent.data as MindMapData;
-          if (parsedContent.layout) {
-            setLayout(parsedContent.layout);
-          }
-        } else if (typeof parsedContent === 'string') {
-           // Old format: just the text string
-          textToProcess = parsedContent;
-        } else if (parsedContent.data && typeof parsedContent.data === 'string') {
-          // Old format: { data: "text string" }
-          textToProcess = parsedContent.data;
-        } else if (typeof parsedContent === 'object' && parsedContent.nodes && parsedContent.links) {
-          // Might be just the MindMapData object directly
-          textToProcess = JSON.stringify(parsedContent, null, 2); // Or some other serialization
-          mindMapDataToSet = parsedContent as MindMapData;
-        } else {
-           console.warn('[MindMap] Unknown format in localStorage, falling back.');
-          textToProcess = ""; // Fallback to empty
-        }
-
-        setInputText(textToProcess);
-        if (mindMapDataToSet) {
-          handleSetData(mindMapDataToSet);
-          setCollapsedNodes(
-            calculateDefaultCollapsedSet(mindMapDataToSet, defaultCollapsed, "localStorage load (direct data)")
-          );
-        } else if (textToProcess) {
-          const generatedData = generateMindMapFromText(textToProcess);
-          if (generatedData.nodes.length > 0) {
-            handleSetData(generatedData);
-            setCollapsedNodes(
-              calculateDefaultCollapsedSet(generatedData, defaultCollapsed, "localStorage load (from text)")
-            );
-          }
-        }
-                      } else {
-          console.log('[MindMap] No saved content found. Using initialData.');
-          if (initialData && initialData.nodes && initialData.nodes.length > 0) {
-            handleSetData(initialData);
-            // Potentially serialize initialData to inputText if needed
-            // setInputText(serializeMindMapToText(initialData)); 
-            // Force all nodes to be expanded for better visibility
-            setCollapsedNodes(new Set<string>());
-            console.log('[MindMap] InitialData load: Forcing all nodes to be expanded');
-          } else {
-            handleSetData(getDefaultData());
-            setInputText("");
-            setCollapsedNodes(new Set<string>());
-            console.log('[MindMap] Default data load: Forcing all nodes to be expanded');
-          }
-        }
-    } catch (error) {
-      console.error('[MindMap] Error loading saved content:', error);
-      // Fallback to default if loading fails
-      handleSetData(initialData || getDefaultData());
-      setInputText("");
-      // Force all nodes to be expanded even in error fallback
-      setCollapsedNodes(new Set<string>());
-      console.log('[MindMap] Error fallback: Forcing all nodes to be expanded');
+    // Priority 1: Use mermaidString prop if provided
+    if (mermaidString && typeof mermaidString === 'string' && mermaidString.trim()) {
+      console.log('[MindMap] Generation useEffect: Using mermaidString prop.');
+      const generatedData = generateMindMapFromText(mermaidString);
+      handleSetData(generatedData);
+      setLastSavedMermaid(mermaidString); // Keep track of what we've processed
+      return;
     }
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
-  }, [initialData, defaultCollapsed, handleSetData]);
 
-  // Effect to handle initialData changes after initial load
-  useEffect(() => {
-    if (!loadInitiatedRef.current) return; // Skip if initial load hasn't happened yet
-    
-    console.log('[MindMap] Effect: initialData changed after initial load. initialData:', initialData);
-    console.log('[MindMap] Effect: initialData nodes count:', initialData?.nodes?.length);
-    console.log('[MindMap] Effect: initialData links count:', initialData?.links?.length);
-    
-    if (initialData && initialData.nodes && initialData.nodes.length > 0) {
-      console.log('[MindMap] Effect: Setting new initialData');
+    // Priority 2: Use initialData prop if provided and different from current data
+    if (initialData && JSON.stringify(initialData) !== JSON.stringify(data)) {
+      console.log('[MindMap] Generation useEffect: Using initialData prop.');
       handleSetData(initialData);
-      // Force all nodes to be expanded for better visibility
-      setCollapsedNodes(new Set<string>());
-      console.log('[MindMap] Effect: Forcing all nodes to be expanded');
+      return;
     }
-  }, [initialData, defaultCollapsed, handleSetData]);
+
+    // Priority 3: Load from localStorage if mermaidString prop is not used
+    // This prevents overwriting prop-driven data with stale localStorage data.
+    if (generationTrigger > 0) { // Assuming trigger is for manual refresh
+      console.log(`[MindMap] Generation useEffect (main from inputText): Trigger is ${generationTrigger}, re-generating.`);
+      
+      // FORCE: Skip localStorage loading if we just cleared it for fresh generation
+      // Check if we have fresh inputText to use instead of loading from localStorage
+      if (inputText && inputText.trim() && inputText !== lastSavedMermaid) {
+        console.log('[MindMap] Using current inputText instead of localStorage for fresh generation');
+        const newGeneratedData = generateMindMapFromText(inputText);
+        handleSetData(newGeneratedData);
+        setLastSavedMermaid(inputText); // Remember this as the last processed content
+        // Dispatch resize event after setting new data
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 100);
+        return;
+      }
+      
+      const savedContent = localStorage.getItem("mindmapContent");
+      if (savedContent) {
+        try {
+          const parsed = JSON.parse(savedContent);
+          
+          // ✅ FIXED: Handle case where parsed.data might be an object (mindmap data) instead of a string
+          let textToGenerate = '';
+          if (parsed.inputText && typeof parsed.inputText === 'string') {
+            textToGenerate = parsed.inputText;
+          } else if (parsed.data && typeof parsed.data === 'string') {
+            textToGenerate = parsed.data;
+          } else if (parsed.data && typeof parsed.data === 'object' && parsed.data.nodes) {
+            // If parsed.data is already a mindmap data object, use it directly
+            console.log('[MindMap] Generation useEffect: Found mindmap data object in localStorage, using directly.');
+            handleSetData(parsed.data);
+            return;
+          }
+          
+          // Only generate if we have valid string text and it's different from the last generated string from a prop
+          if (textToGenerate && textToGenerate !== lastSavedMermaid) {
+            console.log('[MindMap] Generation useEffect: Loading from localStorage with text:', textToGenerate.substring(0, 100) + "...");
+            const generatedData = generateMindMapFromText(textToGenerate);
+            handleSetData(generatedData);
+          } else {
+             console.log('[MindMap] Generation useEffect: Skipping localStorage load, content is same as prop-derived content or no valid text found.');
+          }
+        } catch (e) {
+          console.error("Failed to parse mindmapContent from localStorage", e);
+        }
+      }
+    } else {
+       console.log(`[MindMap] Generation useEffect (main from inputText): Trigger is ${generationTrigger}, skipping.`);
+    }
+  }, [mermaidString, initialData, generationTrigger, lastSavedMermaid]); // FIXED: Remove handleSetData to prevent render loops
 
   // Effect to save to localStorage when data, inputText, or layout changes
   useEffect(() => {
@@ -535,7 +589,7 @@ const MindMap: React.FC<MindMapProps> = ({
     localStorage.setItem('mindmapContent', stringifiedContent);
 
     console.log('[MindMap] Saved to localStorage:', stringifiedContent.substring(0,50) + "...");
-  }, [data, inputText, layout, collapsedNodes]);
+  }, [data, inputText, layout]); // Remove collapsedNodes from dependencies to prevent infinite loop
 
   // Effect to listen for storage changes from other tabs/windows
   useEffect(() => {
@@ -555,9 +609,7 @@ const MindMap: React.FC<MindMapProps> = ({
           // Optionally, reset to initialData or a default empty state
           setData(initialData || getDefaultData());
           setInputText(''); // Clear inputText as well
-          // Force all nodes to be expanded
-          setCollapsedNodes(new Set<string>());
-          console.log('[MindMap] Storage Event Cleared: Forcing all nodes to be expanded');
+          setCollapsedNodes(calculateDefaultCollapsedSet(initialData || getDefaultData(), defaultCollapsed, "Storage Event Cleared"));
           loadInitiatedRef.current = true; // Ensure future saves are allowed
           lastSavedValueRef.current = null; // Reset last saved value
           return;
@@ -580,9 +632,7 @@ const MindMap: React.FC<MindMapProps> = ({
 
           setInputText(loadedContent.inputText || ''); 
           setData(loadedContent.data || getDefaultData());
-          // Force all nodes to be expanded
-          setCollapsedNodes(new Set<string>());
-          console.log('[MindMap] Storage Event Load: Forcing all nodes to be expanded');
+          setCollapsedNodes(calculateDefaultCollapsedSet(loadedContent.data, defaultCollapsed, "Storage Event Load"));
           
           // Update generationTrigger to potentially reflect remote changes, if needed, or reset.
           // For now, let's ensure it doesn't cause an immediate re-generation unless inputText changed significantly.
@@ -594,9 +644,7 @@ const MindMap: React.FC<MindMapProps> = ({
           // Fallback to a safe state if parsing fails
           setData(getDefaultData());
           setInputText('');
-          // Force all nodes to be expanded even in parse error fallback
-          setCollapsedNodes(new Set<string>());
-          console.log('[MindMap] Storage Event Parse Error: Forcing all nodes to be expanded');
+          setCollapsedNodes(calculateDefaultCollapsedSet(getDefaultData(), defaultCollapsed, "Storage Event Parse Error"));
         }
         // Update lastSavedValueRef AFTER processing the foreign change, 
         // so future saves by this instance are correctly managed.
@@ -606,7 +654,17 @@ const MindMap: React.FC<MindMapProps> = ({
 
     window.addEventListener('storage', handleStorageChange);
     return () => { window.removeEventListener('storage', handleStorageChange); };
-  }, [defaultCollapsed, handleSetData, initialData]);
+  }, [defaultCollapsed, initialData]); // Remove handleSetData from dependencies to prevent infinite loop
+
+  // Cleanup effect for browser history
+  useEffect(() => {
+    return () => {
+      // Clean up any remaining popstate listeners when component unmounts
+      if (isPopupOpen && window.history.state?.mindmapOpen) {
+        window.history.back();
+      }
+    };
+  }, [isPopupOpen]);
 
   return (
     <ReactFlowProvider>
@@ -632,5 +690,8 @@ const MindMap: React.FC<MindMapProps> = ({
     </ReactFlowProvider>
   );
 };
+
+// Export the generateMindMapFromText function for use in MindMapContent
+export { generateMindMapFromText };
 
 export default MindMap;

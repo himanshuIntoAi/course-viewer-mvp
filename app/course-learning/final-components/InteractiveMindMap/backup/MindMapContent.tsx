@@ -9,6 +9,8 @@ import GraphRendererLR from "./GraphRendererLR";
 import { toPng, toJpeg } from 'html-to-image';
 import jsPDF from 'jspdf';
 
+import { config } from '../../../lib/config';
+
 // Define interfaces for Node, Link, and MindMapData
 interface Node {
   id: string;
@@ -584,7 +586,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
     const rootNode = data.nodes.find(node => node.id === "1");
     const topic = rootNode?.name || "";
     try {
-      const response = await fetch('/api/chatgpt', {
+      const response = await fetch(`${config.API_BASE_URL}/api/chatgpt`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: `Create a detailed mind map about "${topic}" with multiple branches and sub-branches. Include at least 5-7 main topics with 2-3 subtopics each.`, isMindMap: true }),
@@ -611,7 +613,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
     const topic = inputText.trim();
     if (!topic) { setIsGenerating(false); return; }
     try {
-      const response = await fetch('/api/chatgpt', {
+      const response = await fetch(`${config.API_BASE_URL}/api/chatgpt`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: `Create a detailed mind map about "${topic}" with multiple branches and sub-branches. Include at least 5-7 main topics with 2-3 subtopics each.`, isMindMap: true }),
@@ -715,7 +717,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
       const nodeScope = level > 0 ? "subtopics/child nodes" : "main topics";
       const detail = level > 0 ? "detailed and specific" : "broad and comprehensive";
       const prompt = `Generate 5 ${detail} ${nodeScope} for the concept: "${parentNode.name}". Return them as a numbered list, with each subtopic being concise (2-5 words).`;
-      const response = await fetch('/api/chatgpt', {
+      const response = await fetch(`${config.API_BASE_URL}/api/chatgpt`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, isMindMap: true, field: parentNode.name }),

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, Dispatch, SetStateAction } from "react";
-import { Maximize2, ArrowLeftRight, ArrowUpDown, Plus, Palette, Link as LinkIcon, FileText, Wand2, Sparkles, Download, ChevronDown } from "lucide-react";
+import { Maximize2, ArrowLeftRight, ArrowUpDown, Plus, Palette, Link as LinkIcon, Wand2, Download, ChevronDown } from "lucide-react";
 import 'reactflow/dist/style.css';
 import { useReactFlow } from 'reactflow'; // Import useReactFlow
 import './MindMap.css';
@@ -9,6 +9,10 @@ import GraphRenderer from "./GraphRenderer";
 import GraphRendererLR from "./GraphRendererLR";
 import { toPng, toJpeg } from 'html-to-image';
 import jsPDF from 'jspdf';
+import { API_ENDPOINTS } from '../../lib/config';
+
+// Import the generateMindMapFromText function from MindMap.tsx
+import { generateMindMapFromText } from './MindMap';
 
 // Define interfaces for Node, Link, and MindMapData
 interface Node {
@@ -90,9 +94,6 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
   togglePopup,
   triggerGenerateFromText,
 }) => {
-  console.log('[MindMapContent] Component received data:', data);
-  console.log('[MindMapContent] Data nodes count:', data?.nodes?.length);
-  console.log('[MindMapContent] Data links count:', data?.links?.length);
   const reactFlowInstance = useReactFlow();
   const [showExportOptions, setShowExportOptions] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -311,12 +312,6 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
     return () => { componentMountedRef.current = false; };
   }, [isCoreDataReady]); // Rerun if isCoreDataReady changes, though it should only change once.
 
-  const handleGenerateFromText = useCallback(() => {
-    // This function now just triggers the generation in the parent component.
-    // The parent (MindMap.tsx) will use its `inputText` state to generate the new `data`.
-    triggerGenerateFromText();
-    // Parent component will handle resize after generation
-  }, [triggerGenerateFromText]);
 
   const exportGraph = useCallback(() => {
     const jsonData = JSON.stringify(data, null, 2);
@@ -331,52 +326,277 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
   }, [data]); 
 
   const handleGenerateFromAI = useCallback(async () => {
+    // Generate fresh alternative mindmap content
     setIsGenerating(true);
-    const rootNode = data.nodes.find(node => node.id === "1");
-    const topic = rootNode?.name || "";
-    try {
-      const response = await fetch('/api/chatgpt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: `Create a detailed mind map about "${topic}" with multiple branches and sub-branches. Include at least 5-7 main topics with 2-3 subtopics each.`, isMindMap: true }),
-      });
-      if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-      const mermaidSyntax = await response.text();
-      const formattedSyntax = !mermaidSyntax.trim().startsWith('mindmap') ? `mindmap\n${mermaidSyntax}` : mermaidSyntax;
-      setInputText(formattedSyntax); 
-      // Trigger generation in parent after setting inputText
-      triggerGenerateFromText();
-      // Parent component will handle resize after generation
-    } catch (error) {
-      console.error('[MindMapContent] Error generating mind map from AI:', error);
-    } finally {
-      setIsGenerating(false);
+    
+    // FIRST: Extract topic from input text instead of relying on mindmap data
+    let topic = "";
+    
+    if (inputText && inputText.trim()) {
+      // Extract topic from the input text
+      const lines = inputText.trim().split('\n');
+      const firstLine = lines[0]?.trim();
+      
+      if (firstLine) {
+        // Handle different formats:
+        // 1. "mindmap\n    root((Topic Name))" - extract from root
+        // 2. "Topic Name\n  subtopic..." - use first line
+        // 3. "root((Topic Name))" - extract from parentheses
+        
+        if (firstLine.toLowerCase().includes('mindmap') && lines.length > 1) {
+          // Look for root in subsequent lines
+          const rootLine = lines.find(line => line.includes('root((') || line.includes('root('));
+          if (rootLine) {
+            const match = rootLine.match(/root\(\(([^)]+)\)\)/);
+            if (match) {
+              topic = match[1];
+            } else {
+              const simpleMatch = rootLine.match(/root\(([^)]+)\)/);
+              if (simpleMatch) {
+                topic = simpleMatch[1];
+              }
+            }
+          }
+        } else if (firstLine.includes('root((') || firstLine.includes('root(')) {
+          // Direct root format
+          const match = firstLine.match(/root\(\(([^)]+)\)\)/);
+          if (match) {
+            topic = match[1];
+          } else {
+            const simpleMatch = firstLine.match(/root\(([^)]+)\)/);
+            if (simpleMatch) {
+              topic = simpleMatch[1];
+            }
+          }
+        } else {
+          // Use first line as topic (remove any leading indentation)
+          topic = firstLine.replace(/^\s+/, '');
+        }
+      }
     }
-  }, [data.nodes, setInputText, triggerGenerateFromText]); 
+    
+    // Fallback: Try to get topic from existing mindmap data if input text failed
+    if (!topic) {
+      console.log('[MindMapContent] No topic found in input text, trying existing mindmap data...');
+      const currentData = data;
+      
+      if (currentData && currentData.nodes && currentData.nodes.length > 0) {
+        let rootNode = currentData.nodes.find(node => node.id === "1");
+        if (!rootNode) {
+          rootNode = currentData.nodes.find(node => node.level === 0);
+        }
+        if (!rootNode && currentData.nodes.length > 0) {
+          rootNode = currentData.nodes[0];
+        }
+        topic = rootNode?.name || "";
+      }
+    }
+    
+    console.log('[MindMapContent] Final topic for alternative generation:', topic);
+    
+    if (!topic) {
+      console.error('[MindMapContent] No topic found from input text or mindmap data, cannot generate alternative mindmap');
+      console.error('[MindMapContent] Input text:', inputText);
+      console.error('[MindMapContent] Data nodes:', data.nodes);
+      setIsGenerating(false);
+      return;
+    }
+    
+    // THEN: Clear existing mindmap data to ensure fresh generation
+    setData({ nodes: [], links: [] });
+    setInputText('');
+    
+    // FORCE: Clear localStorage cache to prevent loading old data
+    const timestamp = Date.now();
+    const uniqueId = window.currentCourseId || localStorage.getItem('currentCourseId') || timestamp.toString();
+    
+    // Clear existing mindmap cache
+    const topicKey = topic.toLowerCase().replace(/\s+/g, '_');
+    const storageKey = `mindmapContent_${topicKey}_${uniqueId}`;
+    localStorage.removeItem(storageKey);
+    localStorage.removeItem('mindmapContent');
+    
+    try {
+      // ✅ FIXED: Use the same logic as CourseCreationWorkspace for "Add More" functionality
+      // Get course ID from multiple sources for backend API
+      const courseId = window.currentCourseId || localStorage.getItem('currentCourseId');
+      if (!courseId) {
+        throw new Error('Course ID not found. Please ensure a course has been generated first.');
+      }
 
-  const handleGenerateTopicFromAI = useCallback(async () => {
-    setIsGenerating(true);
-    const topic = inputText.trim(); 
-    if (!topic) { setIsGenerating(false); return; }
-    try {
-      const response = await fetch('/api/chatgpt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: `Create a detailed mind map about "${topic}" with multiple branches and sub-branches. Include at least 5-7 main topics with 2-3 subtopics each.`, isMindMap: true }),
-      });
-      if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-      const mermaidSyntax = await response.text();
-      const formattedSyntax = !mermaidSyntax.trim().startsWith('mindmap') ? `mindmap\n${mermaidSyntax}` : mermaidSyntax;
+      // ✅ FIXED: Build context object that matches BackendAPIService expectations
+      const context = {
+        course_context: `Create a detailed mind map about "${topic}" with specific, concrete content.
+
+IMPORTANT: DO NOT use generic terms like "Key Concepts", "Important Topics", "Advanced Concepts", "Fundamentals", "Theory", "Practice", "Applications", "Basics", "Core Principles", or "Main Areas".
+
+Instead, provide actual, specific topics that are directly related to "${topic}". For example:
+- If topic is "Machine Learning": Supervised Learning, Unsupervised Learning, Neural Networks, Deep Learning, Reinforcement Learning
+- If topic is "Web Development": Frontend Development, Backend Development, Database Design, API Development, DevOps
+- If topic is "Data Science": Data Collection, Data Cleaning, Statistical Analysis, Machine Learning, Data Visualization
+
+Include 5-7 main branches with 2-3 specific subtopics each. Each branch should be a concrete aspect of "${topic}", not a generic category. Use proper mindmap syntax with root((${topic})) format and indentation hierarchy.`,
+        course_id: parseInt(courseId.toString()),
+        topic_id: 1, // Use 1 as default topic_id for mindmap generation
+            difficulty: 'intermediate'
+      };
+
+      console.log(`[MindMapContent] Generating alternative mindmap for topic: "${topic}" with course_id: ${context.course_id}, topic_id: ${context.topic_id}`);
+      
+      // ✅ FIXED: Use BackendAPIService like CourseCreationWorkspace
+      const { BackendAPIService } = await import('../../lib/BackendAPIService');
+      const backendAPI = new BackendAPIService();
+      
+      // ✅ FIXED: Call the API with the same structure as CourseCreationWorkspace
+      const generatedData = await backendAPI.generateContent('mindmap', topic, context);
+      if (!generatedData) {
+        throw new Error('Failed to generate mindmap content');
+      }
+      
+      console.log(`[MindMapContent] Successfully generated mindmap data:`, generatedData);
+      console.log(`[MindMapContent] Generated data type:`, typeof generatedData);
+      
+      // ✅ FIXED: Process response using the same logic as CourseCreationWorkspace
+      let processedData: string = '';
+      
+      if (typeof generatedData === 'string' && generatedData.trim().length > 0) {
+        // Direct string response - should be Mermaid syntax
+        processedData = generatedData;
+        console.log(`[MindMapContent] Using direct string response (${processedData.length} chars)`);
+      } else       if (generatedData && typeof generatedData === 'object') {
+        // Object response - check multiple possible formats
+        if (generatedData.data && typeof generatedData.data === 'string' && generatedData.data.trim().length > 0) {
+          // ✅ FIXED: Check for data as string first (this is the correct format per API docs)
+          processedData = generatedData.data;
+          console.log(`[MindMapContent] Found in .data property as string (${processedData.length} chars)`);
+        } else if (generatedData.data && typeof generatedData.data === 'object' && generatedData.data.mindmap_syntax) {
+          // ✅ FALLBACK: Check for nested data.mindmap_syntax (legacy format)
+          processedData = generatedData.data.mindmap_syntax;
+          console.log(`[MindMapContent] Found in .data.mindmap_syntax property (${processedData.length} chars)`);
+        } else if (generatedData.mindmap && typeof generatedData.mindmap === 'string' && generatedData.mindmap.trim().length > 0) {
+          processedData = generatedData.mindmap;
+          console.log(`[MindMapContent] Found in .mindmap property (${processedData.length} chars)`);
+        } else if (generatedData.content && typeof generatedData.content === 'string' && generatedData.content.trim().length > 0) {
+          processedData = generatedData.content;
+          console.log(`[MindMapContent] Found in .content property (${processedData.length} chars)`);
+        } else if (generatedData.data && typeof generatedData.data === 'string' && generatedData.data.trim().length > 0) {
+          processedData = generatedData.data;
+          console.log(`[MindMapContent] Found in .data property (${processedData.length} chars)`);
+        } else if (generatedData.mind_map && typeof generatedData.mind_map === 'string' && generatedData.mind_map.trim().length > 0) {
+          processedData = generatedData.mind_map;
+          console.log(`[MindMapContent] Found in .mind_map property (${processedData.length} chars)`);
+        } else if (generatedData.text && typeof generatedData.text === 'string' && generatedData.text.trim().length > 0) {
+          processedData = generatedData.text;
+          console.log(`[MindMapContent] Found in .text property (${processedData.length} chars)`);
+        } else {
+          // Check if any property contains mindmap-like content
+          const allKeys = Object.keys(generatedData);
+          console.log(`[MindMapContent] Checking all object properties:`, allKeys);
+          
+          for (const key of allKeys) {
+            const value = generatedData[key];
+            if (typeof value === 'string' && value.trim().length > 0 && 
+                (value.includes('mindmap') || value.includes('root(') || value.includes('    '))) {
+              processedData = value;
+              console.log(`[MindMapContent] Found mindmap-like content in .${key} property (${processedData.length} chars)`);
+              break;
+            }
+          }
+        }
+      }
+      
+      // ✅ FIXED: Enhanced validation with better error messages and content quality checks
+      if (!processedData || processedData.trim().length === 0) {
+        console.warn('[MindMapContent] No mindmap data found');
+        processedData = '';
+      } else if (processedData === '{}' || processedData === '""' || processedData === 'null') {
+        console.warn('[MindMapContent] Mindmap data is empty object/string/null');
+        processedData = '';
+      } else if (processedData.trim().length < 50) {
+        console.warn(`[MindMapContent] Mindmap data too short (${processedData.trim().length} chars), likely incomplete`);
+        processedData = '';
+      } else if (!processedData.includes('mindmap') && !processedData.includes('root(')) {
+        console.warn('[MindMapContent] Mindmap data doesn\'t contain expected mindmap syntax');
+        processedData = '';
+      }
+      
+      // Only use fallback if we have no valid data
+      if (!processedData) {
+        console.warn('[MindMapContent] Invalid mindmap data generated, using fallback');
+        processedData = `mindmap
+    root((${topic}))
+        Core Concepts
+            Fundamental Principles
+            Key Theories
+        Practical Applications
+            Real-world Examples
+            Industry Use Cases
+        Advanced Topics
+            Emerging Trends
+            Research Areas
+        Best Practices
+            Common Challenges`;
+      }
+      
+      // ✅ FIXED: Format the syntax properly
+      const formattedSyntax = !processedData.trim().startsWith('mindmap') ? `mindmap\n${processedData}` : processedData;
+      
+      // ✅ FIXED: Set the input text and trigger generation to replace existing mindmap
       setInputText(formattedSyntax); 
-      // Trigger generation in parent after setting inputText
-      triggerGenerateFromText(); 
-      // Parent component will handle resize after generation
+      
+      // ✅ FIXED: Save the new mindmap data to localStorage for persistence
+      const timestamp = Date.now();
+      const uniqueId = window.currentCourseId || localStorage.getItem('currentCourseId') || timestamp.toString();
+      const topicKey = topic.toLowerCase().replace(/\s+/g, '_');
+      const storageKey = `mindmapContent_${topicKey}_${uniqueId}`;
+      
+      // Save to localStorage with proper format
+      localStorage.setItem(storageKey, JSON.stringify({
+        inputText: formattedSyntax,
+        data: formattedSyntax,
+        timestamp: timestamp,
+        uniqueId: uniqueId,
+        topic: topic
+      }));
+      
+      // Also save to main mindmapContent key for compatibility
+      localStorage.setItem('mindmapContent', JSON.stringify({
+        inputText: formattedSyntax,
+        data: formattedSyntax,
+        timestamp: timestamp
+      }));
+      
+      console.log(`[MindMapContent] Saved new mindmap data to localStorage with key: ${storageKey}`);
+      
+      // ✅ FIXED: Set the input text and trigger generation to replace existing mindmap
+      setInputText(formattedSyntax); 
+      
+      // ✅ IMPROVED: Force immediate data update to ensure regeneration works properly
+      const newGeneratedData = generateMindMapFromText(formattedSyntax);
+      setData(newGeneratedData);
+      
+      // Also trigger the text generation for consistency
+      triggerGenerateFromText();
+      
+      // Force a resize event to ensure proper rendering
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 200);
+      
+      // Dispatch event to notify other components of the update
+      window.dispatchEvent(new CustomEvent('componentDataUpdated', {
+        detail: { componentType: 'mindmap', topic: topic, uniqueId: uniqueId }
+      }));
+      
+      console.log(`[MindMapContent] Successfully generated alternative mindmap for "${topic}"`);
+      
     } catch (error) {
-      console.error('[MindMapContent] Error generating topic mind map from AI:', error);
+      console.error('[MindMapContent] Error generating alternative mind map from AI:', error);
     } finally {
       setIsGenerating(false);
     }
-  }, [inputText, setInputText, triggerGenerateFromText]);
+  }, [inputText, data, setInputText, triggerGenerateFromText, setData]); // Added inputText and data dependencies
+
 
   const handleLayoutChange = useCallback((newLayout: "vertical" | "horizontal") => {
     if (layout === newLayout) return; 
@@ -460,33 +680,282 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
         console.error('[MindMapContent] handleGenerateSubtopics: Parent node not found!');
         setIsGenerating(false); return; 
       }
+      
       const level = parentNode.level || 0;
       const nodeScope = level > 0 ? "subtopics/child nodes" : "main topics";
       const detail = level > 0 ? "detailed and specific" : "broad and comprehensive";
-      const prompt = `Generate 5 ${detail} ${nodeScope} for the concept: "${parentNode.name}". Return them as a numbered list, with each subtopic being concise (2-5 words).`;
-      console.log(`[MindMapContent] handleGenerateSubtopics: Prompt for AI: ${prompt}`);
-      const response = await fetch('/api/chatgpt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, isMindMap: true, field: parentNode.name }),
-      });
-      if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-      const result = await response.text();
-      console.log(`[MindMapContent] handleGenerateSubtopics: Raw result from AI:`, result);
+      
+      // Build comprehensive context by analyzing the entire mindmap structure
+      const buildMindMapContext = () => {
+        let rootNode = data.nodes.find(n => n.id === "1");
+        if (!rootNode) {
+          // Fallback: find node with level 0 (root level)
+          rootNode = data.nodes.find(n => n.level === 0);
+        }
+        if (!rootNode && data.nodes.length > 0) {
+          // Fallback: use the first node if no level 0 node found
+          rootNode = data.nodes[0];
+        }
+        if (!rootNode) return "";
+        
+        // Get all direct children of the root
+        const rootChildren = data.links
+          .filter(link => link.source === rootNode.id)
+          .map(link => data.nodes.find(n => n.id === link.target))
+          .filter(Boolean);
+        
+        // Get all direct children of the parent node
+        const parentChildren = data.links
+          .filter(link => link.source === nodeId)
+          .map(link => data.nodes.find(n => n.id === link.target))
+          .filter(Boolean);
+        
+        // Build complete mindmap structure for context
+        const buildCompleteStructure = () => {
+          let structure = `Complete Mindmap Structure:\n`;
+          structure += `Root: "${rootNode.name}" (Level 0)\n`;
+          
+          // Add all main branches with their levels
+          rootChildren.forEach((child) => {
+            if (child) {
+              structure += `  ├─ ${child.name} (Level 1)\n`;
+              
+              // Get children of this main branch
+              const branchChildren = data.links
+                .filter(link => link.source === child.id)
+                .map(link => data.nodes.find(n => n.id === link.target))
+                .filter(Boolean);
+              
+              branchChildren.forEach((grandChild) => {
+                if (grandChild) {
+                  structure += `    ├─ ${grandChild.name} (Level 2)\n`;
+                  
+                  // Get children of this sub-branch (Level 3)
+                  const subBranchChildren = data.links
+                    .filter(link => link.source === grandChild.id)
+                    .map(link => data.nodes.find(n => n.id === link.target))
+                    .filter(Boolean);
+                  
+                  subBranchChildren.forEach((subChild) => {
+                    if (subChild) {
+                      structure += `      ├─ ${subChild.name} (Level 3)\n`;
+                    }
+                  });
+                }
+              });
+            }
+          });
+          
+          return structure;
+        };
+        
+        // Build parent node context with hierarchy information
+        const buildParentContext = () => {
+          let parentContext = `\nParent Node Details:\n`;
+          parentContext += `- Name: "${parentNode.name}"\n`;
+          parentContext += `- Level: ${parentNode.level || 0}\n`;
+          parentContext += `- Group: ${parentNode.group}\n`;
+          
+          // Find parent's parent (grandparent)
+          const grandparentLink = data.links.find(link => link.target === nodeId);
+          if (grandparentLink) {
+            const grandparent = data.nodes.find(n => n.id === grandparentLink.source);
+            if (grandparent) {
+              parentContext += `- Parent: "${grandparent.name}" (Level ${grandparent.level || 0})\n`;
+            }
+          }
+          
+          // Add siblings (other children of the same parent)
+          if (grandparentLink) {
+            const siblings = data.links
+              .filter(link => link.source === grandparentLink.source && link.target !== nodeId)
+              .map(link => data.nodes.find(n => n.id === link.target))
+              .filter(Boolean);
+            
+            if (siblings.length > 0) {
+              parentContext += `- Siblings: ${siblings.map(s => s?.name).join(", ")}\n`;
+            }
+          }
+          
+          return parentContext;
+        };
+        
+        // Build existing children context
+        const buildExistingChildrenContext = () => {
+          if (parentChildren.length === 0) {
+            return `\nExisting Children: None (this is a new branch)\n`;
+          }
+          
+          let childrenContext = `\nExisting Children under "${parentNode.name}":\n`;
+          parentChildren.forEach((child) => {
+            if (child) {
+              childrenContext += `- ${child.name} (Level ${child.level || 0})\n`;
+              
+              // Get children of this existing child
+              const grandChildren = data.links
+                .filter(link => link.source === child.id)
+                .map(link => data.nodes.find(n => n.id === link.target))
+                .filter(Boolean);
+              
+              if (grandChildren.length > 0) {
+                childrenContext += `  └─ Children: ${grandChildren.map(gc => gc?.name).join(", ")}\n`;
+              }
+            }
+          });
+          
+          return childrenContext;
+        };
+        
+        // Build the complete context
+        let context = buildCompleteStructure();
+        context += buildParentContext();
+        context += buildExistingChildrenContext();
+        
+        // Add generation instructions
+        context += `\nGeneration Instructions:\n`;
+        context += `Generate 5 specific, concrete ${detail} ${nodeScope} for "${parentNode.name}". `;
+        context += `DO NOT return generic template content like "Key Concepts", "Important Topics", or "Advanced Concepts". `;
+        context += `Instead, provide actual, specific subtopics that are directly related to "${parentNode.name}". `;
+        context += `For example, if the topic is "Applications of Machine Learning", return specific applications like "Computer Vision", "Natural Language Processing", "Recommendation Systems", etc. `;
+        context += `Return them as a numbered list, with each subtopic being concise (2-5 words). `;
+        context += `Ensure the new subtopics complement the existing structure and don't duplicate existing concepts. `;
+        context += `Consider the hierarchy level (${parentNode.level || 0}) and maintain consistency with the overall mindmap structure.`;
+        
+        return context;
+      };
+      
+      const prompt = buildMindMapContext();
+      console.log(`[MindMapContent] handleGenerateSubtopics: Enhanced prompt for AI:`, prompt);
+      
+      // ✨ SUBTOPICS API: Generate specific subtopics for existing mindmap nodes
+      // 📍 API: POST /api/course/content/subtopics
+      // 📋 PURPOSE: Magic button to add child nodes to existing nodes
       let suggestions: string[] = [];
-      if (result && typeof result === 'string') {
-        const cleanedResult = result.replace(/^mindmap\s*$/m, '').replace(/^root\s*\(.*Sakai\?\).*$/m, '').replace(/^(\s*)(mindmap|root)(\s*)/, '$1').trim();
-        const lines = cleanedResult.split('\n');
-        const numberedItems = lines.filter(line => /^\s*\d+[\.\)]\s+.*/.test(line)).map(line => line.replace(/^\s*\d+[\.\)]\s+/, '').trim());
-        if (numberedItems.length > 0) {
-          suggestions = numberedItems;
+      let usedSpecializedEndpoint = false;
+      let subtopicsError = null;
+      
+      // ✅ FIXED: Get course ID once at the beginning for both API calls
+      const courseId = window.currentCourseId || localStorage.getItem('currentCourseId');
+      if (!courseId) {
+        throw new Error('Course ID not found for subtopics generation');
+      }
+      
+      try {
+        console.log(`[MindMapContent] Trying specialized subtopics endpoint...`);
+        
+        // ✅ FIXED: Use the dedicated subtopics method from BackendAPIService
+        const { BackendAPIService } = await import('../../lib/BackendAPIService');
+        const apiService = new BackendAPIService();
+        
+        const subtopicsResult = await apiService.generateMindmapSubtopics(
+          parentNode.name,
+          { 
+            course_context: prompt || `Generate specific subtopics for: ${parentNode.name}`,
+            course_id: parseInt(courseId.toString())
+          }, // ✅ FIXED: Include course_id in context
+          {
+            level: level,
+            difficulty: 'intermediate'
+          }
+        );
+        
+        console.log(`[MindMapContent] Subtopics result:`, subtopicsResult);
+        
+        // ✅ FIXED: Handle response format correctly
+        if (subtopicsResult.success && subtopicsResult.subtopics) {
+          suggestions = subtopicsResult.subtopics;
+          usedSpecializedEndpoint = true;
+          console.log(`[MindMapContent] ✅ Using specialized subtopics:`, suggestions);
         } else {
-          suggestions = lines.filter(line => { const trimmed = line.trim(); return trimmed.length > 0 && !trimmed.startsWith('mindmap') && !trimmed.match(/^root\s*\(.*Sakai\?\)/) && !trimmed.match(/^\s*$/) && !trimmed.match(/^\s*[\{\}\(\)]+/); }).map(line => line.trim().replace(/^\s*-?\s*/, '').replace(/\((.*?)\)$/, '$1').replace(/\[\[(.*?)\]\]/, '$1').trim()).filter(line => line.length > 0).slice(0, 5);
+          subtopicsError = 'No subtopics returned from API.';
+        }
+      } catch (error) {
+        subtopicsError = error;
+        console.log(`[MindMapContent] Specialized subtopics endpoint failed:`, error);
+      }
+      
+      if (!usedSpecializedEndpoint) {
+        setIsGenerating(false);
+        console.error('[MindMapContent] Could not generate subtopics:', subtopicsError);
+        return;
+      }
+      
+      console.log(`[MindMapContent] Final suggestions from specialized endpoint:`, suggestions);
+      
+      // Check if suggestions are too generic and try to generate more specific ones
+      const genericTerms = ['key concepts', 'important topics', 'advanced concepts', 'fundamentals', 'theory', 'practice', 'applications'];
+      const isGeneric = suggestions.some(suggestion => 
+        genericTerms.some(term => suggestion.toLowerCase().includes(term))
+      );
+      
+      if (isGeneric && suggestions.length > 0) {
+        console.log(`[MindMapContent] Detected generic suggestions, trying to generate more specific content...`);
+        
+        // Try to generate more specific content using the specialized subtopics endpoint
+        try {
+          const specificPrompt = `Generate 5 specific, concrete subtopics for "${parentNode.name}". 
+DO NOT use generic terms like "Key Concepts", "Important Topics", "Advanced Concepts", "Fundamentals", "Theory", "Practice", or "Applications".
+Instead, provide actual, specific subtopics that are directly related to "${parentNode.name}".
+
+For example:
+- If topic is "Applications of Machine Learning": Computer Vision, Natural Language Processing, Recommendation Systems, Predictive Analytics, Autonomous Systems
+- If topic is "Data Collection": Surveys, Sensors, APIs, Web Scraping, IoT Devices
+- If topic is "Feature Engineering": Feature Selection, Dimensionality Reduction, Data Transformation, Feature Scaling, Feature Creation
+
+Return only the 5 specific subtopics as a numbered list (1. Subtopic, 2. Subtopic, etc.).`;
+
+          console.log(`[MindMapContent] Sending specific content request for: ${parentNode.name}`);
+          
+          // ✅ FIXED: Use the same API service for consistency
+          const { BackendAPIService } = await import('../../lib/BackendAPIService');
+          const apiService = new BackendAPIService();
+          
+          const specificResult = await apiService.generateMindmapSubtopics(
+            parentNode.name,
+            { 
+              course_context: specificPrompt || `Generate specific subtopics for: ${parentNode.name}`,
+              course_id: parseInt(courseId.toString())
+            }, // ✅ FIXED: Include course_id in context
+            {
+              level: level,
+              difficulty: 'intermediate'
+            }
+          );
+          
+          console.log(`[MindMapContent] Specific content response:`, specificResult);
+          
+          if (specificResult && specificResult.success && specificResult.subtopics) {
+            const specificContent = specificResult.subtopics;
+            
+            if (Array.isArray(specificContent) && specificContent.length > 0) {
+              // Extract numbered items from the specific response
+              const numberedItems = specificContent
+                .filter((item: string) => item.length > 0 && !genericTerms.some(term => item.toLowerCase().includes(term)));
+              
+              if (numberedItems.length > 0) {
+                suggestions = numberedItems.slice(0, 5);
+                console.log(`[MindMapContent] Using specific numbered items:`, suggestions);
+              }
+            }
+          }
+        } catch (specificError) {
+          console.error(`[MindMapContent] Error generating specific content:`, specificError);
         }
       }
-      if (suggestions.length === 0) suggestions = Array.from({length: 5}, (_, i) => `${parentNode.name} aspect ${i+1}`);
+      
+      if (suggestions.length === 0) {
+        console.warn(`[MindMapContent] No suggestions extracted from API response, using fallback`);
+        suggestions = Array.from({length: 5}, (_, i) => `${parentNode.name} aspect ${i+1}`);
+        console.log(`[MindMapContent] Fallback suggestions:`, suggestions);
+      }
+      
       console.log(`[MindMapContent] handleGenerateSubtopics: Parsed/fallback suggestions:`, suggestions);
-      suggestions = suggestions.filter(item => item !== 'mindmap' && !item.startsWith('root') && !item.match(/^\s*[\(\)\[\]\{\}]+\s*$/)).slice(0, 5);
+      suggestions = suggestions.filter(item => 
+        item !== 'mindmap' && 
+        !item.startsWith('root') && 
+        !item.match(/^\s*[\(\)\[\]\{\}]+\s*$/)
+      ).slice(0, 5);
+      
       console.log(`[MindMapContent] handleGenerateSubtopics: Filtered suggestions:`, suggestions);
       
       const newNodesPayload: Node[] = [];
@@ -788,8 +1257,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}> 
               <textarea key="mindmap-textarea-fullscreen" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Enter text..." style={{ flexBasis: '200px', flexGrow: 1, minHeight: "30px", maxHeight: "30px", padding: "4px", fontFamily: "monospace", fontSize: "11px", lineHeight: "1.2", border: "1px solid #ddd", borderRadius: "4px", resize: "none", whiteSpace: "nowrap", overflowX: "auto", color: "black", marginRight: 'auto' }} />
-              <button onClick={handleGenerateFromText} style={{ padding: "4px 8px", backgroundColor: "#2ecc71", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", flexShrink: 0, display: "flex", alignItems: "center", gap: "4px" }}><FileText size={16} /> Generate Mind Map</button>
-              <button onClick={handleGenerateFromAI} style={{ padding: "4px 8px", backgroundColor: "#9c27b0", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", flexShrink: 0, display: "flex", alignItems: "center", gap: "4px" }} disabled={isGenerating}><Wand2 size={16} /> Generate alternative mindmap with AI</button>
+              <button onClick={handleGenerateFromAI} style={{ padding: "4px 8px", backgroundColor: "#9c27b0", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", flexShrink: 0, display: "flex", alignItems: "center", gap: "4px" }} disabled={isGenerating}><Wand2 size={16} /> Generate Alternative Mindmap</button>
                <div style={{ display: 'flex', gap: '8px', position: 'relative', flexShrink: 0 }}>
                 <button onClick={() => setShowExportOptions(!showExportOptions)} style={{ padding: "4px 8px", backgroundColor: "#3498db", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}><Download size={16} /> Download Mind Map <ChevronDown size={16} /></button>
                 {showExportOptions && (
@@ -801,7 +1269,6 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
                   </div>
                 )}
               </div>
-              <button onClick={handleGenerateTopicFromAI} style={{ padding: "4px 8px", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", flexShrink: 0, display: "flex", alignItems: "center", gap: "4px" }} disabled={isGenerating}><Sparkles size={16} /> Create Mind Map using AI</button>
               <ManualEditButtons />
             </div>
             <CanvasStyleButtons />
@@ -837,9 +1304,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
           <div style={{ marginBottom: "1rem", background: "#ffffff", padding: "4px", borderRadius: "4px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", width: "100%" }}>
             <textarea key="mindmap-textarea" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Enter text with indentation for hierarchy.\nExample:\nMy Project\n  Planning\n" style={{ width: "100%", minHeight: "40px", maxHeight: "100px", padding: "4px", marginBottom: "4px", fontFamily: "monospace", fontSize: "11px", lineHeight: "1.2", border: "1px solid #ddd", borderRadius: "4px", resize: "vertical", whiteSpace: "pre", overflowX: "auto", color: "black" }}/>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button onClick={handleGenerateFromText} style={{ padding: "4px 8px", backgroundColor: "#2ecc71", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", transition: "background-color 0.2s", display: "flex", alignItems: "center", gap: "4px" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#27ae60")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2ecc71")}><FileText size={16} /> Generate Mind Map</button>
-              <button onClick={handleGenerateFromAI} style={{ padding: "4px 8px", backgroundColor: "#9c27b0", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", transition: "background-color 0.2s", display: "flex", alignItems: "center", gap: "4px" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#7b1fa2")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#9c27b0")} disabled={isGenerating}><Wand2 size={16} /> Generate alternative mindmap with AI</button>
-              <button onClick={handleGenerateTopicFromAI} style={{ padding: "4px 8px", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", flexShrink: 0, display: "flex", alignItems: "center", gap: "4px" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1976D2")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2196F3")} disabled={isGenerating}><Sparkles size={16} /> Create Mind Map using AI</button>
+              <button onClick={handleGenerateFromAI} style={{ padding: "4px 8px", backgroundColor: "#9c27b0", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", transition: "background-color 0.2s", display: "flex", alignItems: "center", gap: "4px" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#7b1fa2")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#9c27b0")} disabled={isGenerating}><Wand2 size={16} /> Generate Alternative Mindmap</button>
               <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
                 <button onClick={() => setShowExportOptions(!showExportOptions)} style={{ padding: "4px 8px", backgroundColor: "#3498db", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", transition: "background-color 0.2s", display: "flex", alignItems: "center", gap: "4px" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2980b9")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#3498db")}><Download size={16} /> Download Mind Map <ChevronDown size={16} /></button>
                 {showExportOptions && (

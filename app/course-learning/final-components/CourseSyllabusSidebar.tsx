@@ -48,9 +48,10 @@ interface CourseSyllabusSidebarProps {
   onLessonSelect?: (lessonId: number) => void,
   onComponentSelect?: (component: InteractiveComponent) => void,
   courseId?: string
+  isLearningSidebarFullScreen?: boolean
 }
 
-function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect, onComponentSelect, courseId = "641" }: CourseSyllabusSidebarProps) {
+function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect, onComponentSelect, courseId = "641", isLearningSidebarFullScreen }: CourseSyllabusSidebarProps) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
@@ -205,11 +206,23 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
     }
   };
 
-  if (!isSidebarOpen) return null;
+  if (!isSidebarOpen) {
+    console.log('CourseSyllabusSidebar: Sidebar is closed, not rendering');
+    return null;
+  }
+  
+  console.log('CourseSyllabusSidebar: Sidebar is open, rendering with props:', {
+    isSidebarOpen,
+    onComponentSelect: !!onComponentSelect,
+    onLessonSelect: !!onLessonSelect,
+    courseId,
+    topicsCount: topics.length,
+    lessonsCount: lessons.length
+  });
   
   return (
     <aside 
-      className="w-full h-full bg-[#faf9fb] border-r border-[#ececec] p-0 box-border flex flex-col"
+      className={`w-full h-full bg-[#faf9fb] border-r border-[#ececec] p-0 box-border flex ${isLearningSidebarFullScreen && 'z-[70]'} flex-col`}
     >
       <div className="flex items-center bg-[#ececec] py-[18px] pr-6 pl-[18px] text-lg font-semibold">
         <FiArrowLeft size={22} className="mr-3 cursor-pointer" onClick={() => setIsSidebarOpen(false)} />
@@ -237,14 +250,12 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
             <p className="text-[#222] text-[15px] mb-4">
               Welcome to the course! Start learning by selecting a lesson below.
             </p>
-            <div className="flex gap-2.5 mb-6">
-              <span className="bg-[#f3f0fa] text-[#6a5acd] rounded-lg px-4 py-1.5 text-[14px] font-medium">Computer science</span>
-              <span className="bg-[#f3f0fa] text-[#6a5acd] rounded-lg px-4 py-1.5 text-[14px] font-medium">Java</span>
-              <span className="bg-[#f3f0fa] text-[#6a5acd] rounded-lg px-4 py-1.5 text-[14px] font-medium">Web development</span>
-            </div>
+            
             
             {/* Topics and Lessons */}
-            {topics.map((topic) => (
+            {(() => {
+              console.log('Rendering topics:', topics.length, 'topics');
+              return topics.map((topic) => (
               <div key={topic.id}>
                 {/* Topic Header */}
                 <div className="flex items-center bg-[#f3f0fa] border border-[#e0d7fa] rounded-xl mb-4 px-4 py-4">
@@ -286,15 +297,27 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                 {/* Interactive Components for this topic */}
                 <div className="mb-4">
                   <h4 className="text-[15px] font-semibold text-gray-700 mb-3">Interactive Learning</h4>
+                  {(() => {
+                    console.log('Rendering interactive components for topic:', topic.id, topic.title);
+                    return null;
+                  })()}
                   <div className="flex flex-col gap-2">
                     <div
                       className="flex items-center border rounded-lg px-3 py-2 cursor-pointer transition-colors text-sm bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                      onClick={() => onComponentSelect && onComponentSelect({
-                        id: `mindmap-${topic.id}`,
-                        type: 'mindmap',
-                        title: `${topic.title} Mind Map`,
-                        topic_id: topic.id
-                      })}
+                      onClick={() => {
+                        console.log('Mindmap button clicked for topic:', topic.id, topic.title);
+                        console.log('onComponentSelect function:', onComponentSelect);
+                        if (onComponentSelect) {
+                          onComponentSelect({
+                            id: `mindmap-${topic.id}`,
+                            type: 'mindmap',
+                            title: `${topic.title} Mind Map`,
+                            topic_id: topic.id
+                          });
+                        } else {
+                          console.error('onComponentSelect is not defined!');
+                        }
+                      }}
                     >
                       <div className="mr-2">
                         {getComponentIcon('mindmap')}
@@ -357,7 +380,8 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                   </button>
                 )}
               </div>
-            ))}
+            ));
+            })()}
           </>
         )}
       </div>

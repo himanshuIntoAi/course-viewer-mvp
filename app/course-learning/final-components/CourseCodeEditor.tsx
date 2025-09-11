@@ -29,6 +29,7 @@ interface CourseEditorProps {
   onCodeChange?: (code: string) => void;
   onRun?: (code: string) => void;
   onTalkToMentor?: () => void;
+  isLearningSidebarFullScreen?: boolean;
 }
 
 function CourseEditor({
@@ -48,7 +49,8 @@ function CourseEditor({
   fileName = 'Main.java',
   onCodeChange,
   onRun,
-  onTalkToMentor
+  onTalkToMentor,
+  isLearningSidebarFullScreen
 }: CourseEditorProps) {
   const [code, setCode] = useState(initialCode);
   const [output, setOutput] = useState('Hello World!');
@@ -258,16 +260,6 @@ function CourseEditor({
     onTalkToMentor?.();
   }, [onTalkToMentor]);
 
-  const handleSave = useCallback(() => {
-    const blob = new Blob([code], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [code, fileName]);
-
   const handleDownload = useCallback(() => {
     const blob = new Blob([code], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -278,23 +270,7 @@ function CourseEditor({
     URL.revokeObjectURL(url);
   }, [code, fileName]);
 
-  const handleUpload = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.java,.js,.py,.cpp,.c,.html,.css,.ts,.tsx,.jsx';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          setCode(content);
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  }, []);
+
 
   const getLanguageId = (lang: string) => {
     const languageMap: { [key: string]: string } = {
@@ -333,7 +309,7 @@ function CourseEditor({
   };
 
   return (
-    <div className={`flex flex-col bg-[#1e1e1e] rounded-lg shadow-2xl border border-[#3c3c3c] overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : 'h-full w-full'}`}>
+    <div className={`flex flex-col bg-[#1e1e1e] shadow-2xl border border-[#3c3c3c] overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : 'h-full w-full'} ${isLearningSidebarFullScreen && 'z-[-10]'}`}>
       {/* VS Code-like Title Bar */}
       <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-[#3c3c3c]">
         <div className="flex items-center gap-3">
@@ -433,36 +409,9 @@ function CourseEditor({
 
       {/* Activity Bar */}
       <div className="flex items-center bg-[#333333] border-b border-[#3c3c3c] px-3 py-1">
-        <div className="flex items-center gap-4">
-          <button className="p-2 rounded hover:bg-[#3c3c3c] transition-colors" title="Explorer">
-            <FileText size={16} className="text-[#cccccc]" />
-          </button>
-          <button className="p-2 rounded hover:bg-[#3c3c3c] transition-colors" title="Search">
-            <Search size={16} className="text-[#cccccc]" />
-          </button>
-          <button className="p-2 rounded hover:bg-[#3c3c3c] transition-colors" title="Source Control">
-            <GitBranch size={16} className="text-[#cccccc]" />
-          </button>
-          <button className="p-2 rounded hover:bg-[#3c3c3c] transition-colors" title="Terminal">
-            <Terminal size={16} className="text-[#cccccc]" />
-          </button>
-        </div>
+       
         
         <div className="ml-auto flex items-center gap-2">
-          <button 
-            onClick={handleUpload}
-            className="p-1.5 rounded hover:bg-[#3c3c3c] transition-colors"
-            title="Upload file"
-          >
-            <Upload size={14} className="text-[#cccccc]" />
-          </button>
-          <button 
-            onClick={handleSave}
-            className="p-1.5 rounded hover:bg-[#3c3c3c] transition-colors"
-            title="Save"
-          >
-            <Save size={14} className="text-[#cccccc]" />
-          </button>
           <button 
             onClick={handleDownload}
             className="p-1.5 rounded hover:bg-[#3c3c3c] transition-colors"
