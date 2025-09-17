@@ -191,7 +191,7 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
         setError(null);
 
         // Get all flashcards for the course
-        const flashcardsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/flashcards/`);
+        const flashcardsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/flashcards/`);
 
         if (!flashcardsResponse.ok) {
           throw new Error(`Failed to fetch flashcards: ${flashcardsResponse.status} ${flashcardsResponse.statusText}`);
@@ -344,7 +344,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
         setError(null);
 
         // Get all mindmaps for the course
-        const mindmapsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/mindmaps/`);
+        const mindmapsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/mindmaps/`);
 
         if (!mindmapsResponse.ok) {
           throw new Error(`Failed to fetch mindmaps: ${mindmapsResponse.status} ${mindmapsResponse.statusText}`);
@@ -558,7 +558,7 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
         setError(null);
 
         // Get all quizzes for the course
-        const quizzesResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/quizzes/`);
+        const quizzesResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/quizzes/`);
 
         if (!quizzesResponse.ok) {
           throw new Error(`Failed to fetch quizzes: ${quizzesResponse.status} ${quizzesResponse.statusText}`);
@@ -593,7 +593,7 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
       }
 
       // Fetch questions for this quiz
-      const questionsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/quizzes/${quizId}/questions/`);
+      const questionsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/quizzes/${quizId}/questions/`);
 
       if (!questionsResponse.ok) {
         throw new Error(`Failed to fetch questions: ${questionsResponse.status} ${questionsResponse.statusText}`);
@@ -868,7 +868,7 @@ const MemoryGameWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
         setError(null);
 
         // First, get all memory games for the course
-        const memoryGamesResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/memory-games/`);
+        const memoryGamesResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/memory-games/`);
 
         if (!memoryGamesResponse.ok) {
           throw new Error('Failed to fetch memory games');
@@ -891,7 +891,7 @@ const MemoryGameWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
 
         if (selectedMemoryGame) {
           // Now fetch the memory game pairs
-          const pairsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/memory-game-pairs/game/${selectedMemoryGame.id}`);
+          const pairsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/memory-game-pairs/game/${selectedMemoryGame.id}`);
 
           if (!pairsResponse.ok) {
             throw new Error('Failed to fetch memory game pairs');
@@ -1025,7 +1025,7 @@ export default function CourseLearningPage() {
       try {
         setLoading(true);
 
-        const lessonResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`);
+        const lessonResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`);
 
         if (lessonResponse.ok) {
           const lessons = await lessonResponse.json();

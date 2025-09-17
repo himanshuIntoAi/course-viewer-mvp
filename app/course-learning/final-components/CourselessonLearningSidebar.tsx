@@ -82,11 +82,11 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
         // If no lesson is selected, try to get the first lesson
         try {
           setLoading(true);
-          const lessonsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`);
+          const lessonsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`);
           if (lessonsResponse.ok) {
             const lessons = await lessonsResponse.json();
             if (lessons.length > 0) {
-              const lessonResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/lessons/${lessons[0].id}`);
+              const lessonResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/lessons/${lessons[0].id}`);
               if (lessonResponse.ok) {
                 const lesson = await lessonResponse.json();
                 setCurrentLesson(lesson);
@@ -131,7 +131,7 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
       try {
         setLoading(true);
         // Use the specific lesson API endpoint
-        const lessonResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/lessons/${selectedLessonId}`);
+        const lessonResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/lessons/${selectedLessonId}`);
         if (lessonResponse.ok) {
           const lesson = await lessonResponse.json();
           setCurrentLesson(lesson);

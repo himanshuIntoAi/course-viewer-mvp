@@ -926,6 +926,84 @@ The project had a platform-specific dependency `@next/swc-darwin-arm64` in packa
 ✅ **READY** - Vercel deployment should now succeed
 ✅ **DOCUMENTED** - Deployment compatibility ensured
 
+## Course Learning API URL Updates & Bug Fixes
+
+### Summary
+Updated all API endpoints in the course-learning module to use the new backend URL and fixed critical React component issues.
+
+### Changes Made
+
+1. **API URL Updates**:
+   - Updated all 15 API endpoints in course-learning module
+   - Changed from `https://ip-hm-course-view-api-mvp.vercel.app` to `https://course-viewer-mvp-backend.vercel.app`
+   - Updated files: `page.tsx`, `CourseVideoPlayer.tsx`, `CourselessonLearningSidebar.tsx`, `CourseSyllabusSidebar.tsx`
+
+2. **CourseVideoPlayer.tsx Fixes**:
+   - **Fixed Maximum Update Depth Error**: Resolved infinite loop in useEffect caused by `hlsInstance` dependency
+   - **Root Cause**: useEffect was including `hlsInstance` in dependency array while also setting it inside the effect
+   - **Solution**: Used local variable `currentHlsInstance` for cleanup and removed `hlsInstance` from dependencies
+   - **Result**: Eliminated "Maximum update depth exceeded" error
+
+3. **CourseCodeEditor.tsx Fixes**:
+   - **Fixed Connection Refused Error**: Updated hardcoded IP address endpoints
+   - **Changed**: `http://48.217.184.72:8000/health` → `https://course-viewer-mvp-backend.vercel.app/api/v1/code-execution/health`
+   - **Changed**: `http://48.217.184.72:8000/execute` → `https://course-viewer-mvp-backend.vercel.app/api/v1/code-execution/execute`
+   - **Result**: Eliminated "ERR_CONNECTION_REFUSED" errors
+
+### Technical Details
+
+**Video Player useEffect Fix**:
+```typescript
+// Before (caused infinite loop)
+useEffect(() => {
+  // ... HLS initialization
+  setHlsInstance(hls);
+  return () => {
+    if (hlsInstance) { // hlsInstance in dependency caused loop
+      hlsInstance.destroy();
+    }
+  };
+}, [playbackUrl, hlsInstance]); // hlsInstance dependency was the problem
+
+// After (fixed)
+useEffect(() => {
+  let currentHlsInstance: Hls | null = null;
+  // ... HLS initialization
+  currentHlsInstance = hls;
+  setHlsInstance(hls);
+  return () => {
+    if (currentHlsInstance) { // Use local variable for cleanup
+      currentHlsInstance.destroy();
+    }
+  };
+}, [playbackUrl]); // Only playbackUrl dependency
+```
+
+**API Endpoint Updates**:
+- **Flashcards**: `/api/v1/course-learning/courses/${courseId}/flashcards/`
+- **Mindmaps**: `/api/v1/course-learning/courses/${courseId}/mindmaps/`
+- **Quizzes**: `/api/v1/course-learning/courses/${courseId}/quizzes/`
+- **Memory Games**: `/api/v1/course-learning/courses/${courseId}/memory-games/`
+- **Lessons**: `/api/v1/course-learning/courses/${courseId}/lessons/`
+- **Code Execution**: `/api/v1/code-execution/health` and `/api/v1/code-execution/execute`
+
+### Verification
+
+- ✅ **Build Success**: `npm run build` completes without errors
+- ✅ **No Linting Errors**: All TypeScript and ESLint issues resolved
+- ✅ **Video Player**: Maximum update depth error eliminated
+- ✅ **Code Editor**: Connection refused errors eliminated
+- ✅ **API Integration**: All endpoints updated to new backend URL
+- ✅ **Cross-Platform**: Deployment compatibility maintained
+
+### Status
+✅ **COMPLETED** - All API URLs updated to new backend
+✅ **COMPLETED** - Video player useEffect infinite loop fixed
+✅ **COMPLETED** - Code editor connection errors resolved
+✅ **COMPLETED** - Build verified and successful
+✅ **READY** - Course learning module fully functional with new backend
+✅ **DOCUMENTED** - All fixes documented and tested
+
 ### Next Steps
 - Backend team to fix API authentication on Vercel
 - Backend team to configure CORS settings properly
@@ -1240,6 +1318,84 @@ The project had a platform-specific dependency `@next/swc-darwin-arm64` in packa
 ✅ **COMPLETED** - Build verified locally
 ✅ **READY** - Vercel deployment should now succeed
 ✅ **DOCUMENTED** - Deployment compatibility ensured
+
+## Course Learning API URL Updates & Bug Fixes
+
+### Summary
+Updated all API endpoints in the course-learning module to use the new backend URL and fixed critical React component issues.
+
+### Changes Made
+
+1. **API URL Updates**:
+   - Updated all 15 API endpoints in course-learning module
+   - Changed from `https://ip-hm-course-view-api-mvp.vercel.app` to `https://course-viewer-mvp-backend.vercel.app`
+   - Updated files: `page.tsx`, `CourseVideoPlayer.tsx`, `CourselessonLearningSidebar.tsx`, `CourseSyllabusSidebar.tsx`
+
+2. **CourseVideoPlayer.tsx Fixes**:
+   - **Fixed Maximum Update Depth Error**: Resolved infinite loop in useEffect caused by `hlsInstance` dependency
+   - **Root Cause**: useEffect was including `hlsInstance` in dependency array while also setting it inside the effect
+   - **Solution**: Used local variable `currentHlsInstance` for cleanup and removed `hlsInstance` from dependencies
+   - **Result**: Eliminated "Maximum update depth exceeded" error
+
+3. **CourseCodeEditor.tsx Fixes**:
+   - **Fixed Connection Refused Error**: Updated hardcoded IP address endpoints
+   - **Changed**: `http://48.217.184.72:8000/health` → `https://course-viewer-mvp-backend.vercel.app/api/v1/code-execution/health`
+   - **Changed**: `http://48.217.184.72:8000/execute` → `https://course-viewer-mvp-backend.vercel.app/api/v1/code-execution/execute`
+   - **Result**: Eliminated "ERR_CONNECTION_REFUSED" errors
+
+### Technical Details
+
+**Video Player useEffect Fix**:
+```typescript
+// Before (caused infinite loop)
+useEffect(() => {
+  // ... HLS initialization
+  setHlsInstance(hls);
+  return () => {
+    if (hlsInstance) { // hlsInstance in dependency caused loop
+      hlsInstance.destroy();
+    }
+  };
+}, [playbackUrl, hlsInstance]); // hlsInstance dependency was the problem
+
+// After (fixed)
+useEffect(() => {
+  let currentHlsInstance: Hls | null = null;
+  // ... HLS initialization
+  currentHlsInstance = hls;
+  setHlsInstance(hls);
+  return () => {
+    if (currentHlsInstance) { // Use local variable for cleanup
+      currentHlsInstance.destroy();
+    }
+  };
+}, [playbackUrl]); // Only playbackUrl dependency
+```
+
+**API Endpoint Updates**:
+- **Flashcards**: `/api/v1/course-learning/courses/${courseId}/flashcards/`
+- **Mindmaps**: `/api/v1/course-learning/courses/${courseId}/mindmaps/`
+- **Quizzes**: `/api/v1/course-learning/courses/${courseId}/quizzes/`
+- **Memory Games**: `/api/v1/course-learning/courses/${courseId}/memory-games/`
+- **Lessons**: `/api/v1/course-learning/courses/${courseId}/lessons/`
+- **Code Execution**: `/api/v1/code-execution/health` and `/api/v1/code-execution/execute`
+
+### Verification
+
+- ✅ **Build Success**: `npm run build` completes without errors
+- ✅ **No Linting Errors**: All TypeScript and ESLint issues resolved
+- ✅ **Video Player**: Maximum update depth error eliminated
+- ✅ **Code Editor**: Connection refused errors eliminated
+- ✅ **API Integration**: All endpoints updated to new backend URL
+- ✅ **Cross-Platform**: Deployment compatibility maintained
+
+### Status
+✅ **COMPLETED** - All API URLs updated to new backend
+✅ **COMPLETED** - Video player useEffect infinite loop fixed
+✅ **COMPLETED** - Code editor connection errors resolved
+✅ **COMPLETED** - Build verified and successful
+✅ **READY** - Course learning module fully functional with new backend
+✅ **DOCUMENTED** - All fixes documented and tested
 
 ### Next Steps
 - Backend team to fix API authentication on Vercel
@@ -1564,3 +1720,81 @@ The project had a platform-specific dependency `@next/swc-darwin-arm64` in packa
 ✅ **COMPLETED** - Build verified locally
 ✅ **READY** - Vercel deployment should now succeed
 ✅ **DOCUMENTED** - Deployment compatibility ensured
+
+## Course Learning API URL Updates & Bug Fixes
+
+### Summary
+Updated all API endpoints in the course-learning module to use the new backend URL and fixed critical React component issues.
+
+### Changes Made
+
+1. **API URL Updates**:
+   - Updated all 15 API endpoints in course-learning module
+   - Changed from `https://ip-hm-course-view-api-mvp.vercel.app` to `https://course-viewer-mvp-backend.vercel.app`
+   - Updated files: `page.tsx`, `CourseVideoPlayer.tsx`, `CourselessonLearningSidebar.tsx`, `CourseSyllabusSidebar.tsx`
+
+2. **CourseVideoPlayer.tsx Fixes**:
+   - **Fixed Maximum Update Depth Error**: Resolved infinite loop in useEffect caused by `hlsInstance` dependency
+   - **Root Cause**: useEffect was including `hlsInstance` in dependency array while also setting it inside the effect
+   - **Solution**: Used local variable `currentHlsInstance` for cleanup and removed `hlsInstance` from dependencies
+   - **Result**: Eliminated "Maximum update depth exceeded" error
+
+3. **CourseCodeEditor.tsx Fixes**:
+   - **Fixed Connection Refused Error**: Updated hardcoded IP address endpoints
+   - **Changed**: `http://48.217.184.72:8000/health` → `https://course-viewer-mvp-backend.vercel.app/api/v1/code-execution/health`
+   - **Changed**: `http://48.217.184.72:8000/execute` → `https://course-viewer-mvp-backend.vercel.app/api/v1/code-execution/execute`
+   - **Result**: Eliminated "ERR_CONNECTION_REFUSED" errors
+
+### Technical Details
+
+**Video Player useEffect Fix**:
+```typescript
+// Before (caused infinite loop)
+useEffect(() => {
+  // ... HLS initialization
+  setHlsInstance(hls);
+  return () => {
+    if (hlsInstance) { // hlsInstance in dependency caused loop
+      hlsInstance.destroy();
+    }
+  };
+}, [playbackUrl, hlsInstance]); // hlsInstance dependency was the problem
+
+// After (fixed)
+useEffect(() => {
+  let currentHlsInstance: Hls | null = null;
+  // ... HLS initialization
+  currentHlsInstance = hls;
+  setHlsInstance(hls);
+  return () => {
+    if (currentHlsInstance) { // Use local variable for cleanup
+      currentHlsInstance.destroy();
+    }
+  };
+}, [playbackUrl]); // Only playbackUrl dependency
+```
+
+**API Endpoint Updates**:
+- **Flashcards**: `/api/v1/course-learning/courses/${courseId}/flashcards/`
+- **Mindmaps**: `/api/v1/course-learning/courses/${courseId}/mindmaps/`
+- **Quizzes**: `/api/v1/course-learning/courses/${courseId}/quizzes/`
+- **Memory Games**: `/api/v1/course-learning/courses/${courseId}/memory-games/`
+- **Lessons**: `/api/v1/course-learning/courses/${courseId}/lessons/`
+- **Code Execution**: `/api/v1/code-execution/health` and `/api/v1/code-execution/execute`
+
+### Verification
+
+- ✅ **Build Success**: `npm run build` completes without errors
+- ✅ **No Linting Errors**: All TypeScript and ESLint issues resolved
+- ✅ **Video Player**: Maximum update depth error eliminated
+- ✅ **Code Editor**: Connection refused errors eliminated
+- ✅ **API Integration**: All endpoints updated to new backend URL
+- ✅ **Cross-Platform**: Deployment compatibility maintained
+
+### Status
+✅ **COMPLETED** - All API URLs updated to new backend
+✅ **COMPLETED** - Video player useEffect infinite loop fixed
+✅ **COMPLETED** - Code editor connection errors resolved
+✅ **COMPLETED** - Build verified and successful
+✅ **READY** - Course learning module fully functional with new backend
+✅ **DOCUMENTED** - All fixes documented and tested

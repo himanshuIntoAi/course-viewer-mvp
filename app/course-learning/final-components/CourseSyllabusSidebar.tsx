@@ -83,8 +83,8 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
         
         // Simple fetch calls
         try {
-                  const topicsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/topics/`);
-        const lessonsResponse = await fetch(`https://ip-hm-course-view-api-mvp.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`);
+                  const topicsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/topics/`);
+        const lessonsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`);
           
           if (topicsResponse.ok && lessonsResponse.ok) {
             const topicsData = await topicsResponse.json();

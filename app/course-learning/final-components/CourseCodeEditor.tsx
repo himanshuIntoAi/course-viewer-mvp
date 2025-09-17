@@ -153,7 +153,7 @@ function CourseEditor({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        const response = await fetch('http://48.217.184.72:8000/health', {
+        const response = await fetch('https://course-viewer-mvp-backend.vercel.app/api/v1/code-execution/health', {
           method: 'GET',
           signal: controller.signal,
         });
@@ -203,7 +203,7 @@ function CourseEditor({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
-      const response = await fetch('http://48.217.184.72:8000/execute', {
+      const response = await fetch('https://course-viewer-mvp-backend.vercel.app/api/v1/code-execution/execute', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
