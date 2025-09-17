@@ -104,7 +104,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
   const getGridRows = useCallback((cardCount: number, difficulty: 'easy' | 'medium' | 'hard' | 'hardest'): string => {
     const cols = difficulty === 'easy' ? 2 : difficulty === 'hardest' ? 6 : 4;
     const rows = Math.ceil(cardCount / cols);
-    return `repeat(${rows}, 120px)`;
+    return `repeat(${rows}, 180px)`;
   }, []);
 
   // Function to shuffle cards and create pairs

@@ -202,7 +202,7 @@
 
 .card-grid {
   display: grid;
-  gap: 8px;
+  gap: 12px;
   margin-top: 0;
   perspective: 1000px;
   margin-left: auto;
@@ -213,44 +213,44 @@
   align-content: center;
   left: auto;
   transform: none;
-  min-width: 150px;
-  min-height: 150px;
-  grid-auto-rows: 120px;
+  min-width: 200px;
+  min-height: 200px;
+  grid-auto-rows: 180px;
 }
 
 /* Square grid layouts based on column count */
 .card-grid.grid-cols-2 {
-  grid-template-columns: repeat(2, minmax(60px, 80px));
-  grid-template-rows: repeat(2, 100px);
+  grid-template-columns: repeat(2, minmax(120px, 180px));
+  grid-template-rows: repeat(2, 180px);
   /* 2x2 grid = 4 cards */
 }
 
 .card-grid.grid-cols-4 {
-  grid-template-columns: repeat(4, minmax(45px, 80px));
+  grid-template-columns: repeat(4, minmax(100px, 150px));
   /* Can handle 4x3, 4x4, and 4x6 layouts */
 }
 
 /* New layout for 6 columns */
 .card-grid.grid-cols-6 {
-  grid-template-columns: repeat(6, minmax(40px, 70px)); /* Adjust min/max for 6 columns */
+  grid-template-columns: repeat(6, minmax(80px, 120px)); /* Adjust min/max for 6 columns */
   /* Should handle 6x4 grid = 24 cards */
 }
 
 /* Keep these for backward compatibility */
 .card-grid.easy {
-  grid-template-columns: repeat(2, minmax(60px, 80px));
+  grid-template-columns: repeat(2, minmax(120px, 180px));
 }
 
 .card-grid.medium {
-  grid-template-columns: repeat(4, minmax(45px, 70px));
+  grid-template-columns: repeat(4, minmax(100px, 150px));
 }
 
 .card-grid.hard {
-  grid-template-columns: repeat(4, minmax(40px, 70px));
+  grid-template-columns: repeat(4, minmax(100px, 150px));
 }
 
 .card-grid.hardest {
-  grid-template-columns: repeat(4, minmax(35px, 65px));
+  grid-template-columns: repeat(4, minmax(100px, 150px));
 }
 
 .game-info {
