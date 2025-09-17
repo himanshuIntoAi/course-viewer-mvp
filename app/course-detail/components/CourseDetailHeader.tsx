@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 
 const CourseDetailHeader = () => {
   return (
@@ -8,7 +9,7 @@ const CourseDetailHeader = () => {
       <div className="flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center space-x-2">
-       <img src="/images/course-detail/cloudOuLogo.png" alt="CloudOU Logo" className='w-50 h-10' />
+       <Image src="/images/course-detail/cloudOuLogo.png" alt="CloudOU Logo" width={200} height={40} className='w-50 h-10' />
         </div>
 
         {/* Search Bar */}
@@ -30,16 +31,18 @@ const CourseDetailHeader = () => {
           </button>
           
           <button className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors">
-            <img src="/images/course-detail/bellIcon.svg" alt="Notification Bell" className='border-2 border-gray-300 rounded-full p-2' />
+            <Image src="/images/course-detail/bellIcon.svg" alt="Notification Bell" width={24} height={24} className='border-2 border-gray-300 rounded-full p-2' />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
           {/* User Profile */}
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
-              <img
+              <Image
                 src="/images/user-avatar.png"
                 alt="User Avatar"
+                width={40}
+                height={40}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNEM0Q3RDEiLz4KPHBhdGggZD0iTTIwIDEwQzIyLjA3NjEgMTAgMjQgMTEuOTIzOSAyNCAxNEMyNCAxNi4wNzYxIDIyLjA3NjEgMTggMjAgMThDMTcuOTIzOSAxOCAxNiAxNi4wNzYxIDE2IDE0QzE2IDExLjkyMzkgMTcuOTIzOSAxMCAyMCAxMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTI4IDMwQzI4IDI2LjY4NiAyNC40MTQgMjQgMjAgMjRDMTUuNTg2IDI0IDEyIDI2LjY4NiAxMiAzMEgyOFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
@@ -50,7 +53,7 @@ const CourseDetailHeader = () => {
               <p className="text-sm font-medium text-gray-900">Emaillia Caitin</p>
               <p className="text-xs text-gray-500">heycaitin@gmail.com</p>
             </div>
-            <img src="/images/course-detail/downArrowIcon.svg" alt="Down Arrow" />
+            <Image src="/images/course-detail/downArrowIcon.svg" alt="Down Arrow" width={16} height={16} />
           </div>
         </div>
       </div>

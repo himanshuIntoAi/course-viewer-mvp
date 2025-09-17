@@ -279,7 +279,7 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
         setHlsInstance(null);
       }
     };
-  }, [playbackUrl]);
+  }, [playbackUrl, hlsInstance]);
 
   // Handle play/pause
   const togglePlay = () => {

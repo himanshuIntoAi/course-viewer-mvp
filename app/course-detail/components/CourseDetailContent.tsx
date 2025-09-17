@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { CourseData } from '../types/course';
 
 interface CourseDetailContentProps {
@@ -29,10 +30,10 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
     <div className="max-w-4xl">
       {/* Breadcrumbs */}
       <nav className="text-sm text-gray-500 mb-6 flex items-center">
-        <img src="/images/course-detail/homeIcon.svg" alt="Breadcrumbs" className='mr-2' />
+        <Image src="/images/course-detail/homeIcon.svg" alt="Breadcrumbs" width={16} height={16} className='mr-2' />
         {courseData.breadcrumbs.map((crumb, index) => (
           <span key={index} className="flex items-center">
-            {index > 0 && <img className="mx-2" src="/images/course-detail/arrow-rightLogo.svg" alt="Right Arrow" />}
+            {index > 0 && <Image className="mx-2" src="/images/course-detail/arrow-rightLogo.svg" alt="Right Arrow" width={16} height={16} />}
             <span className={index === courseData.breadcrumbs.length - 1 ? 'text-gray-900' : 'hover:text-gray-700 cursor-pointer'}>
               {crumb}
             </span>
@@ -59,7 +60,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
           </a>
         </div>
         <div className="flex items-center space-x-1">
-          <img src="/images/course-detail/starRatingLogo.svg" alt="Star Rating" />
+          <Image src="/images/course-detail/starRatingLogo.svg" alt="Star Rating" width={20} height={20} />
           <span className="font-medium">{courseData.rating}</span>
           <span className="text-gray-500">({courseData.totalRatings.toLocaleString()} ratings)</span>
         </div>
@@ -70,7 +71,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
 
       {/* What You'll Learn */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">What you'll learn</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">What you&apos;ll learn</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {courseData.learningObjectives.map((objective, index) => (
             <div key={index} className="flex items-start space-x-3">
@@ -100,24 +101,24 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
         <h3 className="text-lg font-semibold text-gray-900 mb-4">This course includes</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex items-center space-x-3">
-            <img src="/images/course-detail/video-logo.svg" alt="Video" />
+            <Image src="/images/course-detail/video-logo.svg" alt="Video" width={20} height={20} />
             <span className="text-gray-700">{courseData.videoHours} hours on-demand video</span>
           </div>
           <div className="flex items-center space-x-3">
-            <img src="/images/course-detail/mobile-logo.svg" alt="Mobile" />
+            <Image src="/images/course-detail/mobile-logo.svg" alt="Mobile" width={20} height={20} />
             <span className="text-gray-700">Access on mobile and TV</span>
 
           </div>
           <div className="flex items-center space-x-3">
-            <img src="/images/course-detail/document-download-logo.svg" alt="Download" />
+            <Image src="/images/course-detail/document-download-logo.svg" alt="Download" width={20} height={20} />
             <span className="text-gray-700">{courseData.downloadableResources} downloadable resources</span>
           </div>
           <div className="flex items-center space-x-3">
-            <img src="/images/course-detail/assignment-logo.svg" alt="Assignments" />
+            <Image src="/images/course-detail/assignment-logo.svg" alt="Assignments" width={20} height={20} />
             <span className="text-gray-700">Assignments</span>
           </div>
           <div className="flex items-center space-x-3">
-            <img src="/images/course-detail/cup-logo.svg" alt="Certificate" />
+            <Image src="/images/course-detail/cup-logo.svg" alt="Certificate" width={20} height={20} />
             <span className="text-gray-700">Certificate of completion</span>
           </div>
         </div>
@@ -153,7 +154,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                 </div>
                 <button
                   onClick={expandAllSections}
-                  className="text-black font-bold underline text-sm font-medium"
+                  className="text-black font-bold underline text-sm"
                 >
                   Expand all sections
                 </button>
@@ -167,7 +168,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                     onClick={() => toggleSection('introduction')}
                     className="w-full px-4 py-3 text-left bg-black text-white rounded-2xl flex"
                   >
-                    <img src="/images/course-detail/arrow-rightLogo.svg" alt="Arrow Right" />
+                    <Image src="/images/course-detail/arrow-rightLogo.svg" alt="Arrow Right" width={16} height={16} />
                     <div className="flex items-center space-x-3 flex-row justify-between w-full text-white">
                       <span className="font-medium">Introduction</span>
                       <span className="text-sm ">7 Lessons - 21min</span>
@@ -178,7 +179,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                       <div className="pt-3 space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <div className='flex items-center space-x-2'>
-                            <img src="/images/course-detail/video-logo.svg" alt="" />
+                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
                             <span className=" text-blue-600 underline">About the course</span>
                           </div>
                           <div>
@@ -188,7 +189,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <div className='flex items-center space-x-2'>
-                            <img src="/images/course-detail/video-logo.svg" alt="" />
+                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
                             <span className=" text-blue-600 underline">About the course</span>
                           </div>
                           <div>
@@ -198,7 +199,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <div className='flex items-center space-x-2'>
-                            <img src="/images/course-detail/video-logo.svg" alt="" />
+                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
                             <span className=" text-blue-600 underline">About the course</span>
                           </div>
                           <div>
@@ -209,7 +210,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
 
                         <div className="flex items-center justify-between text-sm">
                           <div className='flex items-center space-x-2'>
-                            <img src="/images/course-detail/video-logo.svg" alt="" />
+                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
                             <span className=" text-blue-600 underline">About the course</span>
                           </div>
                           <div>
@@ -219,7 +220,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <div className='flex items-center space-x-2'>
-                            <img src="/images/course-detail/video-logo.svg" alt="" />
+                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
                             <span className=" text-blue-600 underline">About the course</span>
                           </div>
                           <div>
@@ -229,7 +230,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <div className='flex items-center space-x-2'>
-                            <img src="/images/course-detail/video-logo.svg" alt="" />
+                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
                             <span className=" text-blue-600 underline">About the course</span>
                           </div>
                           <div>
@@ -249,7 +250,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                       onClick={() => toggleSection(sectionId)}
                       className="w-full px-4 py-3 text-left flex bg-black text-white rounded-2xl flex-row"
                     >
-                      <img src="/images/course-detail/arrow-rightLogo.svg" alt="Arrow Right" />
+                      <Image src="/images/course-detail/arrow-rightLogo.svg" alt="Arrow Right" width={16} height={16} />
                       <div className="flex items-center space-x-3 flex-row justify-between text-white w-full">
                         <span className="font-medium">Section {sectionId.replace('section', '')}</span>
                         <span className="text-sm ">12 Lessons - 45min</span>
@@ -261,7 +262,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                         <div className="pt-3 space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <div className='flex items-center space-x-2'>
-                              <img src="/images/course-detail/video-logo.svg" alt="" />
+                              <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
                               <span className=" text-blue-600 underline">About the course</span>
                             </div>
                             <div>
@@ -271,7 +272,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <div className='flex items-center space-x-2'>
-                              <img src="/images/course-detail/video-logo.svg" alt="" />
+                              <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
                               <span className=" text-blue-600 underline">About the course</span>
                             </div>
                             <div>
@@ -305,7 +306,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
               <p>Course reviews will be displayed here</p>
             </div>
           )}
-          <p className='text-center text-black font-bold text-lg p-3 border border-2 mt-2 rounded-2xl border-blue-500 '>
+          <p className='text-center text-black font-bold text-lg p-3 border-2 mt-2 rounded-2xl border-blue-500 '>
             Collapse all sections
           </p>
         </div>

@@ -3,14 +3,12 @@ import { useState } from "react";
 
 interface CourseLearningNavbarProps {
   setIsSidebarOpen: (isSidebarOpen: boolean) => void,
-  onTestAPI?: () => void,
   courseId?: string,
   onCourseIdChange?: (courseId: string) => void
 }
 
 function CourseLearningNavbar({ 
   setIsSidebarOpen, 
-  onTestAPI, 
   courseId = "641",
   onCourseIdChange 
 }: CourseLearningNavbarProps) {

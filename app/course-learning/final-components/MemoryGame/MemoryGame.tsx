@@ -242,7 +242,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
 
     try {
       // First try to load from API
-      const courseId = window.currentCourseId || localStorage.getItem('currentCourseId'); // Reserved for future use
+      // const courseId = localStorage.getItem('currentCourseId'); // Reserved for future use
       const topicId = localStorage.getItem('currentTopicId');
       
       if (topicId) {
@@ -354,7 +354,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
           console.log('[MemoryGame] Attempting to force regeneration due to insufficient pairs...');
           try {
             // Force regeneration by calling the generation endpoint directly
-            const courseId = window.currentCourseId || localStorage.getItem('currentCourseId');
+            const courseId = localStorage.getItem('currentCourseId');
             const topicId = localStorage.getItem('currentTopicId');
             
             if (courseId && topicId) {
@@ -868,7 +868,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
         </div>
 
         </div>
-        {showConfetti && <Confetti isActive={showConfetti} />}
+        {showConfetti && <Confetti active={showConfetti} />}
         </div>
       )}
       
@@ -996,7 +996,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ topic: topicProp, cards: cardsP
                   </div>
                 </div>
               </div>
-              {showConfetti && <Confetti isActive={showConfetti} />}
+              {showConfetti && <Confetti active={showConfetti} />}
             </div>
           </div>
         </div>,

@@ -1,14 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import FlashCard from './FlashCard';
 import styles from './FlashCard.module.css';
 
-// First, let's define proper types for the topics
-interface TopicCard {
-  question: string;
-  answer: string;
-}
 
 
 
@@ -46,7 +41,7 @@ interface FlashCardsProps {
   topic?: string; // Optional initial topic
 }
 
-export default function FlashCards({ initialCards, topic: initialTopic }: FlashCardsProps) {
+export default function FlashCards({ initialCards }: FlashCardsProps) {
   const [cards, setCards] = useState<FlashCardType[]>([]);
   const [cardFlipStates, setCardFlipStates] = useState<Record<number, boolean>>({ 0: false });
   const [isLoading, setIsLoading] = useState(true);

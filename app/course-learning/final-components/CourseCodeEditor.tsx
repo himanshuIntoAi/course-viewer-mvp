@@ -11,13 +11,8 @@ import {
   Maximize2, 
   Minimize2, 
   Download, 
-  Upload, 
-  Save,
   Eye,
-  FileText,
   Terminal,
-  GitBranch,
-  Search,
   X,
   Check
 } from 'lucide-react';

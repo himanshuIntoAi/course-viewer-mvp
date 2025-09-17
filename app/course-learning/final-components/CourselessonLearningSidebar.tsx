@@ -1,4 +1,3 @@
-import { FiChevronDown, FiCheckSquare, FiSquare } from "react-icons/fi";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
@@ -41,7 +40,6 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showHint, setShowHint] = useState(false);
 
 
   // Use prop data if available, otherwise use local state
@@ -72,10 +70,10 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
 
   useEffect(() => {
     if (!hasVideo || !hasCode) {
-      setIsLearningSidebarFullScreen(true);
+      setIsLearningSidebarFullScreen?.(true);
      
     }
-  }, [hasVideo, hasCode]);
+  }, [hasVideo, hasCode, setIsLearningSidebarFullScreen]);
 
 
   useEffect(() => {

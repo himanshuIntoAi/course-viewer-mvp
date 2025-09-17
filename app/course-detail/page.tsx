@@ -6,7 +6,6 @@ import CourseDetailSidebar from './components/CourseDetailSidebar';
 import CourseDetailContent from './components/CourseDetailContent';
 import CourseDetailRightSidebar from './components/CourseDetailRightSidebar';
 import RelatedCourse from './components/RelatedCourse';
-import { CourseData } from './types/course';
 
 const CourseDetailPage = () => {
   // Mock data - in real app this would come from API/props

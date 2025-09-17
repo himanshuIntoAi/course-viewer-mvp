@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 
 import { CourseData } from '../types/course';
 
@@ -14,9 +15,11 @@ const CourseDetailRightSidebar: React.FC<CourseDetailRightSidebarProps> = ({ cou
       {/* Video Thumbnail */}
       <div className="relative bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="relative aspect-video bg-gray-100">
-          <img
+          <Image
             src={courseData.thumbnailUrl}
             alt="Course Thumbnail"
+            width={400}
+            height={225}
             className="w-full h-full object-cover"
             onError={(e) => {
               e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyNSIgdmlld0JveD0iMCAwIDQwMCAyMjUiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjI1IiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjIwMCIgY3k9IjExMi41IiByPSI0MCIgZmlsbD0iI0Q5REFEQyIvPgo8cGF0aCBkPSJNMTgwIDk1TDIyMCAxMTIuNUwxODAgMTMwVjk1WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+';
@@ -26,7 +29,7 @@ const CourseDetailRightSidebar: React.FC<CourseDetailRightSidebarProps> = ({ cou
           {/* Play Button Overlay */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-16 h-16 rounded-full bg-opacity-90 border-2 border-white-300 flex items-center justify-center shadow-lg hover:bg-opacity-100 transition-all duration-200 cursor-pointer">
-              <img src="/images/course-detail/playIcon.png" alt="Play" />
+              <Image src="/images/course-detail/playIcon.png" alt="Play" width={24} height={24} />
             </div>
           </div>
         </div>

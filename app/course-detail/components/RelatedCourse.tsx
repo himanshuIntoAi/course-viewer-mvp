@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 
 interface RelatedCourseData {
   id: string;
@@ -68,9 +69,11 @@ const RelatedCourse = () => {
           <div key={course.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
             {/* Course Image */}
             <div className="relative h-48 bg-gray-200">
-              <img 
+              <Image 
                 src={course.thumbnailUrl} 
                 alt={course.title}
+                width={400}
+                height={192}
                 className="w-full h-full object-cover"
               />
               {/* Category Tag */}
@@ -94,7 +97,7 @@ const RelatedCourse = () => {
                   <span>{course.duration}</span>
                 </div>
                 <div className="flex items-center space-x-1">
-                    <img src="/images/course-detail/starRatingLogo.svg" alt="" />
+                    <Image src="/images/course-detail/starRatingLogo.svg" alt="" width={16} height={16} />
                   <span>{course.rating}</span>
                   <span className="text-gray-400">({course.reviewCount})</span>
                 </div>

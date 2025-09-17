@@ -35,7 +35,7 @@ interface MindMapProps {
 }
 
 // Helper function (can be moved to a utils file if shared)
-const generateMindMapFromText = (text: any): MindMapData => {
+const generateMindMapFromText = (text: string): MindMapData => {
   console.log('[MindMap] generateMindMapFromText INPUT TEXT:\n', text); // Log input text
   
   // 🔍 DEBUG: Check for problematic "Topic:" content in input
@@ -369,7 +369,7 @@ const MindMap: React.FC<MindMapProps> = ({
       setGenerationTrigger(1);
     }
     loadInitiatedRef.current = true;
-  }, [mermaidString]); // Remove generationTrigger from dependencies to prevent infinite loop
+  }, [mermaidString, generationTrigger]);
 
   const togglePopup = useCallback(() => {
     setIsPopupOpen(prev => {
@@ -454,14 +454,8 @@ const MindMap: React.FC<MindMapProps> = ({
       nodes: prevData.nodes.map(node => ({ ...node, x: undefined, y: undefined })),
     }));
     setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
-  }, [layout]); // FIXED: Remove handleSetData to prevent render loops
+  }, [layout, handleSetData]);
   
-  const actualGenerateFromInputTextHandler = useCallback(() => {
-    // Now, this handler only updates the trigger.
-    // The actual generation logic will move to a useEffect hook listening to this trigger.
-    console.log('[MindMap] actualGenerateFromInputTextHandler: Setting generation trigger.');
-    setGenerationTrigger(prev => prev + 1);
-  }, []);
 
   // useEffect to handle mind map generation when inputText changes AND a generation is triggered.
   useEffect(() => {
@@ -496,7 +490,7 @@ const MindMap: React.FC<MindMapProps> = ({
       // Reduced logging for performance
       // console.log('[MindMap] Resize event dispatched after Generation useEffect (main from inputText).');
     }, 100);
-  }, [generationTrigger, inputText]); // FIXED: Remove handleSetData to prevent render loops
+  }, [generationTrigger, inputText, handleSetData]);
 
   // Main data generation and loading effect
   useEffect(() => {
@@ -568,7 +562,7 @@ const MindMap: React.FC<MindMapProps> = ({
     } else {
        console.log(`[MindMap] Generation useEffect (main from inputText): Trigger is ${generationTrigger}, skipping.`);
     }
-  }, [mermaidString, initialData, generationTrigger, lastSavedMermaid]); // FIXED: Remove handleSetData to prevent render loops
+  }, [mermaidString, initialData, generationTrigger, lastSavedMermaid, data, handleSetData, inputText]);
 
   // Effect to save to localStorage when data, inputText, or layout changes
   useEffect(() => {
@@ -673,8 +667,6 @@ const MindMap: React.FC<MindMapProps> = ({
           // Pass state and setters as props
           data={data}
           setData={handleSetData}
-          inputText={inputText}
-          setInputText={setInputText}
           layout={layout}
           onLayoutChange={handleLayoutChange}
           collapsedNodes={collapsedNodes}
@@ -682,9 +674,6 @@ const MindMap: React.FC<MindMapProps> = ({
           // Keep existing props
           isPopupOpen={isPopupOpen} 
           togglePopup={togglePopup}
-          // Pass initialData for any specific initial use if MindMapContent still needs it,
-          // though ideally it should rely on the `data` prop now.
-          triggerGenerateFromText={actualGenerateFromInputTextHandler}
         />
       </PopupContainer>
     </ReactFlowProvider>

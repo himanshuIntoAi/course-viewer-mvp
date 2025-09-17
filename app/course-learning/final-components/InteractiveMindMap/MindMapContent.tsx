@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback, Dispatch, SetStateAction } from "react";
 import { Maximize2, ArrowLeftRight, ArrowUpDown, Sun, Moon } from "lucide-react";
 import 'reactflow/dist/style.css';
-import { useReactFlow } from 'reactflow';
 import './MindMap.css';
 import GraphRenderer from "./GraphRenderer";
 import GraphRendererLR from "./GraphRendererLR";
@@ -54,44 +53,28 @@ interface NodeColorMap {
 interface MindMapContentProps {
   data: MindMapData;
   setData: (data: MindMapData | ((prevData: MindMapData) => MindMapData)) => void;
-  inputText: string;
-  setInputText: Dispatch<SetStateAction<string>>;
   layout: "vertical" | "horizontal";
   onLayoutChange: (newLayout: "vertical" | "horizontal") => void;
   collapsedNodes: Set<string>;
   setCollapsedNodes: Dispatch<SetStateAction<Set<string>>>;
   isPopupOpen: boolean;
   togglePopup: () => void;
-  triggerGenerateFromText: () => void;
 }
 
-const spinnerStyle = `
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-.spinner {
-  animation: spin 1s linear infinite;
-}
-`;
 
 const MindMapContent: React.FC<MindMapContentProps> = ({ 
   data,
   setData,
-  inputText,
-  setInputText,
   layout,
   onLayoutChange,
   collapsedNodes,
   setCollapsedNodes,
   isPopupOpen,
   togglePopup,
-  triggerGenerateFromText,
 }) => {
-  const reactFlowInstance = useReactFlow();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const reactFlowWrapperRef = useRef<HTMLDivElement>(null);
-  const [nodeColors, setNodeColors] = useState<NodeColorMap>({});
+  const [nodeColors] = useState<NodeColorMap>({});
   const [isCoreDataReady, setIsCoreDataReady] = useState<boolean>(false);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(false);
 
@@ -184,11 +167,11 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
             {isLoading ? (<div style={{ padding: '20px', textAlign: 'center', color: isDarkTheme ? '#9ca3af' : '#666' }}>Initializing Mind Map...</div>) : (
               <div style={{ width: "100%", height: "100%" }}>
                 {layout === "vertical" ? (
-                  <GraphRenderer data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={() => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
+                  <GraphRenderer data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={async () => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
                     canvasTheme={isDarkTheme ? "dark" : "light"} lineStyle="solid" lineCurveStyle="curved" lineColorMode="default" customLineColor={isDarkTheme ? "#6b7280" : "#CBD5E0"}
                   />
                 ) : (
-                  <GraphRendererLR data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={() => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
+                  <GraphRendererLR data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={async () => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
                     canvasTheme={isDarkTheme ? "dark" : "light"} lineStyle="solid" lineCurveStyle="curved" lineColorMode="default" customLineColor={isDarkTheme ? "#6b7280" : "#CBD5E0"}
                   />
                 )}
@@ -212,11 +195,11 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
             {isLoading ? (<div style={{ padding: '20px', textAlign: 'center', color: isDarkTheme ? '#9ca3af' : '#666' }}>Initializing Mind Map...</div>) : (
               <div style={{ width: "100%", height: "100%" }}>
                 {layout === "vertical" ? (
-                  <GraphRenderer data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={() => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
+                  <GraphRenderer data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={async () => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
                     canvasTheme={isDarkTheme ? "dark" : "light"} lineStyle="solid" lineCurveStyle="curved" lineColorMode="default" customLineColor={isDarkTheme ? "#6b7280" : "#CBD5E0"}
                   />
                 ) : (
-                  <GraphRendererLR data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={() => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
+                  <GraphRendererLR data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={async () => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
                     canvasTheme={isDarkTheme ? "dark" : "light"} lineStyle="solid" lineCurveStyle="curved" lineColorMode="default" customLineColor={isDarkTheme ? "#6b7280" : "#CBD5E0"}
                   />
                 )}

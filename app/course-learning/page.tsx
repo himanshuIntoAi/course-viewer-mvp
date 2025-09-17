@@ -81,7 +81,7 @@ interface APIMindmap {
   course_id: number;
   topic_id: number;
   mindmap_mermaid: string;
-  mindmap_json: {};
+  mindmap_json: Record<string, unknown>;
   is_completed: boolean;
   active: boolean;
   created_at: string;
@@ -107,29 +107,29 @@ interface APIQuiz {
   updated_by: number | null;
 }
 
-interface APIQuestion {
-  quiz_id: number;
-  type: string;
-  question_text: string;
-  points: number;
-  answers: {
-    answer?: boolean | number | number[] | string[];
-    options?: string[];
-    modelAnswer?: string;
-    items?: string[];
-    correctOrder?: number[];
-    stems?: string[];
-    matches?: string[];
-    acceptedAnswers?: string[];
-  };
-  question_order: number;
-  active: boolean;
-  id: number;
-  created_at: string;
-  created_by: number;
-  updated_at: string;
-  updated_by: number | null;
-}
+// interface APIQuestion {
+//   quiz_id: number;
+//   type: string;
+//   question_text: string;
+//   points: number;
+//   answers: {
+//     answer?: boolean | number | number[] | string[];
+//     options?: string[];
+//     modelAnswer?: string;
+//     items?: string[];
+//     correctOrder?: number[];
+//     stems?: string[];
+//     matches?: string[];
+//     acceptedAnswers?: string[];
+//   };
+//   question_order: number;
+//   active: boolean;
+//   id: number;
+//   created_at: string;
+//   created_by: number;
+//   updated_at: string;
+//   updated_by: number | null;
+// }
 
 interface APIMemoryGame {
   id: number;
@@ -367,7 +367,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
             const nodeMap = new Map<string, { id: string; name: string; level: number }>();
 
             let nodeIdCounter = 1;
-            let currentLevel = 0;
+            // const currentLevel = 0;
             const levelStack: string[] = [];
 
             lines.forEach((line, index) => {
@@ -443,7 +443,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
             }
 
             setMindmapData(transformedData);
-          } catch (parseError) {
+          } catch {
             throw new Error('Failed to parse mindmap data');
           }
         } else {
@@ -535,7 +535,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
 };
 
 // Simple Quiz Wrapper Component
-const SimpleQuiz = ({ topic, topicId, courseId }: { topic: string; topicId: number; courseId: string }) => {
+const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) => {
   const [userAnswers, setUserAnswers] = useState<UserAnswers>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -547,7 +547,7 @@ const SimpleQuiz = ({ topic, topicId, courseId }: { topic: string; topicId: numb
   
   // New state for quiz selection
   const [availableQuizzes, setAvailableQuizzes] = useState<APIQuiz[]>([]);
-  const [selectedQuizId, setSelectedQuizId] = useState<number | null>(null);
+  const [, setSelectedQuizId] = useState<number | null>(null);
   const [showQuizSelection, setShowQuizSelection] = useState(true);
 
   // Fetch available quizzes from API
@@ -610,9 +610,9 @@ const SimpleQuiz = ({ topic, topicId, courseId }: { topic: string; topicId: numb
       const transformedQuizData = {
         title: selectedQuiz.title || `${topic} Quiz`,
         description: selectedQuiz.description || `Test your knowledge on ${topic}`,
-        questions: questions.map((q: any, index: number) => {
+        questions: questions.map((q: Record<string, unknown>, index: number) => {
           // Map API question structure to QuizPlayer format based on actual API response
-          let transformedQuestion: any = {
+          const transformedQuestion: Record<string, unknown> = {
             id: q.id || `q${index + 1}`,
             question: q.question_text || 'Question text not available',
             points: q.points || 1,
@@ -622,48 +622,48 @@ const SimpleQuiz = ({ topic, topicId, courseId }: { topic: string; topicId: numb
           switch (q.type) {
             case 'TRUE_FALSE':
               transformedQuestion.type = QuestionType.TrueFalse;
-              transformedQuestion.correctAnswer = q.answers?.answer || false;
+              transformedQuestion.correctAnswer = (q.answers as Record<string, unknown>)?.answer || false;
               break;
 
             case 'SINGLE':
               transformedQuestion.type = QuestionType.SingleChoice;
               // Handle both standard options and acceptedAnswers format
-              if (q.answers?.acceptedAnswers) {
+              if ((q.answers as Record<string, unknown>)?.acceptedAnswers) {
                 // For questions with acceptedAnswers (like fill-in-the-blank style)
-                transformedQuestion.options = q.answers.acceptedAnswers;
+                transformedQuestion.options = (q.answers as Record<string, unknown>).acceptedAnswers;
                 transformedQuestion.correctAnswers = [0]; // First answer is correct
               } else {
-                transformedQuestion.options = q.answers?.options || ['Option A', 'Option B', 'Option C', 'Option D'];
-                transformedQuestion.correctAnswers = [q.answers?.answer || 0];
+                transformedQuestion.options = (q.answers as Record<string, unknown>)?.options || ['Option A', 'Option B', 'Option C', 'Option D'];
+                transformedQuestion.correctAnswers = [(q.answers as Record<string, unknown>)?.answer || 0];
               }
               break;
 
             case 'MULTIPLE':
               transformedQuestion.type = QuestionType.MultipleChoice;
-              transformedQuestion.options = q.answers?.options || ['Option A', 'Option B', 'Option C', 'Option D'];
-              transformedQuestion.correctAnswers = q.answers?.answer || [0];
+              transformedQuestion.options = (q.answers as Record<string, unknown>)?.options || ['Option A', 'Option B', 'Option C', 'Option D'];
+              transformedQuestion.correctAnswers = (q.answers as Record<string, unknown>)?.answer || [0];
               break;
 
             case 'OPEN_ENDED':
               transformedQuestion.type = QuestionType.OpenEnded;
-              transformedQuestion.modelAnswer = q.answers?.modelAnswer || '';
+              transformedQuestion.modelAnswer = (q.answers as Record<string, unknown>)?.modelAnswer || '';
               break;
 
             case 'SORT_ANSWER':
               transformedQuestion.type = QuestionType.SortAnswer;
-              transformedQuestion.items = q.answers?.items || [];
-              transformedQuestion.correctOrder = q.answers?.correctOrder || [];
+              transformedQuestion.items = (q.answers as Record<string, unknown>)?.items || [];
+              transformedQuestion.correctOrder = (q.answers as Record<string, unknown>)?.correctOrder || [];
               break;
 
             case 'MATCHING':
               transformedQuestion.type = QuestionType.Matching;
               // Transform matching data structure
               const matchingItems = [];
-              if (q.answers?.stems && q.answers?.matches) {
-                for (let i = 0; i < q.answers.stems.length; i++) {
-                  const stem = q.answers.stems[i];
-                  const matchIndex = parseInt(q.answers.matches[i]);
-                  const match = q.answers?.options?.[matchIndex] || `Match ${i + 1}`;
+              if ((q.answers as Record<string, unknown>)?.stems && (q.answers as Record<string, unknown>)?.matches) {
+                for (let i = 0; i < ((q.answers as Record<string, unknown>).stems as string[]).length; i++) {
+                  const stem = ((q.answers as Record<string, unknown>).stems as string[])[i];
+                  const matchIndex = parseInt(((q.answers as Record<string, unknown>).matches as string[])[i]);
+                  const match = ((q.answers as Record<string, unknown>)?.options as string[])?.[matchIndex] || `Match ${i + 1}`;
                   matchingItems.push({
                     id: `match_${i}`,
                     left: stem,
@@ -1041,7 +1041,7 @@ export default function CourseLearningPage() {
         } else {
           setCurrentLesson(null);
         }
-      } catch (error) {
+      } catch {
         setCurrentLesson(null);
       } finally {
         setLoading(false);
@@ -1085,7 +1085,7 @@ export default function CourseLearningPage() {
     videoFileName: currentLesson?.video_filename,
     title: currentLesson?.title || "Select a lesson to start learning",
     thumbnailUrl: currentLesson?.image_path || "/images/hero-image-courses.png",
-    onProgressUpdate: (progress: number, completed: boolean) => {
+    onProgressUpdate: () => {
       // Video progress tracking
     }
   }), [currentLesson]);
@@ -1156,7 +1156,7 @@ export default function CourseLearningPage() {
       setEditorWidthPercent(newEditorPercent);
       setVideoWidthPercent(newVideoPercent);
     }
-  }, [isDragging, dragType, lessonSidebarWidthPercent, videoWidthPercent, editorWidthPercent, hasVideo, hasEditor]);
+  }, [isDragging, dragType, lessonSidebarWidthPercent, videoWidthPercent, editorWidthPercent, hasVideo, hasEditor, activeView, selectedComponent]);
 
   // Handle mouse up to stop dragging
   const handleMouseUp = useCallback(() => {
@@ -1218,7 +1218,7 @@ export default function CourseLearningPage() {
         case 'memorygame':
           return <MemoryGameWithAPI topic={selectedComponent.title} topicId={selectedComponent.topic_id} courseId={courseId} />;
         case 'quiz':
-          return <SimpleQuiz topic={selectedComponent.title} topicId={selectedComponent.topic_id} courseId={courseId} />;
+          return <SimpleQuiz topic={selectedComponent.title} courseId={courseId} />;
         default:
           return null;
       }
@@ -1412,10 +1412,10 @@ export default function CourseLearningPage() {
                   initialCode={currentLesson.code || currentLesson.course_code || ''}
                   language={currentLesson.code_language || currentLesson.course_code_language || 'javascript'}
                   fileName={`${currentLesson.title?.replace(/\s+/g, '') || 'Lesson'}.js`}
-                  onCodeChange={(code: string) => {
+                  onCodeChange={() => {
                     // Code change handling
                   }}
-                  onRun={(code: string) => {
+                  onRun={() => {
                     // Code execution handling
                   }}
                   onTalkToMentor={() => {
