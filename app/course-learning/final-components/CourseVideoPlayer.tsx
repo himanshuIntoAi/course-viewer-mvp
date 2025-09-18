@@ -78,8 +78,8 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
     }
 
     try {
-      // const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ip-hm-course-view-api-mvp.vercel.app';
-      const baseUrl = 'https://ip-hm-course-view-api-mvp.vercel.app';
+      // const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://course-viewer-mvp-backend.vercel.app';
+      const baseUrl = 'https://course-viewer-mvp-backend.vercel.app';
       const apiUrl = `${baseUrl}/api/v1/course-learning/hls/${videoPath}/master.m3u8`;
       
       console.log('Fetching video URL from: API', apiUrl);
@@ -140,7 +140,7 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
       
       // Create a temporary videoPath for the API call
       const tempVideoPath = pathPart;
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ip-hm-course-view-api-mvp.vercel.app';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://course-viewer-mvp-backend.vercel.app';
       const apiUrl = `${baseUrl}/api/v1/course-learning/hls/${tempVideoPath}/master.m3u8`;
       console.log("VIDEO FILE API URL", apiUrl);
       console.log('Fallback API URL:', apiUrl);
@@ -187,11 +187,7 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
     setIsLoading(true);
     setError(null);
     
-    // Clean up existing HLS instance
-    if (hlsInstance) {
-      hlsInstance.destroy();
-      setHlsInstance(null);
-    }
+    let currentHlsInstance: Hls | null = null;
 
     if (Hls.isSupported()) {
       const hls = new Hls({
@@ -212,6 +208,9 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
         startFragPrefetch: true,
         testBandwidth: true
       });
+      
+      currentHlsInstance = hls;
+      setHlsInstance(hls);
       
       hls.attachMedia(videoRef.current);
       hls.on(Hls.Events.MEDIA_ATTACHED, () => {
@@ -254,9 +253,6 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
         setIsLoading(false);
         setError('HLS.js error: ' + data.details);
       });
-      
-      // Set the HLS instance immediately
-      setHlsInstance(hls);
     } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
       videoRef.current.src = playbackUrl;
       videoRef.current.addEventListener('loadedmetadata', () => {
@@ -274,8 +270,8 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
 
     // Cleanup function
     return () => {
-      if (hlsInstance) {
-        hlsInstance.destroy();
+      if (currentHlsInstance) {
+        currentHlsInstance.destroy();
         setHlsInstance(null);
       }
     };

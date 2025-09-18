@@ -3,14 +3,12 @@ import { useState } from "react";
 
 interface CourseLearningNavbarProps {
   setIsSidebarOpen: (isSidebarOpen: boolean) => void,
-  onTestAPI?: () => void,
   courseId?: string,
   onCourseIdChange?: (courseId: string) => void
 }
 
 function CourseLearningNavbar({ 
   setIsSidebarOpen, 
-  onTestAPI, 
   courseId = "641",
   onCourseIdChange 
 }: CourseLearningNavbarProps) {
@@ -28,8 +26,16 @@ function CourseLearningNavbar({
       <div className="flex items-center gap-8">
         <Image src="/images/cloud-ou-logo-2.svg" alt="CloudOU Logo" width={120} height={40} />
         <ul className="flex items-center gap-6 text-base font-medium">
-          <li>My Home</li>
-          <li onClick={() => setIsSidebarOpen(true)}>Syllabus</li>
+          <li className="hover:text-blue-600 cursor-pointer transition-colors duration-200">My Home</li>
+          <li 
+            onClick={() => {
+              console.log('Syllabus button clicked, opening sidebar');
+              setIsSidebarOpen(true);
+            }}
+            className="hover:text-blue-600 cursor-pointer transition-colors duration-200"
+          >
+            Syllabus
+          </li>
         </ul>
       </div>
       <div className="flex items-center gap-6">
@@ -54,14 +60,7 @@ function CourseLearningNavbar({
           <li>Get Unstuck</li>
           <li>Tools</li>
         </ul>
-        {onTestAPI && (
-          <button 
-            onClick={onTestAPI}
-            className="flex items-center gap-2 bg-red-500 text-white font-semibold rounded-md px-4 py-2 shadow hover:opacity-90 transition-opacity"
-          >
-            Test API
-          </button>
-        )}
+       
         <button className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-400 text-white font-semibold rounded-md px-6 py-2 shadow hover:opacity-90 transition-opacity">
           <span role="img" aria-label="ai">🧑‍💻</span> Ask the AI Learning Assistant
         </button>

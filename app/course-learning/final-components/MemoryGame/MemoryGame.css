@@ -12,7 +12,7 @@
   overflow: auto;
   box-sizing: border-box;
   position: relative;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 /* Apply Inter font to all memory game elements */
@@ -25,7 +25,62 @@
 .turns *,
 .high-scores *,
 .header * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Loading and Error States */
+.loading-container,
+.error-container,
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  padding: 20px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  color: #e74c3c;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.retry-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.retry-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.retry-button:active {
+  transform: translateY(0);
 }
 
 .game-container {
@@ -91,8 +146,8 @@
   padding: 8px;
   border: none;
   border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.3s ease;
   color: white;
@@ -147,7 +202,7 @@
 
 .card-grid {
   display: grid;
-  gap: 8px;
+  gap: 12px;
   margin-top: 0;
   perspective: 1000px;
   margin-left: auto;
@@ -158,43 +213,44 @@
   align-content: center;
   left: auto;
   transform: none;
-  min-width: 150px;
-  min-height: 150px;
-  grid-auto-rows: 80px;
+  min-width: 200px;
+  min-height: 200px;
+  grid-auto-rows: 180px;
 }
 
 /* Square grid layouts based on column count */
 .card-grid.grid-cols-2 {
-  grid-template-columns: repeat(2, minmax(60px, 80px));
+  grid-template-columns: repeat(2, minmax(120px, 180px));
+  grid-template-rows: repeat(2, 180px);
   /* 2x2 grid = 4 cards */
 }
 
 .card-grid.grid-cols-4 {
-  grid-template-columns: repeat(4, minmax(45px, 80px));
+  grid-template-columns: repeat(4, minmax(100px, 150px));
   /* Can handle 4x3, 4x4, and 4x6 layouts */
 }
 
 /* New layout for 6 columns */
 .card-grid.grid-cols-6 {
-  grid-template-columns: repeat(6, minmax(40px, 70px)); /* Adjust min/max for 6 columns */
+  grid-template-columns: repeat(6, minmax(80px, 120px)); /* Adjust min/max for 6 columns */
   /* Should handle 6x4 grid = 24 cards */
 }
 
 /* Keep these for backward compatibility */
 .card-grid.easy {
-  grid-template-columns: repeat(2, minmax(60px, 80px));
+  grid-template-columns: repeat(2, minmax(120px, 180px));
 }
 
 .card-grid.medium {
-  grid-template-columns: repeat(4, minmax(45px, 70px));
+  grid-template-columns: repeat(4, minmax(100px, 150px));
 }
 
 .card-grid.hard {
-  grid-template-columns: repeat(4, minmax(40px, 70px));
+  grid-template-columns: repeat(4, minmax(100px, 150px));
 }
 
 .card-grid.hardest {
-  grid-template-columns: repeat(4, minmax(35px, 65px));
+  grid-template-columns: repeat(4, minmax(100px, 150px));
 }
 
 .game-info {
@@ -204,16 +260,17 @@
 }
 
 .turns {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #666;
   text-align: center;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .turns-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #888;
   margin-bottom: 2px;
+  font-weight: 400;
 }
 
 .high-scores {
@@ -223,19 +280,21 @@
 }
 
 .high-scores h3 {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #333;
   margin-bottom: 4px;
   text-align: center;
+  font-weight: 400;
 }
 
 .high-scores div {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #666;
   margin: 2px 0;
   display: flex;
   justify-content: space-between;
   padding: 2px 0;
+  font-weight: 300;
 }
 
 @media (max-width: 768px) {
@@ -255,12 +314,14 @@
   }
 
   .difficulty-selector button {
-    font-size: 11px;
+    font-size: 10px;
     padding: 6px;
+    font-weight: 400;
   }
 
   .card-grid.grid-cols-2 {
     grid-template-columns: repeat(2, minmax(50px, 70px));
+    grid-template-rows: repeat(2, 100px);
   }
   
   .card-grid.grid-cols-4 {
@@ -271,6 +332,7 @@
 @media (max-width: 500px) {
   .card-grid.grid-cols-2 {
     grid-template-columns: repeat(2, minmax(40px, 60px));
+    grid-template-rows: repeat(2, 100px);
   }
   
   .card-grid.grid-cols-4 {
@@ -278,7 +340,7 @@
   }
   
   .side-panel {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     width: 90px;
   }
 }

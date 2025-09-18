@@ -27,7 +27,7 @@
 .mind-map-popup *,
 .mind-map-modal,
 .mind-map-modal * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 /* Ensure mind map components inherit Inter font */
@@ -51,7 +51,7 @@
 [id*="node"] *,
 [id*="graph"],
 [id*="graph"] * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 /* Apply to ReactFlow specific components */
@@ -69,7 +69,7 @@
 .react-flow__panel *,
 .react-flow__resize-control,
 .react-flow__resize-control * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 /* Apply to custom node components */
@@ -85,7 +85,7 @@
 .node-button *,
 .edge-label,
 .edge-label * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 /* Apply to control buttons and interface elements */
@@ -99,7 +99,7 @@
 .canvas-style-buttons *,
 .manual-edit-buttons,
 .manual-edit-buttons * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 /* Apply to any div, button, input, textarea, select within mind map components */
@@ -155,5 +155,5 @@ li[class*="mind"] *,
 li[class*="map"] *,
 li[class*="node"] *,
 li[class*="graph"] * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 } 
