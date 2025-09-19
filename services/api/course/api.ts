@@ -4,7 +4,7 @@ import { Course } from '@/services/types/course/course';
 export const getCourseData = async (courseId: number): Promise<Course> => {
   try {
     // Log the URL being called for debugging
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/courses/${courseId}`;
+    const url = `http://127.0.0.1:8000/api/v1/course-learning/courses/${courseId}/details`;
     console.log('Fetching course from:', url);
 
     const response = await axios.get<Course>(url);

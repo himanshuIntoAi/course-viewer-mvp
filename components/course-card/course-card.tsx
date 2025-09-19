@@ -51,7 +51,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, setShowCart }) => {
             {/* Top Image/Heading Section */}
             <div className="">
                 <Image
-                    src="/course-card-img.svg"
+                    src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyNSIgdmlld0JveD0iMCAwIDQwMCAyMjUiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjI1IiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjIwMCIgY3k9IjExMi41IiByPSI0MCIgZmlsbD0iI0Q5REFEQyIvPgo8cGF0aCBkPSJNMTgwIDk1TDIyMCAxMTIuNUwxODAgMTMwVjk1WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+"
                     alt="Web Design Course"
                     className="h-44 w-full object-cover"
                 />

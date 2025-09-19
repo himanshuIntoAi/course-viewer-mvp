@@ -2,21 +2,33 @@
 
 import React from 'react';
 import Image from 'next/image';
-
-import { CourseData } from '../types/course';
+import { Course } from '@/services/types/course/course';
 
 interface CourseDetailRightSidebarProps {
-  courseData: CourseData;
+  courseData: Course | null;
 }
 
 const CourseDetailRightSidebar: React.FC<CourseDetailRightSidebarProps> = ({ courseData }) => {
+  // Handle loading state
+  if (!courseData) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-48 bg-gray-200 rounded-lg mb-6"></div>
+          <div className="h-32 bg-gray-200 rounded-lg mb-6"></div>
+          <div className="h-64 bg-gray-200 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Video Thumbnail */}
       <div className="relative bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="relative aspect-video bg-gray-100">
           <Image
-            src={courseData.thumbnailUrl}
+            src={courseData.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyNSIgdmlld0JveD0iMCAwIDQwMCAyMjUiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjI1IiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjIwMCIgY3k9IjExMi41IiByPSI0MCIgZmlsbD0iI0Q5REFEQyIvPgo8cGF0aCBkPSJNMTgwIDk1TDIyMCAxMTIuNUwxODAgMTMwVjk1WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+'}
             alt="Course Thumbnail"
             width={400}
             height={225}
@@ -61,49 +73,41 @@ const CourseDetailRightSidebar: React.FC<CourseDetailRightSidebarProps> = ({ cou
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Information</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-
-              <span className="text-gray-600">Start Date</span>
-            </div>
-            <span className="font-medium text-gray-900">{courseData.startDate}</span>
+            <span className="text-gray-600">Price</span>
+            <span className="font-medium text-gray-900">${courseData.price}</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-
-              <span className="text-gray-600">Enrolled</span>
-            </div>
-            <span className="font-medium text-gray-900">{courseData.enrolled.toLocaleString()}</span>
+            <span className="text-gray-600">Course Level</span>
+            <span className="font-medium text-gray-900">{courseData.Course_level || 'Beginner'}</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <span className="text-gray-600">Languages</span>
-            </div>
-            <span className="font-medium text-gray-900">{courseData.languages}</span>
+            <span className="text-gray-600">Duration</span>
+            <span className="font-medium text-gray-900">{courseData.duration_unit || 'Days'}</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <span className="text-gray-600">Quizzes</span>
-            </div>
-            <span className="font-medium text-gray-900">10</span>
+            <span className="text-gray-600">Recurrence</span>
+            <span className="font-medium text-gray-900">{courseData.recurrence || 'Weekly'}</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <span className="text-gray-600">Certificate</span>
-            </div>
-            <span className="font-medium text-gray-900">Yes</span>
+            <span className="text-gray-600">Pricing Type</span>
+            <span className="font-medium text-gray-900">{courseData.pricing_type || 'PAID'}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <span className="text-gray-600">Certificate</span>
-            </div>
-            <span className="font-medium text-gray-900">90%</span>
-          </div>
-          <p className='text-gray-600 text-center' >For Details about course</p>
 
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Public Course</span>
+            <span className="font-medium text-gray-900">{courseData.is_public_course ? 'Yes' : 'No'}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Q&A Available</span>
+            <span className="font-medium text-gray-900">{courseData.has_qa ? 'Yes' : 'No'}</span>
+          </div>
+
+          <p className='text-gray-600 text-center'>For Details about course</p>
           <button className='w-full border border-gray-400 p-3 text-black font-medium rounded-lg transition-colors'>Chat Support</button>
         </div>
       </div>

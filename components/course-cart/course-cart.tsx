@@ -70,7 +70,7 @@ const CourseCart = ({ showCart, setShowCart }: CourseCartProps) => {
       {/* Course Item */}
       {cartItems.map((item , index) => (
         <div className="flex items-start mb-5" key={index}>
-          <Image src={item.image_url || "/course-card-img.svg"} alt="Course Thumbnail" width={80} height={56} className="w-20 h-14 object-cover rounded mr-4" />
+          <Image src={item.image_url || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iNTYiIHZpZXdCb3g9IjAgMCA4MCA1NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjU2IiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjQwIiBjeT0iMjgiIHI9IjEwIiBmaWxsPSIjRDlEQUQ5Ii8+CjxwYXRoIGQ9Ik0zNSAyM0w0NSAyOEwzNSAzM1YyM1oiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg=="} alt="Course Thumbnail" width={80} height={56} className="w-20 h-14 object-cover rounded mr-4" />
           <div>
             <h3 className="text-base font-medium mb-1">{item.course_title}</h3>
             <div className="flex items-center space-x-2">

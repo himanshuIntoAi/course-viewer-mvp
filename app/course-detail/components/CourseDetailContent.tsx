@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { CourseData } from '../types/course';
+import { Course } from '@/services/types/course/course';
 
 interface CourseDetailContentProps {
-  courseData: CourseData;
+  courseData: Course | null;
 }
 
 const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData }) => {
@@ -26,19 +26,30 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
     setExpandedSections(new Set(['introduction', 'section1', 'section2', 'section3']));
   };
 
+  // Handle loading state
+  if (!courseData) {
+    return (
+      <div className="max-w-4xl">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="h-8 bg-gray-200 rounded w-3/4 mb-3"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+          <div className="h-32 bg-gray-200 rounded mb-8"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl">
       {/* Breadcrumbs */}
       <nav className="text-sm text-gray-500 mb-6 flex items-center">
         <Image src="/images/course-detail/homeIcon.svg" alt="Breadcrumbs" width={16} height={16} className='mr-2' />
-        {courseData.breadcrumbs.map((crumb, index) => (
-          <span key={index} className="flex items-center">
-            {index > 0 && <Image className="mx-2" src="/images/course-detail/arrow-rightLogo.svg" alt="Right Arrow" width={16} height={16} />}
-            <span className={index === courseData.breadcrumbs.length - 1 ? 'text-gray-900' : 'hover:text-gray-700 cursor-pointer'}>
-              {crumb}
-            </span>
-          </span>
-        ))}
+        <span className="hover:text-gray-700 cursor-pointer">Home</span>
+        <Image className="mx-2" src="/images/course-detail/arrow-rightLogo.svg" alt="Right Arrow" width={16} height={16} />
+        <span className="hover:text-gray-700 cursor-pointer">Courses</span>
+        <Image className="mx-2" src="/images/course-detail/arrow-rightLogo.svg" alt="Right Arrow" width={16} height={16} />
+        <span className="text-gray-900">{courseData.title}</span>
       </nav>
 
       {/* Course Title and Subtitle */}
@@ -47,7 +58,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
           {courseData.title}
         </h1>
         <p className="text-lg text-gray-600 leading-relaxed">
-          {courseData.subtitle}
+          {courseData.description}
         </p>
       </div>
 
@@ -56,16 +67,16 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
         <div className="flex items-center space-x-2">
           <span className="text-gray-600">Created by</span>
           <a href="#" className="underline font-medium">
-            {courseData.instructor}
+            {courseData.instructor?.name || 'Unknown Instructor'}
           </a>
         </div>
         <div className="flex items-center space-x-1">
           <Image src="/images/course-detail/starRatingLogo.svg" alt="Star Rating" width={20} height={20} />
-          <span className="font-medium">{courseData.rating}</span>
-          <span className="text-gray-500">({courseData.totalRatings.toLocaleString()} ratings)</span>
+          <span className="font-medium">{courseData.ratings || 0}</span>
+          <span className="text-gray-500">({courseData.total_reviews || 0} ratings)</span>
         </div>
         <div className="flex items-center space-x-1">
-          <span className="text-gray-500">{courseData.totalLearners.toLocaleString()} Learners</span>
+          <span className="text-gray-500">Course Level: {courseData.Course_level || 'Beginner'}</span>
         </div>
       </div>
 
@@ -73,26 +84,37 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">What you&apos;ll learn</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {courseData.learningObjectives.map((objective, index) => (
-            <div key={index} className="flex items-start space-x-3">
-              <li className="text-gray-700">{objective}</li>
-            </div>
-          ))}
+          {courseData.what_will_you_learn ? (
+            <div className="text-gray-700">{courseData.what_will_you_learn}</div>
+          ) : (
+            <div className="text-gray-500 italic">Learning objectives will be available soon</div>
+          )}
         </div>
       </div>
 
       {/* Related Topics */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Explore related topics</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">Course Information</h3>
         <div className="flex flex-wrap gap-2">
-          {courseData.relatedTopics.map((topic, index) => (
-            <span
-              key={index}
-              className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm"
-            >
-              {topic}
+          <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">
+            Level: {courseData.Course_level || 'Beginner'}
+          </span>
+          <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">
+            Duration: {courseData.duration_unit || 'Days'}
+          </span>
+          <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">
+            Recurrence: {courseData.recurrence || 'Weekly'}
+          </span>
+          {courseData.IT && (
+            <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">
+              IT Course
             </span>
-          ))}
+          )}
+          {courseData.Coding_Required && (
+            <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">
+              Coding Required
+            </span>
+          )}
         </div>
       </div>
 
@@ -102,16 +124,15 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex items-center space-x-3">
             <Image src="/images/course-detail/video-logo.svg" alt="Video" width={20} height={20} />
-            <span className="text-gray-700">{courseData.videoHours} hours on-demand video</span>
+            <span className="text-gray-700">{courseData.duration_hours || 'N/A'} hours of content</span>
           </div>
           <div className="flex items-center space-x-3">
             <Image src="/images/course-detail/mobile-logo.svg" alt="Mobile" width={20} height={20} />
             <span className="text-gray-700">Access on mobile and TV</span>
-
           </div>
           <div className="flex items-center space-x-3">
             <Image src="/images/course-detail/document-download-logo.svg" alt="Download" width={20} height={20} />
-            <span className="text-gray-700">{courseData.downloadableResources} downloadable resources</span>
+            <span className="text-gray-700">Downloadable resources</span>
           </div>
           <div className="flex items-center space-x-3">
             <Image src="/images/course-detail/assignment-logo.svg" alt="Assignments" width={20} height={20} />
@@ -150,7 +171,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
             <div>
               <div className="flex items-center justify-between mb-6">
                 <div className="text-sm text-black ">
-                  {courseData.sections} sections • {courseData.lectures} lectures • {courseData.totalLength} total length
+                  Course Duration: {courseData.duration_unit || 'Days'} • Recurrence: {courseData.recurrence || 'Weekly'} • Level: {courseData.Course_level || 'Beginner'}
                 </div>
                 <button
                   onClick={expandAllSections}
