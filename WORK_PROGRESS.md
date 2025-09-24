@@ -1,5 +1,24 @@
 # Work Progress Documentation
 
+## API Verification and Dynamic Course Detail Routing (All-Courses → Course Detail)
+
+- Verified APIs locally:
+  - GET /api/v1/courses/?skip=0&limit=5 → 200 OK, returns course list with IDs.
+  - GET /api/v1/courses/subcategories → 200 OK, returns objects { id, name }.
+  - GET /api/v1/course-learning/courses/1339/details → 200 OK, valid course payload.
+- Implemented dynamic navigation from `CourseCard` to `course-detail?courseId={id}`.
+- Updated `app/course-detail/page.tsx` to read `courseId` from query and call `getCourseData(courseId)`, defaulting to 1339 when absent.
+- Outcome: Clicking a course card opens the correct detail page using the existing details API.
+
+## Search Functionality with Debounce Implementation
+
+- Added `searchCourses(query, skip, limit)` API service calling `GET /api/v1/courses/search?q={query}&skip={skip}&limit={limit}`.
+- Implemented 300ms debounced search in `CourseContainer` with priority over subcategory filtering.
+- Wired search input in `CourseDetailHeader` with controlled state and real-time updates.
+- Connected header and container via `page.tsx` with shared search state.
+- Search clears subcategory filter and resets pagination; subcategory selection clears search.
+- Outcome: Users can search courses with debounced input, results display with pagination.
+
 ## Course Detail Page Implementation
 
 ### Summary

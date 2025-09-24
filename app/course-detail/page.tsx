@@ -7,21 +7,24 @@ import CourseDetailContent from './components/CourseDetailContent';
 import CourseDetailRightSidebar from './components/CourseDetailRightSidebar';
 import RelatedCourse from './components/RelatedCourse';
 import { useEffect , useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getCourseData } from '@/services/api/course/api';
 import { Course } from '@/services/types/course/course';
   
 const CourseDetailPage = () => {
   const [courseData, setCourseData] = useState<Course | null>(null);
+  const searchParams = useSearchParams();
   // Mock data - in real app this would come from API/props
  
   useEffect(() => {
     const fetchCourseData = async () => {
-      const data = await getCourseData(Number(1339));
-      console.log(data);
+      const idParam = searchParams.get('courseId');
+      const selectedId = idParam ? Number(idParam) : 1339;
+      const data = await getCourseData(Number(selectedId));
       setCourseData(data);
     };
     fetchCourseData();
-  }, []);
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen">
