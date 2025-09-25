@@ -1,4 +1,52 @@
+## Backend Pagination Verification (Courses Endpoint)
+
+- Ran terminal tests against `GET /api/v1/courses/?skip={skip}&limit={limit}`.
+- Findings:
+  - skip=0 with large limits returns a maximum of 60 items (limit=100 → 60).
+  - Page-wise (limit=12): skip=0,12,24,36,48 return 12 items; skip=60 returns 0.
+  - Indicates backend hard cap at 60 items or dataset/windowed query.
+- Impact: Frontend pagination stops after ~5 pages (12×5=60). To access all ~1500 courses, backend needs to remove/raise cap or expose alternate endpoint/params.
+
+## All Courses: Categories Integration
+
+- Added `getCourseCategories()` in `services/api/course/api.ts` calling `GET /api/v1/coursecategories/`.
+- Updated `app/all-courses/components/CourseContainer.tsx` to fetch categories on mount and render them as filter chips.
+- Selected category is highlighted; ready to be wired to filtering logic if backend endpoint is available.
+
+## All Courses: Filter by Category (Courses List)
+
+- Added `getCoursesByCategory(categoryId, skip, limit)` calling `GET /api/v1/courses/categories/{categoryId}?skip={skip}&limit={limit}`.
+- Updated `CourseContainer` data-fetch flow priority:
+  1) Search (debounced)
+  2) Category filter
+  3) Subcategory filter
+  4) Fallback to all courses
+- Clicking a category chip clears subcategory and search, resets to page 1, and fetches category courses.
+
 # Work Progress Documentation
+
+## Topics and Lessons API Integration on Course Detail
+
+- Added `getCourseTopics(courseId)` and `getCourseLessons(courseId)` in `services/api/course/api.ts` hitting:
+  - `GET http://127.0.0.1:8000/api/v1/course-learning/courses/{courseId}/topics/`
+  - `GET http://127.0.0.1:8000/api/v1/course-learning/courses/{courseId}/lessons/`
+- Updated `app/course-detail/page.tsx` to fetch course details, topics, and lessons in parallel and pass them to content component.
+- Modified `app/course-detail/components/CourseDetailContent.tsx` to render a collapsible syllabus:
+  - Shows only topic titles
+  - On expand, shows lesson titles under the topic
+  - No lesson content is displayed
+- Ensured strict TypeScript types and no lint errors.
+
+## Course Learning Content (Details Tab)
+
+- Added `getCourseLearningContent(courseId)` service in `services/api/course/api.ts` hitting:
+  - `GET http://127.0.0.1:8000/api/v1/course-learning/courses/{courseId}/learning-content/`
+- Updated `app/course-detail/page.tsx` to fetch learning content alongside course, topics, and lessons and pass to content component.
+- Rendered in `CourseDetailContent` under the Details tab:
+  - Shows optional title and plain content from API
+  - Gracefully handles empty state with "No details available"
+- Handles both plain text and HTML content; detects HTML and safely renders with `dangerouslySetInnerHTML`.
+- Fixed React key warning by using stable composite keys for list items.
 
 ## API Verification and Dynamic Course Detail Routing (All-Courses → Course Detail)
 
@@ -749,6 +797,9 @@ Fixed all linting errors across the course-detail and course-learning components
 - **Code Quality**: Removed all unused variables, imports, and functions
 - **React Best Practices**: Fixed useEffect dependencies and useCallback hooks
 - **HTML Standards**: Used proper HTML entities for special characters
+
+### Additional Fix (All Courses)
+- Removed unused `onSearchChange` prop completely from `app/all-courses/components/CourseContainer.tsx` to satisfy `@typescript-eslint/no-unused-vars` during production build.
 
 ### Status
 ✅ **COMPLETED** - All linting errors fixed across course-detail and course-learning components

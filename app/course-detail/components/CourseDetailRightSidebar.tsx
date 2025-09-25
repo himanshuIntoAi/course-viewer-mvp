@@ -3,12 +3,14 @@
 import React from 'react';
 import Image from 'next/image';
 import { Course } from '@/services/types/course/course';
+import { useRouter } from 'next/navigation';
 
 interface CourseDetailRightSidebarProps {
   courseData: Course | null;
 }
 
 const CourseDetailRightSidebar: React.FC<CourseDetailRightSidebarProps> = ({ courseData }) => {
+  const router = useRouter();
   // Handle loading state
   if (!courseData) {
     return (
@@ -58,7 +60,16 @@ const CourseDetailRightSidebar: React.FC<CourseDetailRightSidebarProps> = ({ cou
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          <button className="w-full py-3 px-4 border-2 border-purple-600 text-purple-600 font-medium rounded-lg hover:bg-purple-50 transition-colors">
+          <button
+            className="w-full py-3 px-4 border-2 border-purple-600 text-purple-600 font-medium rounded-lg hover:bg-purple-50 transition-colors"
+            onClick={() => {
+              if (!courseData?.id) return;
+              try {
+                localStorage.setItem('currentCourseId', String(courseData.id));
+              } catch {}
+              router.push(`/course-learning?courseId=${courseData.id}`);
+            }}
+          >
             Start Learning
           </button>
           <div className="text-center text-sm text-gray-500">OR</div>

@@ -1,5 +1,6 @@
 
 "use client"
+import { Suspense } from "react"
 import CourseLearningNavbar from "./final-components/CourselearningNavbar"
 import CourseSyllabusSidebar from "./final-components/CourseSyllabusSidebar"
 import CourseLessonLearningSidebar from "./final-components/CourselessonLearningSidebar"
@@ -7,6 +8,7 @@ import CourseEditor from "./final-components/CourseCodeEditor"
 import CourseVideoPlayer from "./final-components/CourseVideoPlayer"
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react"
+import { useSearchParams } from 'next/navigation'
 // Import interactive components
 import FlashCards from "./final-components/FlashCards/FlashCards"
 import MindMap from "./final-components/InteractiveMindMap/MindMap"
@@ -988,7 +990,7 @@ const MemoryGameWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
   );
 };
 
-export default function CourseLearningPage() {
+const CourseLearningPageInner = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [selectedLessonId, setSelectedLessonId] = useState<number | undefined>(undefined);
@@ -996,8 +998,9 @@ export default function CourseLearningPage() {
   const [loading, setLoading] = useState(false);
   const [activeView, setActiveView] = useState<'video' | 'component'>('video');
   const [selectedComponent, setSelectedComponent] = useState<InteractiveComponent | null>(null);
-  const [courseId, setCourseId] = useState<string>("641");
+  const [courseId, setCourseId] = useState<string>("");
   const [isLearningSidebarFullScreen, setIsLearningSidebarFullScreen] = useState<boolean | null>(null);
+  const searchParams = useSearchParams();
 
 
   // Percentage-based layout state for seamless resizing (syllabus is now overlay)
@@ -1070,14 +1073,18 @@ export default function CourseLearningPage() {
   };
 
   
-  // Handle course ID change
-  const handleCourseIdChange = (newCourseId: string) => {
-    setCourseId(newCourseId);
-    setSelectedLessonId(undefined);
-    setCurrentLesson(null);
-    setSelectedComponent(null);
-    setActiveView('video');
-  };
+  // Initialize courseId from URL or localStorage
+  useEffect(() => {
+    const idParam = searchParams.get('courseId');
+    const resolvedId = idParam || (typeof window !== 'undefined' ? localStorage.getItem('currentCourseId') || '' : '');
+    if (resolvedId && resolvedId !== courseId) {
+      setCourseId(resolvedId);
+      setSelectedLessonId(undefined);
+      setCurrentLesson(null);
+      setSelectedComponent(null);
+      setActiveView('video');
+    }
+  }, [searchParams, courseId]);
 
   // Video props based on current lesson
   const videoProps = useMemo(() => ({
@@ -1257,8 +1264,6 @@ export default function CourseLearningPage() {
       <div className="flex flex-col h-screen w-full overflow-hidden">
         <CourseLearningNavbar
           setIsSidebarOpen={setIsSidebarOpen}
-          courseId={courseId}
-          onCourseIdChange={handleCourseIdChange}
         />
 
         {/* Syllabus Sidebar - Now as an overlay */}
@@ -1302,8 +1307,6 @@ export default function CourseLearningPage() {
 
       <CourseLearningNavbar
         setIsSidebarOpen={setIsSidebarOpen}
-        courseId={courseId}
-        onCourseIdChange={handleCourseIdChange}
       />
 
       <div
@@ -1429,5 +1432,13 @@ export default function CourseLearningPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CourseLearningPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}> 
+      <CourseLearningPageInner />
+    </Suspense>
   )
 }

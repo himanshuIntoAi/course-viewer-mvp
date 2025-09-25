@@ -3,23 +3,26 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { CourseCard } from ".";
-import { getAllCourses, ApiCourse, getCourseSubcategories, SubcategoryDto, getCoursesBySubcategory, searchCourses } from "@/services/api/course/api";
+import { getAllCourses, ApiCourse, getCourseSubcategories, SubcategoryDto, getCoursesBySubcategory, searchCourses, getCourseCategories, CourseCategoryDto, getCoursesByCategory } from "@/services/api/course/api";
 
 interface CourseContainerProps {
 	onSearchChange?: (query: string) => void;
 	searchQuery?: string;
 }
 
-function CourseContainer({ onSearchChange, searchQuery: externalSearchQuery }: CourseContainerProps) {
+function CourseContainer({ searchQuery: externalSearchQuery }: CourseContainerProps) {
 	const [courses, setCourses] = useState<ApiCourse[]>([]);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const coursesPerPage = 12; // 4 per row x 3 rows
 	const [subcategories, setSubcategories] = useState<SubcategoryDto[]>([]);
+	const [categories, setCategories] = useState<CourseCategoryDto[]>([]);
 	const [activeSubcategory, setActiveSubcategory] = useState<SubcategoryDto | null>(null);
+	const [activeCategory, setActiveCategory] = useState<CourseCategoryDto | null>(null);
 	const [searchQuery, setSearchQuery] = useState<string>(externalSearchQuery || "");
 	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(externalSearchQuery || "");
+	const [reachedEnd, setReachedEnd] = useState<boolean>(false);
 
 	// Debounce search query
 	useEffect(() => {
@@ -41,22 +44,29 @@ function CourseContainer({ onSearchChange, searchQuery: externalSearchQuery }: C
 				if (debouncedSearchQuery.trim()) {
 					// Search takes priority over subcategory filter
 					data = await searchCourses(debouncedSearchQuery, skip, coursesPerPage);
+				} else if (activeCategory) {
+					data = await getCoursesByCategory(activeCategory.id, skip, coursesPerPage);
 				} else if (activeSubcategory) {
 					data = await getCoursesBySubcategory(activeSubcategory.id, skip, coursesPerPage);
 				} else {
 					data = await getAllCourses(skip, coursesPerPage);
 				}
 				setCourses(data);
-			} catch (err: any) {
-				setError(err.message || 'Failed to fetch courses');
-				console.error('Error fetching courses:', err);
+				setReachedEnd(data.length === 0);
+			} catch (error: unknown) {
+				const message =
+					(error && typeof error === 'object' && 'message' in error && typeof (error as { message?: unknown }).message === 'string')
+						? (error as { message: string }).message
+						: 'Failed to fetch courses';
+				setError(message);
+				console.error('Error fetching courses:', error);
 			} finally {
 				setLoading(false);
 			}
 		};
 
 		fetchCourses();
-	}, [currentPage, activeSubcategory, debouncedSearchQuery]);
+	}, [currentPage, activeSubcategory, activeCategory, debouncedSearchQuery]);
 
 	useEffect(() => {
 		const loadSubcategories = async () => {
@@ -67,27 +77,32 @@ function CourseContainer({ onSearchChange, searchQuery: externalSearchQuery }: C
 				console.error(e);
 			}
 		};
+		const loadCategories = async () => {
+			try {
+				const data = await getCourseCategories();
+				setCategories(data);
+			} catch (e) {
+				console.error(e);
+			}
+		};
 		loadSubcategories();
+		loadCategories();
 	}, []);
 
 	const handlePageChange = (page: number) => {
 		setCurrentPage(page);
+		setReachedEnd(false);
 		window.scrollTo({ top: 0, behavior: 'smooth' });
 	};
 	const handleSelectSubcategory = (sub: SubcategoryDto) => {
 		setActiveSubcategory(sub);
 		setCurrentPage(1);
 		setSearchQuery(""); // Clear search when selecting subcategory
+		setActiveCategory(null); // Clear category when selecting subcategory
 	};
 
-	const handleSearchChange = (query: string) => {
-		setSearchQuery(query);
-		setCurrentPage(1); // Reset to first page when searching
-		if (query.trim()) {
-			setActiveSubcategory(null); // Clear subcategory filter when searching
-		}
-		onSearchChange?.(query); // Notify parent component
-	};
+	// Intentionally keeping `onSearchChange` prop for potential parent-driven search,
+	// but local search is controlled via internal state and filters in this component.
 
 	// Sync with external search query changes
 	useEffect(() => {
@@ -96,7 +111,7 @@ function CourseContainer({ onSearchChange, searchQuery: externalSearchQuery }: C
 		}
 	}, [externalSearchQuery]);
 
-	const totalPages = Math.ceil(30 / coursesPerPage); // Assuming 30 total courses for now
+// total pages unknown; we paginate by requesting next page until fewer than page size is returned
 
 	// Helper function to get category name from category_id
 	const getCategoryName = (categoryId?: number | null): string => {
@@ -203,29 +218,34 @@ function CourseContainer({ onSearchChange, searchQuery: externalSearchQuery }: C
        </div>
 
 				{/* Filters row */}
-				<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+		<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex flex-wrap gap-2">
-						{[
-							"All Filters",
-							"Software Development",
-							"IT & Consulting",
-							"Business",
-							"Sales & Marketing",
-							"Healthcare",
-							"Data Science",
-						].map((chip, index) => (
-							<button
-								key={chip}
-								className={
-									"rounded-md border px-3 py-1.5 text-xs sm:text-sm " +
-									(index === 1
-										? "border-violet-500 bg-violet-600 text-white"
-										: "border-gray-200 bg-white text-gray-700 hover:bg-gray-50")
-								}
-							>
-								{chip}
-							</button>
-						))}
+				{/* All button */}
+				<button
+					className={
+						"rounded-md border px-3 py-1.5 text-xs sm:text-sm " +
+						(!activeCategory && !activeSubcategory && !debouncedSearchQuery.trim()
+							? "border-violet-500 bg-violet-600 text-white"
+							: "border-gray-200 bg-white text-gray-700 hover:bg-gray-50")
+					}
+					onClick={() => { setActiveCategory(null); setActiveSubcategory(null); setSearchQuery(""); setCurrentPage(1); }}
+				>
+					All
+				</button>
+				{(categories.length ? categories : []).map((cat) => (
+					<button
+						key={cat.id}
+						className={
+							"rounded-md border px-3 py-1.5 text-xs sm:text-sm " +
+							(activeCategory?.id === cat.id
+								? "border-violet-500 bg-violet-600 text-white"
+								: "border-gray-200 bg-white text-gray-700 hover:bg-gray-50")
+						}
+						onClick={() => { setActiveCategory(cat); setActiveSubcategory(null); setSearchQuery(""); setCurrentPage(1); }}
+					>
+						{cat.name}
+					</button>
+				))}
 					</div>
 					<div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
 						<span>Sort by:</span>
@@ -239,9 +259,7 @@ function CourseContainer({ onSearchChange, searchQuery: externalSearchQuery }: C
 
 				{/* Catalog preview cards */}
 				<div className="mt-6">
-					<p className="text-sm text-gray-600">
-						Browse full catalog <span className="text-gray-900 font-medium">(30 results)</span>
-					</p>
+					<p className="text-sm text-gray-600">Browse full catalog</p>
 					
 					{loading && (
 						<div className="mt-4 flex items-center justify-center py-8">
@@ -278,40 +296,20 @@ function CourseContainer({ onSearchChange, searchQuery: externalSearchQuery }: C
 						</div>
 					)}
 
-					{/* Pagination */}
+					{/* Pagination: Previous / Next only */}
 					{!loading && !error && courses.length > 0 && (
 						<div className="mt-8 flex items-center justify-center gap-3">
-							<button
+					<button
 								className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-40 hover:bg-gray-50"
 								onClick={() => handlePageChange(currentPage - 1)}
 								disabled={currentPage === 1}
 							>
 								Previous
 							</button>
-							
-							<div className="flex items-center gap-2">
-								{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-									const pageNum = i + 1;
-									return (
-										<button
-											key={pageNum}
-											className={`rounded-md px-3 py-1.5 text-sm ${
-												currentPage === pageNum
-													? 'bg-violet-600 text-white'
-													: 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-											}`}
-											onClick={() => handlePageChange(pageNum)}
-										>
-											{pageNum}
-										</button>
-									);
-								})}
-							</div>
-							
-							<button
+					<button
 								className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-40 hover:bg-gray-50"
 								onClick={() => handlePageChange(currentPage + 1)}
-								disabled={currentPage === totalPages}
+						disabled={reachedEnd || loading}
 							>
 								Next
 							</button>

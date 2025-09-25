@@ -3,16 +3,28 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Course } from '@/services/types/course/course';
+import type {
+  CourseTopic,
+  CourseLesson,
+  CourseLearningContentResponse,
+  CourseLearningContentQuizItem,
+  CourseLearningContentFlashcardItem,
+  CourseLearningContentMemoryGameItem,
+  CourseLearningContentTopicItem,
+} from '@/services/api/course/api';
 
 interface CourseDetailContentProps {
   courseData: Course | null;
+  topics?: CourseTopic[];
+  lessons?: CourseLesson[];
+  learningContent?: CourseLearningContentResponse | null;
 }
 
-const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData }) => {
+const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData, topics = [], lessons = [], learningContent = null }) => {
   const [activeTab, setActiveTab] = useState('content');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['introduction']));
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
 
-  const toggleSection = (sectionId: string) => {
+  const toggleSection = (sectionId: number) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(sectionId)) {
       newExpanded.delete(sectionId);
@@ -23,7 +35,7 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
   };
 
   const expandAllSections = () => {
-    setExpandedSections(new Set(['introduction', 'section1', 'section2', 'section3']));
+    setExpandedSections(new Set(topics.map((t) => t.id)));
   };
 
   // Handle loading state
@@ -181,138 +193,155 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData })
                 </button>
               </div>
 
-              {/* Course Sections */}
+              {/* Course Sections (Topics and Lessons) */}
               <div className="space-y-2">
-                {/* Introduction Section */}
-                <div className="rounded-lg">
-                  <button
-                    onClick={() => toggleSection('introduction')}
-                    className="w-full px-4 py-3 text-left bg-black text-white rounded-2xl flex"
-                  >
-                    <Image src="/images/course-detail/arrow-rightLogo.svg" alt="Arrow Right" width={16} height={16} />
-                    <div className="flex items-center space-x-3 flex-row justify-between w-full text-white">
-                      <span className="font-medium">Introduction</span>
-                      <span className="text-sm ">7 Lessons - 21min</span>
+                {topics.length === 0 && (
+                  <div className="text-sm text-gray-500">No topics available</div>
+                )}
+                {topics.map((topic) => {
+                  const topicLessons = lessons.filter((l) => l.topic_id === topic.id);
+                  return (
+                    <div key={topic.id} className="rounded-lg">
+                      <button
+                        onClick={() => toggleSection(topic.id)}
+                        className="w-full px-4 py-3 text-left bg-black text-white rounded-2xl flex"
+                      >
+                        <Image src="/images/course-detail/arrow-rightLogo.svg" alt="Arrow Right" width={16} height={16} />
+                        <div className="flex items-center space-x-3 flex-row justify-between w-full text-white">
+                          <span className="font-medium">{topic.title}</span>
+                          <span className="text-sm ">{topicLessons.length} Lessons</span>
+                        </div>
+                      </button>
+                      {expandedSections.has(topic.id) && (
+                        <div className="px-4 pb-3 border-t border-gray-200">
+                          <div className="pt-3 space-y-2">
+                            {topicLessons.length === 0 && (
+                              <div className="text-sm text-gray-500">No lessons</div>
+                            )}
+                            {topicLessons.map((lesson) => (
+                              <div key={lesson.id} className="flex items-center justify-between text-sm">
+                                <div className='flex items-center space-x-2'>
+                                  <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
+                                  <span className=" text-blue-600 underline">{lesson.title}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </button>
-                  {expandedSections.has('introduction') && (
-                    <div className="px-4 pb-3 border-t border-gray-200">
-                      <div className="pt-3 space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className='flex items-center space-x-2'>
-                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
-                            <span className=" text-blue-600 underline">About the course</span>
-                          </div>
-                          <div>
-                            <span className="mr-2 text-blue-600 underline">Preview</span>
-                            <span className="text-gray-500">2:15</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className='flex items-center space-x-2'>
-                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
-                            <span className=" text-blue-600 underline">About the course</span>
-                          </div>
-                          <div>
-                            <span className="mr-2 text-blue-600 underline">Preview</span>
-                            <span className="text-gray-500">2:15</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className='flex items-center space-x-2'>
-                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
-                            <span className=" text-blue-600 underline">About the course</span>
-                          </div>
-                          <div>
-                            <span className="mr-2 text-blue-600 underline">Preview</span>
-                            <span className="text-gray-500">2:15</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm">
-                          <div className='flex items-center space-x-2'>
-                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
-                            <span className=" text-blue-600 underline">About the course</span>
-                          </div>
-                          <div>
-                            <span className="mr-2 text-blue-600 underline">Preview</span>
-                            <span className="text-gray-500">2:15</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className='flex items-center space-x-2'>
-                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
-                            <span className=" text-blue-600 underline">About the course</span>
-                          </div>
-                          <div>
-                            <span className="mr-2 text-blue-600 underline">Preview</span>
-                            <span className="text-gray-500">2:15</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className='flex items-center space-x-2'>
-                            <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
-                            <span className=" text-blue-600 underline">About the course</span>
-                          </div>
-                          <div>
-                            <span className="mr-2 text-blue-600 underline">Preview</span>
-                            <span className="text-gray-500">2:15</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Additional Sections */}
-                {['section1', 'section2', 'section3'].map((sectionId) => (
-                  <div key={sectionId} className="">
-                    <button
-                      onClick={() => toggleSection(sectionId)}
-                      className="w-full px-4 py-3 text-left flex bg-black text-white rounded-2xl flex-row"
-                    >
-                      <Image src="/images/course-detail/arrow-rightLogo.svg" alt="Arrow Right" width={16} height={16} />
-                      <div className="flex items-center space-x-3 flex-row justify-between text-white w-full">
-                        <span className="font-medium">Section {sectionId.replace('section', '')}</span>
-                        <span className="text-sm ">12 Lessons - 45min</span>
-                      </div>
-
-                    </button>
-                    {expandedSections.has(sectionId) && (
-                      <div className="px-4 pb-3 border-t ">
-                        <div className="pt-3 space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <div className='flex items-center space-x-2'>
-                              <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
-                              <span className=" text-blue-600 underline">About the course</span>
-                            </div>
-                            <div>
-                              <span className="mr-2 text-blue-600 underline">Preview</span>
-                              <span className="text-gray-500">2:15</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <div className='flex items-center space-x-2'>
-                              <Image src="/images/course-detail/video-logo.svg" alt="" width={16} height={16} />
-                              <span className=" text-blue-600 underline">About the course</span>
-                            </div>
-                            <div>
-                              <span className="mr-2 text-blue-600 underline">Preview</span>
-                              <span className="text-gray-500">2:15</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
           {activeTab === 'details' && (
-            <div className="text-center py-12 text-gray-500">
-              <p>Course details will be displayed here</p>
+            <div className="py-6">
+              {(() => {
+                const data = learningContent;
+                if (!data || !data.learning_content) {
+                  return <div className="text-center py-12 text-gray-500">No details available</div>;
+                }
+
+                const { course_title, learning_content, content_summary } = data;
+                const lessons = learning_content?.lessons ?? [];
+                const quizzes = learning_content?.quizzes ?? [];
+                const flashcards = learning_content?.flashcards ?? [];
+                const memoryGames = learning_content?.memory_games ?? [];
+                const topicsLC = learning_content?.topics ?? [];
+
+                return (
+                  <div className="prose max-w-none">
+                    {course_title && (
+                      <h2 className="text-2xl font-bold text-gray-900 mb-4">{course_title}</h2>
+                    )}
+
+                    {content_summary && (
+                      <div className="flex flex-wrap gap-2 mb-6 not-prose">
+                        <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">Lessons: {content_summary.total_lessons}</span>
+                        <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">Quizzes: {content_summary.total_quizzes}</span>
+                        <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">Flashcards: {content_summary.total_flashcards}</span>
+                        <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">Mindmaps: {content_summary.total_mindmaps}</span>
+                        <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">Memory Games: {content_summary.total_memory_games}</span>
+                        <span className="px-3 py-1 border border-gray-200 text-gray-700 rounded-sm text-sm">Topics: {content_summary.total_topics}</span>
+                      </div>
+                    )}
+
+                    <div className="space-y-6">
+                      {/* Lessons titles only */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">Lessons</h4>
+                        {lessons.length === 0 ? (
+                          <div className="text-sm text-gray-500">No lessons</div>
+                        ) : (
+                          <ul className="list-disc pl-5 text-gray-800">
+                            {lessons.map((lesson, idx) => (
+                              <li key={`${lesson.id ?? 'lesson'}-${idx}`}>{lesson.title}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* Quizzes titles only */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">Quizzes</h4>
+                        {quizzes.length === 0 ? (
+                          <div className="text-sm text-gray-500">No quizzes</div>
+                        ) : (
+                          <ul className="list-disc pl-5 text-gray-800">
+                            {quizzes.map((q: CourseLearningContentQuizItem, idx: number) => (
+                              <li key={`${q.id ?? 'quiz'}-${idx}`}>{q.title}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* Flashcards titles only (use front as title) */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">Flashcards</h4>
+                        {flashcards.length === 0 ? (
+                          <div className="text-sm text-gray-500">No flashcards</div>
+                        ) : (
+                          <ul className="list-disc pl-5 text-gray-800">
+                            {flashcards.map((fc: CourseLearningContentFlashcardItem, idx: number) => (
+                              <li key={`${fc.id ?? 'flashcard'}-${idx}`}>{fc.front}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* Memory games titles only (use description) */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">Memory Games</h4>
+                        {memoryGames.length === 0 ? (
+                          <div className="text-sm text-gray-500">No memory games</div>
+                        ) : (
+                          <ul className="list-disc pl-5 text-gray-800">
+                            {memoryGames.map((mg: CourseLearningContentMemoryGameItem, idx: number) => (
+                              <li key={`${mg.id ?? 'memory'}-${idx}`}>{mg.description}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* Topics titles only */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">Topics</h4>
+                        {topicsLC.length === 0 ? (
+                          <div className="text-sm text-gray-500">No topics</div>
+                        ) : (
+                          <ul className="list-disc pl-5 text-gray-800">
+                            {topicsLC.map((t: CourseLearningContentTopicItem, idx: number) => (
+                              <li key={`${t.id ?? 'topic'}-${idx}`}>{t.title}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
