@@ -212,40 +212,8 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
 
           setFlashcardData(sortedFlashcards);
         } else {
-          // Fallback to dummy data if no matching flashcards found
-          setFlashcardData([
-            {
-              id: 1,
-              front: topic,
-              back: 'Key concepts and information',
-              clue: 'Study this topic thoroughly',
-              topic_id: topicId,
-              card_order: 1
-            },
-            {
-              id: 2,
-              front: 'Important Points',
-              back: 'Remember the key takeaways',
-              clue: 'Focus on main concepts',
-              topic_id: topicId,
-              card_order: 2
-            },
-            {
-              id: 3,
-              front: 'Practice Questions',
-              back: 'Test your understanding',
-              clue: 'Apply what you learned',
-              topic_id: topicId,
-              card_order: 3
-            }
-          ]);
-        }
-      } catch (err) {
-        console.error('Error fetching flashcard data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch flashcard data');
-
-        // Fallback to dummy data on error
-        setFlashcardData([
+        // Fallback to dummy data if no matching flashcards found
+        const fallbackData = [
           {
             id: 1,
             front: topic,
@@ -270,7 +238,41 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
             topic_id: topicId,
             card_order: 3
           }
-        ]);
+        ];
+        setFlashcardData(fallbackData);
+        }
+      } catch (err) {
+        console.error('Error fetching flashcard data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch flashcard data');
+
+        // Fallback to dummy data on error
+        const errorFallbackData = [
+          {
+            id: 1,
+            front: topic,
+            back: 'Key concepts and information',
+            clue: 'Study this topic thoroughly',
+            topic_id: topicId,
+            card_order: 1
+          },
+          {
+            id: 2,
+            front: 'Important Points',
+            back: 'Remember the key takeaways',
+            clue: 'Focus on main concepts',
+            topic_id: topicId,
+            card_order: 2
+          },
+          {
+            id: 3,
+            front: 'Practice Questions',
+            back: 'Test your understanding',
+            clue: 'Apply what you learned',
+            topic_id: topicId,
+            card_order: 3
+          }
+        ];
+        setFlashcardData(errorFallbackData);
       } finally {
         setLoading(false);
       }
@@ -310,6 +312,8 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
       <div className="w-full h-full">
         <FlashCards
           topic={topic}
+          courseId={courseId}
+          topicId={topicId}
           initialCards={flashcardData.map(card => ({
             question: card.front,
             answer: card.back
@@ -326,6 +330,11 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
         <div className="text-gray-500 text-6xl mb-4">❓</div>
         <h3 className="text-xl font-semibold text-gray-600 mb-2">No Flashcards Available</h3>
         <p className="text-gray-500">Please try again later.</p>
+        <FlashCards
+          topic={topic}
+          courseId={courseId}
+          topicId={topicId}
+        />
       </div>
     </div>
   );
@@ -382,10 +391,10 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
               const indentMatch = line.match(/^(\s*)/);
               const indentLength = indentMatch ? indentMatch[1].length : 0;
               const indentLevel = Math.floor(indentLength / 4); // Assuming 4 spaces per level
-              
+
               // Extract node name (remove parentheses and extra formatting)
               let nodeName = line.replace(/^\s*/, '').replace(/^root\(\(/, '').replace(/\)\)$/, '').replace(/^root\(/, '').replace(/\)$/, '');
-              
+
               // Clean up the node name
               nodeName = nodeName.trim();
 
@@ -411,7 +420,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
                       break;
                     }
                   }
-                  
+
                   if (parentNode) {
                     links.push({
                       source: parentNode,
@@ -425,7 +434,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
                   levelStack.push('');
                 }
                 levelStack[indentLevel] = nodeId;
-                
+
                 // Clear deeper levels
                 for (let i = indentLevel + 1; i < levelStack.length; i++) {
                   levelStack[i] = '';
@@ -438,7 +447,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
 
           try {
             const transformedData = parseMermaidToMindMapData(selectedMindmap.mindmap_mermaid);
-            
+
             // Validate the transformed data
             if (transformedData.nodes.length === 0) {
               throw new Error('No nodes found in mindmap data');
@@ -546,7 +555,7 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
   const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // New state for quiz selection
   const [availableQuizzes, setAvailableQuizzes] = useState<APIQuiz[]>([]);
   const [, setSelectedQuizId] = useState<number | null>(null);
@@ -568,7 +577,7 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
 
         const quizzes = await quizzesResponse.json();
         setAvailableQuizzes(quizzes);
-        
+
         if (quizzes.length === 0) {
           throw new Error('No quizzes available for this course');
         }
@@ -992,7 +1001,7 @@ const MemoryGameWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
 
 const CourseLearningPageInner = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+
   const [selectedLessonId, setSelectedLessonId] = useState<number | undefined>(undefined);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1072,7 +1081,7 @@ const CourseLearningPageInner = () => {
     setSelectedComponent(null);
   };
 
-  
+
   // Initialize courseId from URL or localStorage
   useEffect(() => {
     const idParam = searchParams.get('courseId');
@@ -1129,7 +1138,7 @@ const CourseLearningPageInner = () => {
 
       if (rightMinPercent > 0) {
         const remainingForRight = 100 - newLessonPercent;
-        
+
         if (hasEditor) {
           // When editor is present, distribute between video and editor
           const totalRight = (videoWidthPercent + editorWidthPercent) || 1; // avoid divide by zero
@@ -1278,8 +1287,8 @@ const CourseLearningPageInner = () => {
             <div
               className={`absolute top-0 left-0 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl z-[1000] `}
               style={{
-                width: '400px',
-                minWidth: '400px'
+                width: '1000px',
+                minWidth: '1000px'
               }}
             >
               <CourseSyllabusSidebar
@@ -1325,7 +1334,7 @@ const CourseLearningPageInner = () => {
             <div
               className={`absolute top-0 left-0 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl z-[1000] `}
               style={{
-                width: '400px',
+                width: '700px',
                 minWidth: '400px'
               }}
             >
@@ -1437,7 +1446,7 @@ const CourseLearningPageInner = () => {
 
 export default function CourseLearningPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen" />}> 
+    <Suspense fallback={<div className="min-h-screen" />}>
       <CourseLearningPageInner />
     </Suspense>
   )
