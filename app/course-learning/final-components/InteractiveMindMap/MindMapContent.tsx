@@ -107,7 +107,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
         setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
     }
     return () => { componentMountedRef.current = false; };
-  }, [isCoreDataReady]);
+  }, []); // Remove isCoreDataReady dependency to prevent infinite loop
 
 
 
@@ -134,7 +134,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
       }
       return prev;
     });
-  }, [setData]);
+  }, []); // Remove setData dependency to prevent infinite loops
 
   const isLoading = false;
 
@@ -151,6 +151,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
       boxSizing: "border-box",
       background: isPopupOpen ? "#f0f0f0" : "transparent"
     }}>
+       
       {isPopupOpen ? (
         <>
           <div style={{ padding: "8px", background: isDarkTheme ? "#1f2937" : "#ffffff", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -163,6 +164,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
               <button onClick={togglePopup} className="p-2 text-white rounded-md shadow-md" style={{ backgroundColor: '#0d9488' }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#14b8a6')} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0d9488')} title="Exit fullscreen"><Maximize2 size={20} color="white" /></button>
             </div>
           </div>
+
           <div ref={reactFlowWrapperRef} style={{ width: "100%", flexGrow: 1, position: "relative", overflow: "hidden", background: isDarkTheme ? "#111827" : "#f8fafc", touchAction: "none" }} className="reactflow-wrapper">
             {isLoading ? (<div style={{ padding: '20px', textAlign: 'center', color: isDarkTheme ? '#9ca3af' : '#666' }}>Initializing Mind Map...</div>) : (
               <div style={{ width: "100%", height: "100%" }}>
@@ -172,25 +174,17 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
                   />
                 ) : (
                   <GraphRendererLR data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={async () => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
-                    canvasTheme={isDarkTheme ? "dark" : "light"} lineStyle="solid" lineCurveStyle="curved" lineColorMode="default" customLineColor={isDarkTheme ? "#6b7280" : "#CBD5E0"}
+                    canvasTheme={isDarkTheme ? "dark" : "light"} lineStyle="solid" lineCurveStyle="curved" lineColorMode="default" customLineColor={isDarkTheme ? "#6b7280" : "#CBD5E0"} readOnly
                   />
                 )}
               </div>
             )}
           </div>
+          
         </>
       ) : (
         <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", width: "100%" }}>
-            <span className="text-lg font-semibold" style={{ color: isDarkTheme ? "#ffffff" : "#1e40af" }}>Interactive Mind Map</span>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button onClick={handleThemeToggle} className="p-1 text-white rounded-md shadow-md" style={{ backgroundColor: isDarkTheme ? '#374151' : '#6b7280' }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = isDarkTheme ? '#4b5563' : '#9ca3af')} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isDarkTheme ? '#374151' : '#6b7280')} title={`Switch to ${isDarkTheme ? 'light' : 'dark'} theme`}>
-                {isDarkTheme ? <Sun size={16} color="white" /> : <Moon size={16} color="white" />}
-              </button>
-              <button onClick={() => handleLayoutChange(layout === "vertical" ? "horizontal" : "vertical")} className="p-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 shadow-md" title={`Switch to ${layout === "vertical" ? "horizontal" : "vertical"} layout`} style={{ fontSize: '12px', padding: '4px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '120px', height: '30px' }}>{layout === "vertical" ? <><ArrowLeftRight size={16} color="white" /> Horizontal</> : <><ArrowUpDown size={16} color="white" /> Vertical</>}</button>
-              <button onClick={togglePopup} className="p-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 shadow-md" title="Open in fullscreen"><Maximize2 size={20} color="white" /></button>
-            </div>
-          </div>
+          
           <div ref={reactFlowWrapperRef} style={{ width: "100%", flexGrow: 1, position: "relative", border: isDarkTheme ? "1px solid #374151" : "1px solid #E2E8F0", borderRadius: "4px", overflow: "hidden", background: isDarkTheme ? "#111827" : "#f8fafc", minHeight: "300px", touchAction: "none" }} className="reactflow-wrapper">
             {isLoading ? (<div style={{ padding: '20px', textAlign: 'center', color: isDarkTheme ? '#9ca3af' : '#666' }}>Initializing Mind Map...</div>) : (
               <div style={{ width: "100%", height: "100%" }}>
@@ -200,7 +194,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
                   />
                 ) : (
                   <GraphRendererLR data={data} deleteNode={() => {}} onAddChildNode={() => {}} onUpdateNodeLabel={() => {}} onRequestSubtopics={async () => {}} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNodeId} selectedColor="#4f46e5" nodeColors={nodeColors} linkMode={false} linkSource={null} controlsPosition="bottom-right" minimapPosition="top-right" onAddNodeOnEdgeDrop={() => {}} onNodePositionChange={handleNodePositionChange} collapsedNodes={collapsedNodes} onNodeToggle={handleNodeToggle} isParentInitialized={isCoreDataReady} isInPopupView={isPopupOpen} 
-                    canvasTheme={isDarkTheme ? "dark" : "light"} lineStyle="solid" lineCurveStyle="curved" lineColorMode="default" customLineColor={isDarkTheme ? "#6b7280" : "#CBD5E0"}
+                    canvasTheme={isDarkTheme ? "dark" : "light"} lineStyle="solid" lineCurveStyle="curved" lineColorMode="default" customLineColor={isDarkTheme ? "#6b7280" : "#CBD5E0"} readOnly
                   />
                 )}
               </div>

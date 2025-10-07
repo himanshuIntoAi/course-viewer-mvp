@@ -13,9 +13,8 @@ import { useSearchParams } from 'next/navigation'
 import FlashCards from "./final-components/FlashCards/FlashCards"
 import MindMap from "./final-components/InteractiveMindMap/MindMap"
 import MemoryGame from "./final-components/MemoryGame/MemoryGame"
-import QuizPlayer from "./final-components/QuizBuilder/QuizPlayer"
-import { QuestionType, QuizData, UserAnswers, EliminatedOptions } from "./final-components/QuizBuilder/QuizBuilder"
-
+import QuizPlayer, { QuestionType, QuizData, UserAnswers, EliminatedOptions } from "./final-components/QuizBuilder/QuizPlayer"
+import Image from "next/image"
 interface Lesson {
   id: number;
   title: string;
@@ -109,30 +108,6 @@ interface APIQuiz {
   updated_by: number | null;
 }
 
-// interface APIQuestion {
-//   quiz_id: number;
-//   type: string;
-//   question_text: string;
-//   points: number;
-//   answers: {
-//     answer?: boolean | number | number[] | string[];
-//     options?: string[];
-//     modelAnswer?: string;
-//     items?: string[];
-//     correctOrder?: number[];
-//     stems?: string[];
-//     matches?: string[];
-//     acceptedAnswers?: string[];
-//   };
-//   question_order: number;
-//   active: boolean;
-//   id: number;
-//   created_at: string;
-//   created_by: number;
-//   updated_at: string;
-//   updated_by: number | null;
-// }
-
 interface APIMemoryGame {
   id: number;
   description: string;
@@ -193,7 +168,7 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
         setError(null);
 
         // Get all flashcards for the course
-        const flashcardsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/flashcards/`);
+        const flashcardsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/flashcards/`);
 
         if (!flashcardsResponse.ok) {
           throw new Error(`Failed to fetch flashcards: ${flashcardsResponse.status} ${flashcardsResponse.statusText}`);
@@ -212,67 +187,13 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
 
           setFlashcardData(sortedFlashcards);
         } else {
-        // Fallback to dummy data if no matching flashcards found
-        const fallbackData = [
-          {
-            id: 1,
-            front: topic,
-            back: 'Key concepts and information',
-            clue: 'Study this topic thoroughly',
-            topic_id: topicId,
-            card_order: 1
-          },
-          {
-            id: 2,
-            front: 'Important Points',
-            back: 'Remember the key takeaways',
-            clue: 'Focus on main concepts',
-            topic_id: topicId,
-            card_order: 2
-          },
-          {
-            id: 3,
-            front: 'Practice Questions',
-            back: 'Test your understanding',
-            clue: 'Apply what you learned',
-            topic_id: topicId,
-            card_order: 3
-          }
-        ];
-        setFlashcardData(fallbackData);
+          // Fallback to dummy data if no matching flashcards found
+          setFlashcardData([]);
         }
       } catch (err) {
         console.error('Error fetching flashcard data:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch flashcard data');
-
-        // Fallback to dummy data on error
-        const errorFallbackData = [
-          {
-            id: 1,
-            front: topic,
-            back: 'Key concepts and information',
-            clue: 'Study this topic thoroughly',
-            topic_id: topicId,
-            card_order: 1
-          },
-          {
-            id: 2,
-            front: 'Important Points',
-            back: 'Remember the key takeaways',
-            clue: 'Focus on main concepts',
-            topic_id: topicId,
-            card_order: 2
-          },
-          {
-            id: 3,
-            front: 'Practice Questions',
-            back: 'Test your understanding',
-            clue: 'Apply what you learned',
-            topic_id: topicId,
-            card_order: 3
-          }
-        ];
-        setFlashcardData(errorFallbackData);
+        setFlashcardData([]);
       } finally {
         setLoading(false);
       }
@@ -284,7 +205,7 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
   // Show loading state
   if (loading) {
     return (
-      <div className="w-full h-full bg-white flex items-center justify-center">
+      <div className="w-full h-full  bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading flashcards...</p>
@@ -309,7 +230,7 @@ const FlashCardsWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
   // Show flashcards when data is loaded
   if (flashcardData.length > 0) {
     return (
-      <div className="w-full h-full">
+      <div className="w-full h-full ">
         <FlashCards
           topic={topic}
           courseId={courseId}
@@ -355,7 +276,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
         setError(null);
 
         // Get all mindmaps for the course
-        const mindmapsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/mindmaps/`);
+        const mindmapsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/mindmaps/`);
 
         if (!mindmapsResponse.ok) {
           throw new Error(`Failed to fetch mindmaps: ${mindmapsResponse.status} ${mindmapsResponse.statusText}`);
@@ -363,84 +284,74 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
 
         const mindmaps = await mindmapsResponse.json();
 
-        // Find mindmap that matches the topic ID
-        const selectedMindmap = mindmaps.find((mindmap: APIMindmap) => {
-          return mindmap.topic_id === topicId;
-        });
+        // Find mindmap that matches the topic ID; fallback to first available if none
+        let selectedMindmap = mindmaps.find((mindmap: APIMindmap) => mindmap.topic_id === topicId);
+        if (!selectedMindmap && Array.isArray(mindmaps) && mindmaps.length > 0) {
+          selectedMindmap = mindmaps[0];
+        }
 
         if (selectedMindmap) {
 
           // Parse Mermaid data to extract nodes and links
           const parseMermaidToMindMapData = (mermaidText: string): MindMapData => {
-            const lines = mermaidText.split('\n').map(line => line.trim()).filter(line => line);
+            const rawLines = mermaidText.split('\n');
             const nodes: MindMapData['nodes'] = [];
             const links: MindMapData['links'] = [];
-            const nodeMap = new Map<string, { id: string; name: string; level: number }>();
-
             let nodeIdCounter = 1;
-            // const currentLevel = 0;
             const levelStack: string[] = [];
 
-            lines.forEach((line, index) => {
-              // Skip the first line if it's just "mindmap"
-              if (index === 0 && line.toLowerCase() === 'mindmap') {
-                return;
-              }
+            const normalizeIndent = (s: string) => s.replace(/\t/g, '    ');
 
-              // Calculate indentation level - handle both spaces and tabs
-              const indentMatch = line.match(/^(\s*)/);
+            for (let idx = 0; idx < rawLines.length; idx++) {
+              let line = rawLines[idx];
+              if (!line) continue;
+              // Skip mermaid header
+              if (line.trim().toLowerCase() === 'mindmap') continue;
+
+              const normalized = normalizeIndent(line);
+              const indentMatch = normalized.match(/^(\s*)/);
               const indentLength = indentMatch ? indentMatch[1].length : 0;
-              const indentLevel = Math.floor(indentLength / 4); // Assuming 4 spaces per level
+              const indentLevel = Math.floor(indentLength / 4);
 
-              // Extract node name (remove parentheses and extra formatting)
-              let nodeName = line.replace(/^\s*/, '').replace(/^root\(\(/, '').replace(/\)\)$/, '').replace(/^root\(/, '').replace(/\)$/, '');
+              // Extract node name from trimmed content
+              let content = normalized.trim();
+              // Handle root((Title)) or root(Title)
+              const rootMatch = content.match(/^root\s*\(\(?([^\)]+)\)?\)?/i);
+              if (rootMatch && rootMatch[1]) {
+                content = rootMatch[1].trim();
+              }
+              const nodeName = content;
+              if (!nodeName) continue;
 
-              // Clean up the node name
-              nodeName = nodeName.trim();
+              // Assign ids: ensure first node becomes id "1"
+              const nodeId = String(nodeIdCounter++);
+              nodes.push({ id: nodeId, name: nodeName, group: Math.max(1, indentLevel + 1), level: indentLevel });
 
-              if (nodeName) {
-                const nodeId = `node_${nodeIdCounter++}`;
-                const node = {
-                  id: nodeId,
-                  name: nodeName,
-                  group: 1,
-                  level: indentLevel
-                };
-
-                nodes.push(node);
-                nodeMap.set(nodeName, { id: nodeId, name: nodeName, level: indentLevel });
-
-                // Create links based on hierarchy
-                if (indentLevel > 0) {
-                  // Find the most recent parent at the previous level
-                  let parentNode = null;
-                  for (let i = indentLevel - 1; i >= 0; i--) {
-                    if (levelStack[i]) {
-                      parentNode = levelStack[i];
-                      break;
-                    }
-                  }
-
-                  if (parentNode) {
-                    links.push({
-                      source: parentNode,
-                      target: nodeId
-                    });
-                  }
+              // Parent link for children
+              if (indentLevel > 0) {
+                let parentId: string | null = null;
+                for (let i = indentLevel - 1; i >= 0; i--) {
+                  if (levelStack[i]) { parentId = levelStack[i]; break; }
                 }
-
-                // Update level stack - ensure array is large enough
-                while (levelStack.length <= indentLevel) {
-                  levelStack.push('');
-                }
-                levelStack[indentLevel] = nodeId;
-
-                // Clear deeper levels
-                for (let i = indentLevel + 1; i < levelStack.length; i++) {
-                  levelStack[i] = '';
+                if (parentId) {
+                  links.push({ source: parentId, target: nodeId });
                 }
               }
-            });
+
+              // Update stack at this level
+              while (levelStack.length <= indentLevel) levelStack.push('');
+              levelStack[indentLevel] = nodeId;
+              // Clear deeper levels
+              for (let i = indentLevel + 1; i < levelStack.length; i++) levelStack[i] = '';
+            }
+
+            // Ensure the very first node has id "1" (already true), and there is at least one node
+            if (nodes.length > 0 && nodes[0].id !== '1') {
+              // Reindex only if somehow first id is not "1"
+              nodes[0].id = '1';
+              // Update links that reference old id
+              links.forEach(l => { if (l.source === nodes[1]?.id) l.source = '1'; if (l.target === nodes[1]?.id) l.target = '1'; });
+            }
 
             return { nodes, links };
           };
@@ -458,39 +369,12 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
             throw new Error('Failed to parse mindmap data');
           }
         } else {
-          // Fallback to dummy data if no matching mindmap found
-          const fallbackData = {
-            nodes: [
-              { id: '1', name: topic, group: 1, level: 0 },
-              { id: '2', name: 'Key Concepts', group: 1, level: 1 },
-              { id: '3', name: 'Examples', group: 1, level: 1 },
-              { id: '4', name: 'Practice', group: 1, level: 1 }
-            ],
-            links: [
-              { source: '1', target: '2' },
-              { source: '1', target: '3' },
-              { source: '1', target: '4' }
-            ]
-          };
-          setMindmapData(fallbackData);
+          // No mindmaps available for course
+          setMindmapData(null);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch mindmap data');
-
-        // Fallback to dummy data on error
-        setMindmapData({
-          nodes: [
-            { id: '1', name: topic, group: 1, level: 0 },
-            { id: '2', name: 'Key Concepts', group: 1, level: 1 },
-            { id: '3', name: 'Examples', group: 1, level: 1 },
-            { id: '4', name: 'Practice', group: 1, level: 1 }
-          ],
-          links: [
-            { source: '1', target: '2' },
-            { source: '1', target: '3' },
-            { source: '1', target: '4' }
-          ]
-        });
+        setMindmapData(null);
       } finally {
         setLoading(false);
       }
@@ -545,8 +429,8 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
   );
 };
 
-// Simple Quiz Wrapper Component
-const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) => {
+// Simple Quiz Wrapper Component (auto-start first quiz for topic)
+const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: number; courseId: string }) => {
   const [userAnswers, setUserAnswers] = useState<UserAnswers>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -559,9 +443,9 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
   // New state for quiz selection
   const [availableQuizzes, setAvailableQuizzes] = useState<APIQuiz[]>([]);
   const [, setSelectedQuizId] = useState<number | null>(null);
-  const [showQuizSelection, setShowQuizSelection] = useState(true);
+  const [showQuizSelection, setShowQuizSelection] = useState(false);
 
-  // Fetch available quizzes from API
+  // Fetch available quizzes from API for the specific topic and auto-start the first
   useEffect(() => {
     const fetchAvailableQuizzes = async () => {
       try {
@@ -569,18 +453,25 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
         setError(null);
 
         // Get all quizzes for the course
-        const quizzesResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/quizzes/`);
+        const quizzesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/quizzes/`);
 
         if (!quizzesResponse.ok) {
           throw new Error(`Failed to fetch quizzes: ${quizzesResponse.status} ${quizzesResponse.statusText}`);
         }
 
-        const quizzes = await quizzesResponse.json();
-        setAvailableQuizzes(quizzes);
+        const quizzes: APIQuiz[] = await quizzesResponse.json();
+        // Filter quizzes by topicId
+        const topicQuizzes = quizzes.filter(q => q.topic_id === topicId);
+        setAvailableQuizzes(topicQuizzes);
 
-        if (quizzes.length === 0) {
-          throw new Error('No quizzes available for this course');
+        if (topicQuizzes.length === 0) {
+          throw new Error('No quizzes available for this topic');
         }
+
+        // Auto-start the first quiz for this topic
+        const firstQuiz = topicQuizzes[0];
+        setSelectedQuizId(firstQuiz.id);
+        await fetchQuizData(firstQuiz.id, firstQuiz);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch quizzes');
       } finally {
@@ -589,22 +480,22 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
     };
 
     fetchAvailableQuizzes();
-  }, [courseId]);
+  }, [courseId, topicId]);
 
   // Fetch specific quiz data when a quiz is selected
-  const fetchQuizData = async (quizId: number) => {
+  const fetchQuizData = async (quizId: number, preselected?: APIQuiz) => {
     try {
       setLoading(true);
       setError(null);
 
       // Find the selected quiz
-      const selectedQuiz = availableQuizzes.find(quiz => quiz.id === quizId);
+      const selectedQuiz = preselected ?? availableQuizzes.find(quiz => quiz.id === quizId);
       if (!selectedQuiz) {
         throw new Error('Selected quiz not found');
       }
 
       // Fetch questions for this quiz
-      const questionsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/quizzes/${quizId}/questions/`);
+      const questionsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/quizzes/${quizId}/questions/`);
 
       if (!questionsResponse.ok) {
         throw new Error(`Failed to fetch questions: ${questionsResponse.status} ${questionsResponse.statusText}`);
@@ -732,9 +623,7 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
       <div className="w-full h-full bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">
-            {showQuizSelection ? 'Loading quizzes...' : 'Loading quiz...'}
-          </p>
+          <p className="text-gray-600">Loading quiz...</p>
         </div>
       </div>
     );
@@ -762,73 +651,7 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
     );
   }
 
-  // Show quiz selection interface
-  if (showQuizSelection) {
-    return (
-      <div className="w-full h-full bg-white p-6 overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Available Quizzes</h1>
-            <p className="text-gray-600">Choose a quiz to test your knowledge on {topic}</p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {availableQuizzes.map((quiz) => (
-              <div
-                key={quiz.id}
-                className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => handleQuizSelection(quiz.id)}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800 line-clamp-2">
-                    {quiz.title}
-                  </h3>
-                  <div className="flex items-center text-sm text-gray-500 ml-2">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                      {quiz.max_questions} questions
-                    </span>
-                  </div>
-                </div>
-
-                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                  {quiz.description}
-                </p>
-
-                <div className="space-y-2 text-sm text-gray-500">
-                  <div className="flex items-center justify-between">
-                    <span>Time Limit:</span>
-                    <span className="font-medium">{quiz.time_limit_minutes} minutes</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Passing Grade:</span>
-                    <span className="font-medium">{quiz.passing_grade_percent}%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Status:</span>
-                    <span className={`font-medium ${quiz.is_completed ? 'text-green-600' : 'text-orange-600'}`}>
-                      {quiz.is_completed ? 'Completed' : 'Not Completed'}
-                    </span>
-                  </div>
-                </div>
-
-                <button className="w-full mt-4 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">
-                  Start Quiz
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {availableQuizzes.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">📝</div>
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">No Quizzes Available</h3>
-              <p className="text-gray-500">There are no quizzes available for this topic at the moment.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // No quiz selection UI; auto-starts based on topic
 
   // Show quiz when data is loaded
   if (quizData) {
@@ -836,7 +659,7 @@ const SimpleQuiz = ({ topic, courseId }: { topic: string; courseId: string }) =>
       <div className="w-full h-full bg-white">
         <QuizPlayer
           quizData={quizData}
-          questions={quizData.questions}
+          questions={quizData.questions as any}
           onExitQuiz={handleExitQuiz}
           userAnswers={userAnswers}
           setUserAnswers={setUserAnswers}
@@ -879,7 +702,7 @@ const MemoryGameWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
         setError(null);
 
         // First, get all memory games for the course
-        const memoryGamesResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/memory-games/`);
+        const memoryGamesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/memory-games/`);
 
         if (!memoryGamesResponse.ok) {
           throw new Error('Failed to fetch memory games');
@@ -902,7 +725,7 @@ const MemoryGameWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
 
         if (selectedMemoryGame) {
           // Now fetch the memory game pairs
-          const pairsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/memory-game-pairs/game/${selectedMemoryGame.id}`);
+          const pairsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/memory-game-pairs/game/${selectedMemoryGame.id}`);
 
           if (!pairsResponse.ok) {
             throw new Error('Failed to fetch memory game pairs');
@@ -1000,12 +823,14 @@ const MemoryGameWithAPI = ({ topic, topicId, courseId }: { topic: string; topicI
 };
 
 const CourseLearningPageInner = () => {
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [selectedLessonId, setSelectedLessonId] = useState<number | undefined>(undefined);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [allLessons, setAllLessons] = useState<APILesson[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeView, setActiveView] = useState<'video' | 'component'>('video');
+  const [activeView, setActiveView] = useState<'lesson' | 'InteractiveComponent'>('lesson');
   const [selectedComponent, setSelectedComponent] = useState<InteractiveComponent | null>(null);
   const [courseId, setCourseId] = useState<string>("");
   const [isLearningSidebarFullScreen, setIsLearningSidebarFullScreen] = useState<boolean | null>(null);
@@ -1037,7 +862,7 @@ const CourseLearningPageInner = () => {
       try {
         setLoading(true);
 
-        const lessonResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`);
+        const lessonResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/lessons/`);
 
         if (lessonResponse.ok) {
           const lessons = await lessonResponse.json();
@@ -1065,10 +890,21 @@ const CourseLearningPageInner = () => {
 
   // Handle component selection
   const handleComponentSelect = (component: InteractiveComponent) => {
+
+    if (
+      selectedComponent &&
+      selectedComponent.id === component.id &&
+      selectedComponent.type === component.type
+    ) {
+      setIsSidebarOpen(false); // just close sidebar
+      return;
+    }
+
     setSelectedComponent(component);
-    setActiveView('component');
+    setActiveView('InteractiveComponent');
+    setIsSidebarOpen(false);
     // Hide lesson sidebar when component is selected for full screen experience
-    setIsLearningSidebarFullScreen(true);
+    // setIsLearningSidebarFullScreen(true);
   };
 
   // Handle lesson selection
@@ -1077,7 +913,7 @@ const CourseLearningPageInner = () => {
       setIsLearningSidebarFullScreen(false);
     }
     setSelectedLessonId(lessonId);
-    setActiveView('video');
+    setActiveView('lesson');
     setSelectedComponent(null);
   };
 
@@ -1091,9 +927,31 @@ const CourseLearningPageInner = () => {
       setSelectedLessonId(undefined);
       setCurrentLesson(null);
       setSelectedComponent(null);
-      setActiveView('video');
+      setActiveView('lesson');
     }
   }, [searchParams, courseId]);
+
+  // Fetch and cache all lessons for the course (for prev/next navigation)
+  useEffect(() => {
+    const fetchAllLessons = async () => {
+      if (!courseId) {
+        setAllLessons([]);
+        return;
+      }
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/lessons/`);
+        if (response.ok) {
+          const lessons: APILesson[] = await response.json();
+          setAllLessons(lessons || []);
+        } else {
+          setAllLessons([]);
+        }
+      } catch {
+        setAllLessons([]);
+      }
+    };
+    fetchAllLessons();
+  }, [courseId]);
 
   // Video props based on current lesson
   const videoProps = useMemo(() => ({
@@ -1117,7 +975,7 @@ const CourseLearningPageInner = () => {
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
   }, []);
-
+  console.log("Active view", activeView);
   // Handle mouse move for resizing with proper constraints (syllabus is now overlay)
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !containerRef.current) return;
@@ -1130,7 +988,7 @@ const CourseLearningPageInner = () => {
     if (dragType === 'lesson') {
       // Resize lesson sidebar with constraints based on available right-side content
       const minLessonPercent = 15;
-      const rightMinPercent = (hasVideo || hasEditor || (activeView === 'component' && selectedComponent)) ? 30 : 0;
+      const rightMinPercent = (hasVideo || hasEditor || (activeView === 'InteractiveComponent' && selectedComponent)) ? 30 : 0;
       const maxLessonPercent = 100 - rightMinPercent;
       const newLessonPercent = Math.max(minLessonPercent, Math.min(maxLessonPercent, mousePercent));
 
@@ -1219,138 +1077,52 @@ const CourseLearningPageInner = () => {
     }
   }, [lessonSidebarWidthPercent, videoWidthPercent, editorWidthPercent, hasEditor]);
 
-  // Render the appropriate component based on active view
-  const renderMainContent = () => {
-    if (activeView === 'component' && selectedComponent) {
-      switch (selectedComponent.type) {
-        case 'mindmap':
-          return (
-            <div className="w-full h-full bg-white">
-              <MindMapWithAPI topic={selectedComponent.title} topicId={selectedComponent.topic_id} courseId={courseId} />
-            </div>
-          );
-        case 'flashcards':
-          return <FlashCardsWithAPI topic={selectedComponent.title} topicId={selectedComponent.topic_id} courseId={courseId} />;
-        case 'memorygame':
-          return <MemoryGameWithAPI topic={selectedComponent.title} topicId={selectedComponent.topic_id} courseId={courseId} />;
-        case 'quiz':
-          return <SimpleQuiz topic={selectedComponent.title} courseId={courseId} />;
-        default:
-          return null;
-      }
+  const memoizedInteractiveComponent = useMemo(() => {
+    if (!selectedComponent) return null;
+
+    switch (selectedComponent.type) {
+      case 'mindmap':
+        return <MindMapWithAPI key={selectedComponent.id} topic={selectedComponent.title} topicId={selectedComponent.topic_id} courseId={courseId} />;
+      case 'flashcards':
+        return <FlashCardsWithAPI key={selectedComponent.id} topic={selectedComponent.title} topicId={selectedComponent.topic_id} courseId={courseId} />;
+      case 'memorygame':
+        return <MemoryGameWithAPI key={selectedComponent.id} topic={selectedComponent.title} topicId={selectedComponent.topic_id} courseId={courseId} />;
+      case 'quiz':
+        return <QuizWithAPI key={selectedComponent.id} topic={selectedComponent.title} topicId={selectedComponent.topic_id} courseId={courseId} />;
+      default:
+        return null;
     }
+  }, [selectedComponent, courseId]);
 
-
-    if (!selectedLessonId) {
-      return null
+  // Compute prev/next lesson details based on current selection
+  const { prevLesson, nextLesson } = useMemo(() => {
+    if (!allLessons || allLessons.length === 0) {
+      return { prevLesson: null as APILesson | null, nextLesson: null as APILesson | null };
     }
+    const currentIndex = selectedLessonId ? allLessons.findIndex(l => l.id === selectedLessonId) : -1;
+    const prev = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
+    const next = currentIndex >= 0 && currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
+    return { prevLesson: prev, nextLesson: next };
+  }, [allLessons, selectedLessonId]);
 
-    if (loading) {
-      return (
-        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading lesson...</p>
-          </div>
-        </div>
-      );
+  const handleGoPrev = useCallback(() => {
+    if (prevLesson) {
+      handleLessonSelect(prevLesson.id);
     }
+  }, [prevLesson]);
 
-    if (!hasVideo) {
-      // If no video but we have interactive components, show them
-      if (activeView === 'component' && selectedComponent) {
-        return null; // This will be handled by the component rendering above
-      }
-      return null;
+  const handleGoNext = useCallback(() => {
+    if (nextLesson) {
+      handleLessonSelect(nextLesson.id);
+    } else if (!selectedLessonId && allLessons.length > 0) {
+      // If nothing selected yet, start from the first lesson on Next
+      handleLessonSelect(allLessons[0].id);
     }
+  }, [nextLesson, selectedLessonId, allLessons]);
 
-    return <CourseVideoPlayer {...videoProps} />;
-  };
-
-  // If an interactive component is selected, show it in full screen
-  if (activeView === 'component' && selectedComponent) {
+  const renderVideoLearningCodeComponent = () => {
     return (
-      <div className="flex flex-col h-screen w-full overflow-hidden">
-        <CourseLearningNavbar
-          setIsSidebarOpen={setIsSidebarOpen}
-        />
-
-        {/* Syllabus Sidebar - Now as an overlay */}
-        {isSidebarOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="absolute bg-black bg-opacity-50 z-40"
-              onClick={() => setIsSidebarOpen(false)}
-            />
-            {/* Syllabus Sidebar */}
-            <div
-              className={`absolute top-0 left-0 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl z-[1000] `}
-              style={{
-                width: '1000px',
-                minWidth: '1000px'
-              }}
-            >
-              <CourseSyllabusSidebar
-                isSidebarOpen={isSidebarOpen}
-                setIsSidebarOpen={setIsSidebarOpen}
-                onLessonSelect={handleLessonSelect}
-                onComponentSelect={handleComponentSelect}
-                courseId={courseId}
-                isLearningSidebarFullScreen={isLearningSidebarFullScreen ?? undefined}
-              />
-            </div>
-          </>
-        )}
-
-        {/* Full screen interactive component */}
-        <div className="flex-1 w-full h-full overflow-hidden">
-          {renderMainContent()}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-screen w-full overflow-hidden">
-
-      <CourseLearningNavbar
-        setIsSidebarOpen={setIsSidebarOpen}
-      />
-
-      <div
-        ref={containerRef}
-        className="flex flex-row h-full w-full overflow-hidden relative"
-      >
-        {/* Syllabus Sidebar - Now as an overlay */}
-        {isSidebarOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="absolute bg-black bg-opacity-50 z-40"
-              onClick={() => setIsSidebarOpen(false)}
-            />
-            {/* Syllabus Sidebar */}
-            <div
-              className={`absolute top-0 left-0 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl z-[1000] `}
-              style={{
-                width: '700px',
-                minWidth: '400px'
-              }}
-            >
-              <CourseSyllabusSidebar
-                isSidebarOpen={isSidebarOpen}
-                setIsSidebarOpen={setIsSidebarOpen}
-                onLessonSelect={handleLessonSelect}
-                onComponentSelect={handleComponentSelect}
-                courseId={courseId}
-                isLearningSidebarFullScreen={isLearningSidebarFullScreen ?? undefined}
-              />
-            </div>
-          </>
-        )}
-
-        {/* Main content area - Always takes full width when syllabus is closed */}
+      <>
         <div className={`flex flex-1 flex-row min-w-0 overflow-hidden ${isLearningSidebarFullScreen && 'z-[50]'}`}
         >
           {/* Lesson Learning Sidebar */}
@@ -1359,7 +1131,6 @@ const CourseLearningPageInner = () => {
             style={{
               width: `${lessonSidebarWidthPercent}%`,
               minWidth: '200px'
-
             }}
           >
             <CourseLessonLearningSidebar
@@ -1396,7 +1167,7 @@ const CourseLearningPageInner = () => {
                 height: '100%'
               }}
             >
-              {renderMainContent()}
+              <CourseVideoPlayer {...videoProps} />
             </div>
           )}
 
@@ -1439,15 +1210,86 @@ const CourseLearningPageInner = () => {
             </>
           )}
         </div>
+
+      </>
+    )
+  }
+
+  return (
+    <div className="flex flex-col h-screen w-full overflow-hidden">
+
+      <CourseLearningNavbar
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
+
+      <div
+        ref={containerRef}
+        className="flex flex-row h-full w-full  relative"
+      >
+        {/* Syllabus Sidebar - Now as an overlay */}
+        <div
+          className="absolute top-0 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl z-[1000]"
+          style={{
+            width: '700px',
+            minWidth: '400px',
+            maxWidth: '700px',
+            left: isSidebarOpen ? '0' : '-700px'
+          }}
+        >
+          <CourseSyllabusSidebar
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+            onLessonSelect={handleLessonSelect}
+            onComponentSelect={handleComponentSelect}
+            courseId={courseId}
+            setActiveView={(view: string) => setActiveView(view === 'InteractiveComponent' ? 'InteractiveComponent' : 'lesson')}
+            isLearningSidebarFullScreen={isLearningSidebarFullScreen ?? undefined}
+          />
+        </div>
+        {/*   Render Content based on User Selection */}
+        <div className="w-full h-[95vh] pb-[10vh]">
+          {
+            activeView === 'lesson' && renderVideoLearningCodeComponent()
+          }
+          {
+            activeView === 'InteractiveComponent' && memoizedInteractiveComponent
+          }
+
+          <div className="fixed bottom-0 left-0 right-0 h-[5vh] flex flex-row items-center justify-between bg-gray-300 p-6 z-[100]" >
+            <button
+              onClick={handleGoPrev}
+              disabled={!prevLesson}
+              className={`flex items-center justify-center gap-2 bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] text-white px-4 py-2 rounded-md p-4 ${!prevLesson ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Image src="/lessThenIcon.svg" alt="Previous" width={20} height={20} />
+              <span className="text-sm font-medium">{prevLesson ? `Back: ${prevLesson.title}` : 'Back'}</span>
+            </button>
+            <button
+              onClick={handleGoNext}
+              disabled={!nextLesson && allLessons.length === 0}
+              className={`flex items-center justify-center gap-2 bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] text-white px-4 py-2 rounded-md p-4 ${(!nextLesson && allLessons.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <span className="text-sm font-medium">{nextLesson ? `Next: ${nextLesson.title}` : (selectedLessonId ? 'Next' : 'Start')}</span>
+              <Image src="/greaterThenIcon.svg" alt="Next" width={20} height={20} />
+            </button>
+          </div>
+        </div>
+
+
+        {/* Main content area - Always takes full width when syllabus is closed */}
+
       </div>
+
     </div>
   )
 }
 
 export default function CourseLearningPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen" />}>
-      <CourseLearningPageInner />
-    </Suspense>
+    <div className="flex flex-col h-screen w-full">
+      <Suspense fallback={<div className="min-h-screen" />}> 
+        <CourseLearningPageInner />
+      </Suspense>
+    </div>
   )
-}
+} 

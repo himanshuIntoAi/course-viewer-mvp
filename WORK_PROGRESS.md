@@ -1,3 +1,62 @@
+2025-10-06: GraphRendererLR settings modal toggle
+- Added `isSettingsOpen` state and wired the top-right `Setting` button to open the settings modal.
+- Wrapped the settings panel in a conditional so it renders only when open.
+- Added close functionality by clicking the close icon button to set `isSettingsOpen(false)`.
+- Implemented settings: Theme (Light/Dark/Auto with system detection), Animated Lines toggle, Line Curve (Curved/Straight), Line Color mode (Default/Random/Custom) with color swatches. Applied settings to edge generation, updates, and onConnect.
+- File: `app/course-learning/final-components/InteractiveMindMap/GraphRendererLR.tsx`. No linter errors.
+
+2025-10-06: GraphRendererLR download dropdown
+- Added `isDownloadOpen` state. Wired the top-right Download button to open the download options panel and close via the close icon, mirroring Settings behavior.
+- File: `app/course-learning/final-components/InteractiveMindMap/GraphRendererLR.tsx`. No linter errors.
+
+2025-10-07: Course Learning bottom navigation bar fixed across views
+- Converted bottom navigation in `app/course-learning/page.tsx` to fixed position with `fixed bottom-0 left-0 right-0` and raised z-index to keep above content.
+- Added bottom padding `pb-[10vh]` to the main content wrapper to avoid overlap.
+- Outcome: Navigation appears at the bottom for both lesson and interactive component views.
+
+2025-10-07: Previous/Next lesson navigation wired
+- Fetched and cached lessons list for current course in `page.tsx`.
+- Computed current lesson index and exposed `prevLesson`/`nextLesson` via `useMemo`.
+- Wired bottom bar buttons to call `handleLessonSelect` for previous/next, with disabled states and dynamic labels.
+- No linter errors.
+
+2025-10-01: Fixed InteractiveMindMap "Maximum update depth exceeded" error (Final Comprehensive Fix)
+- Fixed infinite loop causing React "Maximum update depth exceeded" error in InteractiveMindMap components.
+- Root causes identified and fixed in multiple components:
+
+**MindMap.tsx fixes:**
+  1. Removed `inputText` from useEffect dependencies in mermaidString prop change handler to prevent circular updates
+  2. Added `setTimeout` wrapper around `setCollapsedNodes` calls in `handleSetData` to break update cycles
+  3. Properly included `collapsedNodes` in localStorage save dependencies and restored from storage
+  4. Fixed storage change effect to properly handle collapsedNodes loading from localStorage
+  5. **CRITICAL:** Removed `data` and `handleSetData` from main useEffect dependencies to prevent infinite loops (main cause of remaining errors)
+
+**GraphRenderer.tsx fixes:**
+  6. Removed `onNodePositionChange` from main useEffect dependencies to prevent infinite loops (function recreates on every render)
+  7. Removed redundant collapsedNodes useEffect that was duplicating main useEffect functionality
+  8. Eliminated circular dependencies between setNodes and collapsedNodes effects
+
+**GraphRendererLR.tsx fixes:**
+  9. Removed `onNodePositionChange` from main useEffect dependencies to prevent infinite loops (same issue as GraphRenderer)
+
+**MindMapContent.tsx fixes:**
+  10. Removed `setData` dependency from `handleNodePositionChange` callback to prevent recreation on every render
+  11. Fixed `isCoreDataReady` useEffect to run only once instead of creating infinite loop with its own dependency
+
+**Storage Change Effect fixes:**
+  12. Removed `handleSetData` from storage change effect dependencies to prevent potential infinite loops
+
+- Mindmap should now load completely without infinite loop errors when opened through sidebar.
+
+2025-10-01: Fixed Course Syllabus Sidebar repeated API calls
+- Added per-course fetch guard in `app/course-learning/final-components/CourseSyllabusSidebar.tsx` using `loadedFor` ref to ensure data is fetched only once per `courseId`.
+- Sidebar now slides in/out without triggering remount-based refetches; clicks on lessons/interactive items no longer re-trigger fetches.
+
+2025-10-01: Fixed infinite recursion in Course Learning Page
+- Fixed "Maximum call stack size exceeded" error in `app/course-learning/page.tsx` caused by recursive call in `renderVideoLearningCodeComponent()`.
+- Replaced recursive call with direct `<CourseVideoPlayer {...videoProps} />` component rendering.
+- Error was occurring at line 1206 where function was calling itself infinitely.
+
 - 2025-09-29: Updated `app/course-learning/final-components/CourseSyllabusSidebar.tsx` to fetch and cache interactive elements (quizzes, flashcards, mindmaps, memory games) alongside topics and lessons for course `641`. Implemented unified per-topic listing that maintains continuous numbering (e.g., 1.1, 1.2, 1.3...) across lessons and interactive items without breaking flow. Added filter support over the combined list. No linter errors.
 ## Backend Pagination Verification (Courses Endpoint)
 
@@ -7721,3 +7780,55 @@ Successfully resolved all build errors and achieved a clean production build wit
 
 - **Total Routes**: 19 routes successfully built
 - **Largest Bundle
+---
+
+## Syllabus Sidebar Size Consistency Fix - October 1, 2025
+
+### Issue
+The syllabus sidebar was displaying inconsistent width and height when switching between lessons and interactive components (mindmap, quiz, memory game, flashcard), causing layout issues and overlapping content.
+
+### Root Cause
+- When interactive components were selected, sidebar width was set to `1000px`
+- When lessons were selected, sidebar width was set to `700px`
+- Inconsistent positioning classes (`absolute` vs `fixed`) and backdrop coverage
+
+### Changes Made
+
+**File: `app/course-learning/page.tsx`**
+- Standardized syllabus sidebar width to `700px` for both lesson and interactive component views
+- Changed positioning from `absolute` to `fixed` for consistent overlay behavior
+- Added `maxWidth: '700px'` to prevent expansion
+- Updated backdrop to use `fixed inset-0` for full-screen coverage
+- Changed sidebar height from `h-full` to `h-screen` for consistent height
+
+**File: `app/course-learning/final-components/CourseSyllabusSidebar.tsx`**
+- Removed conditional z-index override (`${isLearningSidebarFullScreen && 'z-[70]'}`)
+- Added `overflow-hidden` class to prevent content overflow
+- Maintained `w-full h-full` to properly fill parent container
+
+### Results
+✅ Syllabus sidebar now maintains consistent `700px` width across all views
+✅ Fixed height remains `h-screen` without expanding
+✅ No more overlapping or hovering over other elements
+✅ Smooth transitions between lessons and interactive components
+✅ No linter errors introduced
+
+### Technical Details
+- Both render paths (interactive component full-screen and normal lesson view) now use identical sidebar dimensions
+- Backdrop properly covers entire viewport when sidebar is open
+- Z-index hierarchy maintained for proper layering
+
+## Mindmap Viewer Simplification - October 6, 2025
+
+### Summary
+Simplified the Interactive MindMap to a view-only experience powered by the existing LR renderer. Removed edit-oriented features and eliminated duplicate parsing/state to rely on API-provided data.
+
+### Changes
+- `app/course-learning/final-components/InteractiveMindMap/GraphRendererLR.tsx`: added `readOnly` prop; disabled drag/connect/update; hid Add/Delete/AI buttons; preserved expand/collapse.
+- `app/course-learning/final-components/InteractiveMindMap/MindMapContent.tsx`: passes `readOnly` to LR renderer; keeps vertical renderer path unchanged.
+- `app/course-learning/final-components/InteractiveMindMap/MindMap.tsx`: converted to view-only wrapper; removed mermaid parsing, localStorage persistence, and popup/fullscreen; now consumes `initialData` from API in `app/course-learning/page.tsx`.
+
+### Impact
+- UI for viewing mindmaps remains identical; users cannot mutate graphs.
+- Less code and state; no duplicate generation logic; supports current API responses seamlessly.
+

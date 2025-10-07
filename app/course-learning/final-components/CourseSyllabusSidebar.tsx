@@ -102,9 +102,10 @@ interface CourseSyllabusSidebarProps {
   onComponentSelect?: (component: InteractiveComponent) => void,
   courseId?: string
   isLearningSidebarFullScreen?: boolean
+  setActiveView?: (view: string) => void
 }
 
-function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect, onComponentSelect, courseId = "641", isLearningSidebarFullScreen }: CourseSyllabusSidebarProps) {
+function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect, onComponentSelect, courseId = "641", isLearningSidebarFullScreen , setActiveView }: CourseSyllabusSidebarProps) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [quizzes, setQuizzes] = useState<APIQuiz[]>([]);
@@ -117,338 +118,61 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [expandedTopic, setExpandedTopic] = useState<number | null>(null);
   const [lessonDurations, setLessonDurations] = useState<Record<number, string>>({});
-  const [cachedCourseData, setCachedCourseData] = useState<{
-    courseId: string;
-    topics: Topic[];
-    lessons: Lesson[];
-    quizzes: APIQuiz[];
-    flashcards: APIFlashcard[];
-    mindmaps: APIMindmap[];
-    memoryGames: APIMemoryGame[];
-  } | null>(null);
-
+  console.log("Current course id  in syllabus sidebar", courseId);
+  const loadedFor = React.useRef<string | null>(null);
   useEffect(() => {
-    // First, try sessionStorage cache to persist across remounts
-    if (typeof window !== 'undefined') {
-      const cacheKey = `courseData_${courseId}`;
-      const cached = window.sessionStorage.getItem(cacheKey);
-      if (isSidebarOpen && cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.courseId === courseId) {
-            console.log('Using sessionStorage course data for course:', courseId);
-            setTopics(parsed.topics || []);
-            setLessons(parsed.lessons || []);
-            setQuizzes(parsed.quizzes || []);
-            setFlashcards(parsed.flashcards || []);
-            setMindmaps(parsed.mindmaps || []);
-            setMemoryGames(parsed.memoryGames || []);
-            setLoading(false);
-            setError(null);
-            return;
-          }
-        } catch {
-          // ignore parse errors
-        }
-      }
-    }
-
-    // Then, check in-memory cache for same mount
-    if (cachedCourseData && cachedCourseData.courseId === courseId) {
-      console.log('Using cached course data for course:', courseId);
-      setTopics(cachedCourseData.topics);
-      setLessons(cachedCourseData.lessons);
-      setQuizzes(cachedCourseData.quizzes || []);
-      setFlashcards(cachedCourseData.flashcards || []);
-      setMindmaps(cachedCourseData.mindmaps || []);
-      setMemoryGames(cachedCourseData.memoryGames || []);
-      setLoading(false);
-      setError(null);
+    // Prevent duplicate fetches for the same courseId
+    if (!courseId || loadedFor.current === courseId) {
       return;
     }
-
+    loadedFor.current = courseId;
     const fetchCourseData = async () => {
       try {
-        setLoading(true);
-        console.log('Fetching fresh course data for course:', courseId);
+        const [topicsResponse, lessonsResponse, quizzesResponse, flashcardsResponse, mindmapsResponse, memoryGamesResponse] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/topics/`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/lessons/`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/quizzes/`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/flashcards/`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/mindmaps/`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/memory-games/`)
+        ]);
 
-        // Simple fetch calls
-        try {
-          const [topicsResponse, lessonsResponse, quizzesResponse, flashcardsResponse, mindmapsResponse, memoryGamesResponse] = await Promise.all([
-            fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/topics/`),
-            fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`),
-            fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/quizzes/`),
-            fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/flashcards/`),
-            fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/mindmaps/`),
-            fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/memory-games/`)
+        if (topicsResponse.ok && lessonsResponse.ok) {
+          const [topicsData, lessonsData] = await Promise.all([
+            topicsResponse.json(),
+            lessonsResponse.json()
           ]);
+          const quizzesData = quizzesResponse.ok ? await quizzesResponse.json() : [];
+          const flashcardsData = flashcardsResponse.ok ? await flashcardsResponse.json() : [];
+          const mindmapsData = mindmapsResponse.ok ? await mindmapsResponse.json() : [];
+          const memoryGamesData = memoryGamesResponse.ok ? await memoryGamesResponse.json() : [];
 
-          if (topicsResponse.ok && lessonsResponse.ok) {
-            const [topicsData, lessonsData] = await Promise.all([
-              topicsResponse.json(),
-              lessonsResponse.json()
-            ]);
+          console.log('Fetched topics:', topicsData);
+          console.log('Fetched lessons:', lessonsData);
+          console.log('Fetched quizzes:', quizzesData);
+          console.log('Fetched flashcards:', flashcardsData);
+          console.log('Fetched mindmaps:', mindmapsData);
+          console.log('Fetched memory games:', memoryGamesData);
 
-            const quizzesData = quizzesResponse.ok ? await quizzesResponse.json() : [];
-            const flashcardsData = flashcardsResponse.ok ? await flashcardsResponse.json() : [];
-            const mindmapsData = mindmapsResponse.ok ? await mindmapsResponse.json() : [];
-            const memoryGamesData = memoryGamesResponse.ok ? await memoryGamesResponse.json() : [];
-
-            console.log('Fetched topics:', topicsData);
-            console.log('Fetched lessons:', lessonsData);
-            console.log('Fetched quizzes:', quizzesData);
-            console.log('Fetched flashcards:', flashcardsData);
-            console.log('Fetched mindmaps:', mindmapsData);
-            console.log('Fetched memory games:', memoryGamesData);
-
-            setTopics(topicsData);
-            setLessons(lessonsData);
-            setQuizzes(Array.isArray(quizzesData) ? quizzesData : []);
-            setFlashcards(Array.isArray(flashcardsData) ? flashcardsData : []);
-            setMindmaps(Array.isArray(mindmapsData) ? mindmapsData : []);
-            setMemoryGames(Array.isArray(memoryGamesData) ? memoryGamesData : []);
-            setError(null);
-
-            // Cache the data for this course ID
-            setCachedCourseData({
-              courseId: courseId,
-              topics: topicsData,
-              lessons: lessonsData,
-              quizzes: Array.isArray(quizzesData) ? quizzesData : [],
-              flashcards: Array.isArray(flashcardsData) ? flashcardsData : [],
-              mindmaps: Array.isArray(mindmapsData) ? mindmapsData : [],
-              memoryGames: Array.isArray(memoryGamesData) ? memoryGamesData : []
-            });
-
-            // Persist in sessionStorage for reuse across remounts
-            if (typeof window !== 'undefined') {
-              const cacheKey = `courseData_${courseId}`;
-              window.sessionStorage.setItem(cacheKey, JSON.stringify({
-                courseId,
-                topics: topicsData,
-                lessons: lessonsData,
-                quizzes: Array.isArray(quizzesData) ? quizzesData : [],
-                flashcards: Array.isArray(flashcardsData) ? flashcardsData : [],
-                mindmaps: Array.isArray(mindmapsData) ? mindmapsData : [],
-                memoryGames: Array.isArray(memoryGamesData) ? memoryGamesData : []
-              }));
-            }
-          } else {
-            console.log('Fetch failed');
-            setError(null);
-
-            // Cache the mock data for this course ID
-          }
-        } catch (fetchError) {
-          // Fallback to mock data if fetch fails
-          console.log('Fetch failed, using mock data:', fetchError);
-          setTopics([
-            {
-              id: 1,
-              title: 'Introduction to Python',
-              topic_order: 1,
-              course_id: 641,
-              is_expanded: false,
-              active: true,
-              created_at: '2025-01-01T00:00:00Z',
-              created_by: 1,
-              updated_at: '2025-01-01T00:00:00Z'
-            }
-          ]);
-          setLessons([
-            {
-              id: 1,
-              title: 'What is Python?',
-              content: 'Python is a high-level programming language...',
-              topic_id: 1,
-              course_id: 641,
-              is_completed: false,
-              active: true,
-              created_at: '2025-01-01T00:00:00Z',
-              created_by: 1,
-              updated_at: '2025-01-01T00:00:00Z'
-            }
-          ]);
-          setQuizzes([]);
-          setFlashcards([]);
-          setMindmaps([]);
-          setMemoryGames([]);
+          setTopics(topicsData);
+          setLessons(lessonsData);
+          setQuizzes(Array.isArray(quizzesData) ? quizzesData : []);
+          setFlashcards(Array.isArray(flashcardsData) ? flashcardsData : []);
+          setMindmaps(Array.isArray(mindmapsData) ? mindmapsData : []);
+          setMemoryGames(Array.isArray(memoryGamesData) ? memoryGamesData : []);
           setError(null);
-
-          // Cache the fallback mock data for this course ID
-          setCachedCourseData({
-            courseId: courseId,
-            topics: [
-              {
-                id: 1,
-                title: 'Introduction to Python',
-                topic_order: 1,
-                course_id: 641,
-                is_expanded: false,
-                active: true,
-                created_at: '2025-01-01T00:00:00Z',
-                created_by: 1,
-                updated_at: '2025-01-01T00:00:00Z'
-              }
-            ],
-            lessons: [
-              {
-                id: 1,
-                title: 'What is Python?',
-                content: 'Python is a high-level programming language...',
-                topic_id: 1,
-                course_id: 641,
-                is_completed: false,
-                active: true,
-                created_at: '2025-01-01T00:00:00Z',
-                created_by: 1,
-                updated_at: '2025-01-01T00:00:00Z'
-              }
-            ],
-            quizzes: [],
-            flashcards: [],
-            mindmaps: [],
-            memoryGames: []
-          });
-          if (typeof window !== 'undefined') {
-            const cacheKey = `courseData_${courseId}`;
-            window.sessionStorage.setItem(cacheKey, JSON.stringify({
-              courseId,
-              topics: [
-                {
-                  id: 1,
-                  title: 'Introduction to Python',
-                  topic_order: 1,
-                  course_id: 641,
-                  is_expanded: false,
-                  active: true,
-                  created_at: '2025-01-01T00:00:00Z',
-                  created_by: 1,
-                  updated_at: '2025-01-01T00:00:00Z'
-                }
-              ],
-              lessons: [
-                {
-                  id: 1,
-                  title: 'What is Python?',
-                  content: 'Python is a high-level programming language...',
-                  topic_id: 1,
-                  course_id: 641,
-                  is_completed: false,
-                  active: true,
-                  created_at: '2025-01-01T00:00:00Z',
-                  created_by: 1,
-                  updated_at: '2025-01-01T00:00:00Z'
-                }
-              ],
-              quizzes: [],
-              flashcards: [],
-              mindmaps: [],
-              memoryGames: []
-            }));
-          }
         }
-      } catch (err) {
-        console.error('Error fetching course data:', err);
-        setError('Failed to load course data');
+
+      } catch (fetchError) {
+        // Fallback to mock data if fetch fails
+        console.log('Fetch failed, using mock data:', fetchError);
+
       } finally {
         setLoading(false);
       }
     };
-
-    // Only fetch data if sidebar is open and we don't have cached data
-    if (isSidebarOpen && (!cachedCourseData || cachedCourseData.courseId !== courseId)) {
-      fetchCourseData();
-    }
-  }, [courseId, isSidebarOpen, cachedCourseData]);
-
-  // Resolve and cache lesson video durations (YouTube supported + use lesson.duration when present)
-  useEffect(() => {
-    const buildCacheKey = (cid: string) => `lessonDurations_${cid}`;
-    const cached = typeof window !== 'undefined' ? window.sessionStorage.getItem(buildCacheKey(courseId)) : null;
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached) as Record<number, string>;
-        setLessonDurations(parsed || {});
-      } catch {}
-    }
-
-    const unresolvedLessons = lessons.filter(l => !lessonDurations[l.id]);
-    if (unresolvedLessons.length === 0) return;
-
-    const nextDurations: Record<number, string> = {};
-
-    // 1) Use duration already present on lesson
-    unresolvedLessons.forEach(l => {
-      if (l.duration && String(l.duration).trim().length > 0) {
-        nextDurations[l.id] = String(l.duration);
-      }
-    });
-
-    // 2) Collect YouTube IDs and fetch durations in batch
-    const YT_API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
-    const extractYouTubeId = (value?: string) => {
-      if (!value) return null;
-      // Handle raw id or full URL
-      const idMatch = value.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || value.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/) || value.match(/^([a-zA-Z0-9_-]{11})$/);
-      return idMatch ? idMatch[1] : null;
-    };
-
-    const youtubeLessons = unresolvedLessons.filter(l =>
-      (l.video_source || '').toLowerCase().includes('youtube') && (extractYouTubeId(l.video_path) || extractYouTubeId(l.video_filename))
-    );
-
-    const ids = Array.from(new Set(youtubeLessons.map(l => extractYouTubeId(l.video_path) || extractYouTubeId(l.video_filename)).filter(Boolean))) as string[];
-
-    const fetchYouTubeDurations = async () => {
-      if (!YT_API_KEY || ids.length === 0) return {} as Record<string, string>;
-      try {
-        const url = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${ids.join(',')}&key=${YT_API_KEY}`;
-        const res = await fetch(url);
-        if (!res.ok) return {} as Record<string, string>;
-        const data = await res.json();
-        const map: Record<string, string> = {};
-        const format = (iso: string) => {
-          const m = iso.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-          const h = (m?.[1] || '').replace('H','');
-          const mi = (m?.[2] || '').replace('M','');
-          const s = (m?.[3] || '').replace('S','');
-          const parts: string[] = [];
-          if (h) { parts.push(h); parts.push(mi.padStart(2,'0') || '00'); }
-          else { parts.push(mi || '0'); }
-          parts.push(s.padStart(2,'0') || '00');
-          return parts.join(':');
-        };
-        (data.items || []).forEach((item: { id: string; contentDetails?: { duration?: string } }) => {
-          const id = item.id;
-          const iso = item.contentDetails?.duration || 'PT0M0S';
-          map[id] = format(iso);
-        });
-        return map;
-      } catch {
-        return {} as Record<string, string>;
-      }
-    };
-
-    (async () => {
-      const ytMap = await fetchYouTubeDurations();
-      youtubeLessons.forEach(l => {
-        const vid = extractYouTubeId(l.video_path) || extractYouTubeId(l.video_filename);
-        if (vid && ytMap[vid]) {
-          nextDurations[l.id] = ytMap[vid];
-        }
-      });
-
-      if (Object.keys(nextDurations).length > 0) {
-        const merged = { ...lessonDurations, ...nextDurations };
-        setLessonDurations(merged);
-        if (typeof window !== 'undefined') {
-          window.sessionStorage.setItem(buildCacheKey(courseId), JSON.stringify(merged));
-        }
-      }
-    })();
-  }, [lessons, courseId, lessonDurations]);
-
+    fetchCourseData();
+  }, [courseId]);
 
   // Clear search function
   const clearSearch = () => {
@@ -496,19 +220,7 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
     return combined.filter(item => allowedKinds.has(item.kind) && filterBySearch(item.label));
   };
 
-  if (!isSidebarOpen) {
-    console.log('CourseSyllabusSidebar: Sidebar is closed, not rendering');
-    return null;
-  }
 
-  console.log('CourseSyllabusSidebar: Sidebar is open, rendering with props:', {
-    isSidebarOpen,
-    onComponentSelect: !!onComponentSelect,
-    onLessonSelect: !!onLessonSelect,
-    courseId,
-    topicsCount: topics.length,
-    lessonsCount: lessons.length
-  });
 
   // Get progress color based on completion status
 
@@ -532,17 +244,8 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
 
   return (
     <>
-      <style jsx>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar { 
-          display: none;
-        }
-      `}</style>
       <aside
-        className={`w-full h-full bg-white p-0 box-border flex ${isLearningSidebarFullScreen && 'z-[70]'} flex-col`}
+        className="w-full h-full bg-white p-0 box-border flex flex-col overflow-hidden"
       >
         {/* Header with purple gradient */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-4 py-4 flex items-center justify-between">
@@ -627,8 +330,8 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
             <button
               onClick={() => setActiveFilter("all")}
               className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "all"
-                  ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
-                  : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
+                ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
+                : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
             >
               <Image src="/images/allIcon.svg" alt="Lesson" width={16} height={16} />
@@ -637,8 +340,8 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
             <button
               onClick={() => setActiveFilter("lessons")}
               className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "lessons"
-                  ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
-                  : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
+                ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
+                : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
             >
               <Image src="/images/topicIcon1.svg" alt="Lesson" width={16} height={16} />
@@ -647,19 +350,19 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
             <button
               onClick={() => setActiveFilter("quiz")}
               className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "quiz"
-                  ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
-                  : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
+                ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
+                : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
             >
               <Image src="/images/topicIcon3.svg" alt="Lesson" width={16} height={16} />
-             
+
               Quizzes
             </button>
             <button
               onClick={() => setActiveFilter("mindmap")}
               className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "mindmap"
-                  ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
-                  : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
+                ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
+                : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
             >
               <Image src="/images/topicIcon2.svg" alt="Lesson" width={16} height={16} />
@@ -668,12 +371,12 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
             <button
               onClick={() => setActiveFilter("flashcards")}
               className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "flashcards"
-                  ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
-                  : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
+                ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
+                : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
             >
               <Image src="/images/topicIcon4.svg" alt="Lesson" width={16} height={16} />
-               
+
               Flash Cards
             </button>
           </div>
@@ -696,10 +399,10 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                 const completed = topic.completed_items || 0;
                 const total = topic.total_items || 0;
                 const isExpanded = expandedTopic === topic.id;
-                  const filteredCombined = getFilteredCombinedForTopic(topic);
-                  if (filteredCombined.length === 0) {
-                    return null; // hide topics with no matching items
-                  }
+                const filteredCombined = getFilteredCombinedForTopic(topic);
+                if (filteredCombined.length === 0) {
+                  return null; // hide topics with no matching items
+                }
                 return (
                   <div key={topic.id} className={`${isExpanded ? '' : 'border border-gray-200 rounded-lg'} bg-white`}>
                     {/* Module Header */}
@@ -725,12 +428,12 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                             <Image src="/images/topicIcon4.svg" alt="Flashcards" width={16} height={16} />
                             <span>{flashcards.filter((f: APIFlashcard) => f.topic_id === topic.id).length}</span>
                             <Image src="/images/topicIcon2.svg" alt="Mindmap" width={16} height={16} />
-                            <span>{mindmaps.filter((m: APIMindmap) => m.topic_id === topic.id).length}</span>                          
+                            <span>{mindmaps.filter((m: APIMindmap) => m.topic_id === topic.id).length}</span>
                           </div>
                           <span className={`text-xs ${isExpanded ? 'text-white' : 'text-gray-600'}`}>{topic.credits} Credits</span>
                           <div className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${completed === 0 ? (isExpanded ? 'bg-white/20 text-white border-white/30' : 'bg-gray-100 text-gray-700 border-gray-200') :
-                              completed === total ? (isExpanded ? 'bg-emerald-400/20 text-white border-white/30' : 'bg-green-100 text-green-700 border-green-200') :
-                                (isExpanded ? 'bg-orange-400/30 text-white border-white/30' : 'bg-orange-100 text-orange-700 border-orange-200')
+                            completed === total ? (isExpanded ? 'bg-emerald-400/20 text-white border-white/30' : 'bg-green-100 text-green-700 border-green-200') :
+                              (isExpanded ? 'bg-orange-400/30 text-white border-white/30' : 'bg-orange-100 text-orange-700 border-orange-200')
                             }`}>
                             {completed}/{total}
                           </div>
@@ -757,7 +460,7 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                                     className={`flex items-center rounded-lg justify-between px-6 py-3 bg-white`}
                                     onClick={() => onLessonSelect && onLessonSelect(l.id)}
                                   >
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex items-center space-x-2" onClick={() => setActiveView && setActiveView('lesson')}>
                                       {renderLeftIcon('lesson')}
                                       <span className="text-sm font-medium text-gray-600 w-10 text-right">{numberLabel}</span>
                                       <span className={`text-base text-gray-800 font-medium`}>{l.title}</span>
@@ -775,16 +478,16 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                                 return (
                                   <div
                                     key={`quiz_${q.id}`}
-                                    className="flex items-center rounded-lg justify-between px-6 py-3 bg-white"
-                                    onClick={() => onComponentSelect && onComponentSelect({ id: String(q.id), type: 'quiz', title: q.title || 'Quiz', topic_id: q.topic_id })}
+                                    className="px-6 py-3 bg-white cursor-pointer rounded-lg"
+                                    onClick={() => {
+                                      if (onComponentSelect) {
+                                        onComponentSelect({ id: String(q.id), type: 'quiz', title: 'Quiz', topic_id: q.topic_id });
+                                      }
+                                    }}
                                   >
                                     <div className="flex items-center space-x-2">
                                       {renderLeftIcon('quiz')}
-                                      <span className="text-sm font-medium text-gray-600 w-10 text-right">{numberLabel}</span>
-                                      <span className="text-base text-gray-800 font-medium">{q.title || 'Quiz'}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                      {/* <span className="text-lg">{getTypeIcon('quiz')}</span> */}
+                                      <span className="text-base text-gray-800 font-medium">Quiz</span>
                                     </div>
                                   </div>
                                 );
@@ -795,16 +498,16 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                                 return (
                                   <div
                                     key={`mindmap_${m.id}`}
-                                    className="flex items-center rounded-lg justify-between px-6 py-3 bg-white"
-                                    onClick={() => onComponentSelect && onComponentSelect({ id: String(m.id), type: 'mindmap', title: 'Mind Map', topic_id: m.topic_id })}
+                                    className="px-6 py-3 bg-white cursor-pointer rounded-lg"
+                                    onClick={() => {
+                                      if (onComponentSelect) {
+                                        onComponentSelect({ id: String(m.id), type: 'mindmap', title: 'Mind Map', topic_id: m.topic_id });
+                                      }
+                                    }}
                                   >
                                     <div className="flex items-center space-x-2">
                                       {renderLeftIcon('mindmap')}
-                                      <span className="text-sm font-medium text-gray-600 w-10 text-right">{numberLabel}</span>
                                       <span className="text-base text-gray-800 font-medium">Mind Map</span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                      {/* <span className="text-lg">{getTypeIcon('mindmap')}</span> */}
                                     </div>
                                   </div>
                                 );
@@ -815,16 +518,16 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                                 return (
                                   <div
                                     key={`memorygame_${mg.id}`}
-                                    className="flex items-center rounded-lg justify-between px-6 py-3 bg-white"
-                                    onClick={() => onComponentSelect && onComponentSelect({ id: String(mg.id), type: 'memorygame', title: mg.description || 'Memory Game', topic_id: mg.topic_id })}
+                                    className="px-6 py-3 bg-white cursor-pointer rounded-lg"
+                                    onClick={() => {
+                                      if (onComponentSelect) {
+                                        onComponentSelect({ id: String(mg.id), type: 'memorygame', title: 'Memory Game', topic_id: mg.topic_id });
+                                      }
+                                    }}
                                   >
                                     <div className="flex items-center space-x-2">
                                       {renderLeftIcon('memorygame')}
-                                      <span className="text-sm font-medium text-gray-600 w-10 text-right">{numberLabel}</span>
-                                      <span className="text-base text-gray-800 font-medium">{mg.description || 'Memory Game'}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                      {/* <span className="text-lg">{getTypeIcon('memorygame')}</span> */}
+                                      <span className="text-base text-gray-800 font-medium">Memory Game</span>
                                     </div>
                                   </div>
                                 );
@@ -836,16 +539,16 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                                 return (
                                   <div
                                     key={`flashcards_topic_${fc.topic_id}`}
-                                    className="flex items-center rounded-lg justify-between px-6 py-3 bg-white"
-                                    onClick={() => onComponentSelect && onComponentSelect({ id: `flashcards_topic_${fc.topic_id}`, type: 'flashcards', title: 'Flashcards', topic_id: fc.topic_id })}
+                                    className="px-6 py-3 bg-white cursor-pointer rounded-lg"
+                                    onClick={() => {
+                                      if (onComponentSelect) {
+                                        onComponentSelect({ id: `flashcards_topic_${fc.topic_id}`, type: 'flashcards', title: 'Flashcards', topic_id: fc.topic_id });
+                                      }
+                                    }}
                                   >
                                     <div className="flex items-center space-x-2">
                                       {renderLeftIcon('flashcards')}
-                                      <span className="text-sm font-medium text-gray-600 w-10 text-right">{numberLabel}</span>
-                                      <span className="text-base text-gray-800 font-medium">Flashcards ({flashcards.filter(f => f.topic_id === fc.topic_id).length})</span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                      {/* <span className="text-lg">{getTypeIcon('flashcard')}</span> */}
+                                      <span className="text-base text-gray-800 font-medium">Flashcards</span>
                                     </div>
                                   </div>
                                 );

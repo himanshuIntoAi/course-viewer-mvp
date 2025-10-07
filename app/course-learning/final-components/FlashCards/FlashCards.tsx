@@ -3,24 +3,17 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
-
 const getRandomGradient = () => {
-  const colors = [
-    'rgba(147, 197, 253, 0.5)',  // blue
-    'rgba(249, 168, 212, 0.5)',  // pink
-    'rgba(110, 231, 183, 0.5)',  // green
-    'rgba(251, 146, 60, 0.5)',   // orange
-    'rgba(167, 139, 250, 0.5)',  // purple
-    'rgba(252, 211, 77, 0.5)',   // yellow
+  const gradients = [
+    'linear-gradient(270deg, #696EFF 0%, #F8ACFF 100%)',
+    'linear-gradient(270deg, #E8B595 0%, #B190BA 100%)',
+    'linear-gradient(270deg, #5CB270 0%, #DBDA79 100%)',
+    'linear-gradient(270deg, #028CF3 0%, #2FEAA8 100%)',
+    'linear-gradient(270deg, #939781 0%, #EED991 100%)',
+    'linear-gradient(270deg, #F4D444 0%, #F86CA7 100%)',
   ];
 
-  const color1 = colors[Math.floor(Math.random() * colors.length)];
-  let color2;
-  do {
-    color2 = colors[Math.floor(Math.random() * colors.length)];
-  } while (color2 === color1);
-
-  return `linear-gradient(135deg, ${color1}, ${color2})`;
+  return gradients[Math.floor(Math.random() * gradients.length)];
 };
 
 interface FlashCardType {
@@ -47,6 +40,9 @@ function RenderPlayingCards({ cards }: { cards: FlashCardType[] }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+
+  const [completedCards, setCompletedCards] = useState<Set<number>>(new Set());
+
   // Use the passed cards data or fallback to mock data
   const flashcards = cards.length > 0 ? cards : [
     { question: "Describe the concept of User Experience (UX).", answer: "User Experience (UX) is the overall experience a person has when interacting with a product or service." },
@@ -70,26 +66,41 @@ function RenderPlayingCards({ cards }: { cards: FlashCardType[] }) {
   const currentCard = flashcards[currentCardIndex];
   const totalCards = flashcards.length;
 
+
+  // ✅ progress based on current position
+  const progressPercentage = totalCards > 0 ? ((currentCardIndex + 1) / totalCards) * 100 : 0;
+
+  const completeCard = () => {
+    setCompletedCards((prev) => new Set([...prev, currentCardIndex]));
+    if (currentCardIndex < totalCards - 1) {
+      setCurrentCardIndex((prev) => prev + 1);
+      setIsFlipped(false);
+    }
+  };
   const nextCard = () => {
     if (currentCardIndex < totalCards - 1) {
-      setCurrentCardIndex(currentCardIndex + 1);
+      setCurrentCardIndex((prev) => prev + 1);
       setIsFlipped(false);
     }
   };
 
   const prevCard = () => {
     if (currentCardIndex > 0) {
-      setCurrentCardIndex(currentCardIndex - 1);
+      setCurrentCardIndex((prev) => prev - 1);
       setIsFlipped(false);
     }
   };
+
 
   const flipCard = () => {
     setIsFlipped(!isFlipped);
   };
 
   const skipCard = () => {
-    nextCard();
+    if (currentCardIndex < totalCards - 1) {
+      setCurrentCardIndex((prev) => prev + 1);
+      setIsFlipped(false);
+    }
   };
 
   // Handle body scroll lock when modal is open
@@ -109,7 +120,7 @@ function RenderPlayingCards({ cards }: { cards: FlashCardType[] }) {
   if (!isOpen) {
     return (
       <div className='flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 cursor-pointer transition-colors'
-           onClick={() => setIsOpen(true)}>
+        onClick={() => setIsOpen(true)}>
         <Image src="/images/playIconCards.svg" alt='play icon' width={20} height={20} />
         <span className="text-gray-700 font-medium">Play Cards</span>
       </div>
@@ -120,58 +131,77 @@ function RenderPlayingCards({ cards }: { cards: FlashCardType[] }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-y-auto">
       <div className="relative w-full min-h-full bg-black bg-opacity-80 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6">
-          <h1 className="text-4xl font-bold text-white text-center flex-1">User Experience (UX) Flashcards</h1>
-          <button 
-            onClick={() => setIsOpen(false)}
-            className="text-white text-4xl hover:text-gray-200 transition-colors"
-          >
-            ×
-          </button>
-        </div>
 
         {/* Main Card Content */}
-        <div className="flex-1 flex items-center justify-center px-8">
+        <div className="flex-1 flex flex-col items-center justify-center px-8 ">
+          <div className="flex items-center justify-between mb-8 w-[48vw] relative ">
+            <h1 className="text-2xl font-bold text-white text-center flex-1 mr-5">User Experience (UX) Flashcards</h1>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-white text-4xl hover:text-gray-200 transition-colors ml-5 absolute right-0 "
+            >
+              ×
+            </button>
+          </div>
+
+
           {/* Card */}
           <div className="max-w-4xl w-full relative">
-            <div className="bg-gradient-to-br from-sky-300 to-blue-400 rounded-3xl p-8 min-h-[500px] flex flex-col relative shadow-2xl">
+            <div className="w-full h-[3px] bg-gray-300 mb-8 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#5A09FF] transition-all duration-300 ease-in-out rounded-full"
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+
+            <div className='w-full h-[45px] bg-[#3D3D3D] text-white flex items-center justify-center'>
+              <p className="" > <span className='bg-[#864EF6] px-2 py-1' >{currentCardIndex + 1}</span> Flashcards</p>
+              <button
+                onClick={completeCard}
+                className="absolute right-6"
+              >
+                ...
+              </button>
+
+            </div>
+            <div className="bg-gradient-to-br from-sky-300 to-blue-400  p-8 min-h-[500px] flex flex-col relative shadow-2xl">
               {/* Left Arrow - Inside Card */}
-              <button 
+              <button
                 onClick={prevCard}
                 disabled={currentCardIndex === 0}
                 className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-white text-4xl hover:text-gray-200 transition-colors z-10 ${currentCardIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                ←
+                <Image src={"/flashcard/leftIcon.svg"} alt='' width={30} height={30} />
+
               </button>
 
               {/* Right Arrow - Inside Card */}
-              <button 
+              <button
                 onClick={nextCard}
                 disabled={currentCardIndex === totalCards - 1}
                 className={`absolute right-4 top-1/2 transform -translate-y-1/2 text-white text-4xl hover:text-gray-200 transition-colors z-10 ${currentCardIndex === totalCards - 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                →
+                <Image src={"/flashcard/forwardIcon.svg"} alt='' width={30} height={30} />
+
               </button>
 
               {/* Card Header - Top Inside Card */}
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3 text-white">
-                  <div className="w-8 h-8 rounded-lg border-2 border-white flex items-center justify-center">
-                    <span className="text-lg font-bold">?</span>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                    <Image src={"/flashcard/questionIcon.svg"} alt='' width={30} height={30} />
                   </div>
-                  <span className="text-xl font-semibold">Question</span>
+                  <span className="text-xl text-black">Question</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <button 
+                  <button
                     onClick={skipCard}
-                    className="text-white hover:text-gray-200 transition-colors font-medium"
+                    className="text-black hover:text-gray-200 transition-colors font-medium"
                   >
                     Skip
                   </button>
                   <button className="text-white hover:text-gray-200 transition-colors">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a5 5 0 010 7.072M6.343 6.343A10 10 0 0117.657 17.657M4.929 4.929a10 10 0 0114.142 14.142" />
-                    </svg>
+                    <Image src={"/flashcard/volumeIcon.svg"} alt='' width={30} height={30} />
                   </button>
                 </div>
               </div>
@@ -188,57 +218,33 @@ function RenderPlayingCards({ cards }: { cards: FlashCardType[] }) {
                 {/* Left Icons */}
                 <div className="flex items-center gap-4">
                   <button className="text-white hover:text-gray-200 transition-colors">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
+                    <Image src={"/flashcard/shuffleIcon.svg"} alt='' width={30} height={30} />
                   </button>
                   <button className="text-white hover:text-gray-200 transition-colors">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
+                    <Image src={"/flashcard/heartIcon.svg"} alt='' width={30} height={30} />
                   </button>
                 </div>
 
                 {/* Center Controls */}
-                <div className="flex items-center gap-6">
-                  <span className="text-white text-xl font-semibold">
+                <div className="flex flex-col items-center gap-6 mt-9">
+                  <div className="flex items-center gap-4">
+                    <Image src={"/flashcard/cancelIcon.svg"} alt='' width={30} height={30} />
+                    <Image src={"/flashcard/playIcon.svg"} alt='' width={30} height={30} />
+                    <Image src={"/flashcard/rightIcon.svg"} alt='' width={30} height={30} />
+                  </div>
+                  <span className="text-black text-xl font-semibold ">
                     {currentCardIndex + 1} / {totalCards}
                   </span>
-                  <div className="flex items-center gap-4">
-                    <button className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 transition-colors flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                    <button 
-                      onClick={() => setIsPlaying(!isPlaying)}
-                      className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors flex items-center justify-center"
-                    >
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {isPlaying ? (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6l4-3-4-3z" />
-                        ) : (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        )}
-                      </svg>
-                    </button>
-                    <button className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-600 transition-colors flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </button>
-                  </div>
+
                 </div>
 
                 {/* Right Flip Button */}
-                <button 
+                <button
                   onClick={flipCard}
-                  className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors"
+                  className="flex flex-col items-center gap-2 text-white hover:text-gray-200 transition-colors"
                 >
-                  <span className="text-lg font-medium">Click to flip</span>
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
+                  <Image src={"/flashcard/clickToFlipIcon.svg"} alt='' width={30} height={30} />
+                  <span className="text-lg font-medium text-black">Click to flip</span>
                 </button>
               </div>
             </div>
@@ -251,37 +257,35 @@ function RenderPlayingCards({ cards }: { cards: FlashCardType[] }) {
 
 function Card({ card }: { card: FlashCardType; index: number }) {
   return (
-    <div className="w-[30%] h-[40vh] px-5 sm:px-8 md:px-12 lg:px-16 py-6">
+    <div className="w-[32%] h-[40vh] px-5 sm:px-8 md:px-12 lg:px-16 py-6">
       <div className="w-full h-full rounded-[28px] shadow-md overflow-hidden" style={{ background: card.gradient }}>
         {/* Top bar */}
         <div className="w-full flex items-center justify-between  text-white px-6 md:px-8 py-3">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md border border-white/80 flex items-center justify-center text-sm">?</div>
+            <Image src="/flashcard/flashcardIcon4.svg" alt='question icon' width={30} height={30} />
             <span className="text-sm md:text-base font-medium">Question</span>
           </div>
         </div>
 
         {/* Card body */}
         <div className="relative w-full h-[calc(100%-48px)]">
-          <div className="absolute inset-0 flex items-center justify-center px-6 md:px-12 text-white">
-            <p className="text-center text-xl md:text-3xl lg:text-[34px] font-semibold leading-snug">
+          <div className="absolute inset-0 flex  pt-8 justify-center  md:px-12 text-white">
+            <p className="text-center text-lg md:text-3xl lg:text-[34px] font-light leading-snug">
               {card.question}
             </p>
           </div>
 
           {/* Bottom controls */}
           <div className="absolute bottom-5 left-6 right-6 flex items-center justify-between text-white">
-            <button className="w-10 h-10 rounded-lg border-2 border-white/90 flex items-center justify-center" aria-label="mark">
+            {/* <button className="w-10 h-10 rounded-lg border-2 border-white/90 flex items-center justify-center" aria-label="mark">
               <div className="w-4 h-4 border-2 border-white/90" />
             </button>
+             */}
+            <Image src="/flashcard/flashcardIcon1.svg" alt='mark icon' width={30} height={30} />
 
-            <button className="w-10 h-10 flex items-center justify-center" aria-label="link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-7 h-7"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M13.5 6.5l4 4a3 3 0 01-4.24 4.24l-1-1M10.5 17.5l-4-4A3 3 0 0110.76 9.26l1 1" /></svg>
-            </button>
+            <Image src="/flashcard/flashcardIcon2.svg" alt='link icon' width={30} height={30} />
 
-            <button className="w-10 h-10 rounded-lg border-2 border-white/90 flex items-center justify-center" aria-label="save">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-6 h-6"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 4h12a1 1 0 011 1v14l-7-3-7 3V5a1 1 0 011-1z" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 9l2 2-2 2-2-2 2-2z" /></svg>
-            </button>
+            <Image src="/flashcard/flashcardIcon3.svg" alt='save icon' width={30} height={30} />
           </div>
         </div>
       </div>
@@ -391,7 +395,7 @@ export default function FlashCards({ initialCards, courseId, topicId }: FlashCar
         }
       } catch (error) {
         console.error('[FlashCards] Error fetching flashcard data:', error);
-        
+
         // Fallback to initialCards or default data on error
         if (initialCards && initialCards.length > 0) {
           const flashCards: FlashCardType[] = initialCards.map((card, index) => ({
@@ -433,74 +437,6 @@ export default function FlashCards({ initialCards, courseId, topicId }: FlashCar
     fetchFlashcardData();
   }, [courseId, topicId, initialCards]);
 
-  // Initialize cards from initialCards prop
-  // useEffect(() => {
-  //   console.log("[FlashCards] Initializing. Received initialCards prop:", initialCards);
-
-  //   if (initialCards && initialCards.length > 0) {
-  //     console.log("[FlashCards] Using initialCards prop:", initialCards);
-  //     // Convert to FlashCardType format with gradients
-  //     const flashCards: FlashCardType[] = initialCards.map((card, index) => ({
-  //       id: index,
-  //       question: card.question,
-  //       answer: card.answer,
-  //       gradient: getRandomGradient()
-  //     }));
-
-  //     setCards(flashCards);
-  //     setCardFlipStates({});
-  //     setIsLoading(false);
-
-  //     console.log("[FlashCards] Initialization complete. Loaded cards:", flashCards.length);
-  //   } else {
-  //     console.log("[FlashCards] No initialCards provided");
-  //     setCards([]);
-  //     setIsLoading(false);
-  //   }
-  // }, [initialCards]);
-  // // Filter cards (simplified - no search functionality)
-  // const filteredCards = cards;
-
-
-  // const handleFlip = (cardId: number) => {
-  //   setCardFlipStates(prev => ({
-  //     ...prev,
-  //     [cardId]: !prev[cardId]
-  //   }));
-  // };
-
-
-
-  // if (isLoading) {
-  //   return (
-  //     <div className="flex items-center justify-center w-full h-full p-8">
-  //       <div className="text-center">
-  //         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mb-4"></div>
-  //         <p className="text-gray-600">Loading flashcards...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
-  // if (cards.length === 0) {
-  //   return (
-  //     <div className="flex items-center justify-center w-full h-full p-8">
-  //       <div className="text-center">
-  //         <p className="text-gray-600">No flashcards available.</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
-  // const total = filteredCards.length;
-  // const clampedIndex = Math.max(0, Math.min(currentIndex, total - 1));
-  // const activeCard = filteredCards[clampedIndex];
-
-  // const goPrev = () => setCurrentIndex((i) => Math.max(0, i - 1));
-  // const goNext = () => setCurrentIndex((i) => Math.min(total - 1, i + 1));
-  // const flipActive = () => handleFlip(activeCard.id);
-
-  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen overflow-y-auto">
@@ -526,23 +462,23 @@ export default function FlashCards({ initialCards, courseId, topicId }: FlashCar
       </div>
       <div className='flex items-center justify-between w-[80vw] mx-auto mb-6 mt-5'>
         <div className='relative flex-1 max-w-md'>
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Search Cards..."
             className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
-          <Image 
-            src="/images/course-catalog/search-icon.svg" 
-            alt='search icon' 
-            width={20} 
-            height={20} 
+          <Image
+            src="/images/course-catalog/search-icon.svg"
+            alt='search icon'
+            width={20}
+            height={20}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
           />
         </div>
 
         <RenderPlayingCards cards={cards} />
       </div>
-      <div className='w-[80vw] mx-auto flex flex-wrap items-center justify-between pb-8'>
+      <div className='w-[90vw] mx-auto flex flex-wrap items-center justify-between pb-8'>
         {cards.slice(0, 6).map((card, index) => (
           <Card key={card.id} card={card} index={index} />
         ))}

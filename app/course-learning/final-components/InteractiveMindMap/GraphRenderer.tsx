@@ -1116,7 +1116,7 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
     selectedColor, 
     setNodes, 
     setEdges, 
-    onNodePositionChange, 
+    // onNodePositionChange, // Removed to prevent infinite loops - this function changes on every render
     userInteracted, // MODIFIED: Ensure userInteracted is a dependency
     isParentInitialized,
     // Add new style dependencies
@@ -1468,101 +1468,9 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
     }
   }, [isReadyToFit, reactFlowInstance, nodes, userInteracted, isParentInitialized]);
 
-  // Node repositioning effect (when collapsedNodes changes from props)
-  useEffect(() => {
-    console.log('[GraphRenderer] Collapsed nodes changed (from prop), recalculating layout. User interacted:', userInteracted, "Initial render:", isInitialRender.current);
-
-    if (!isParentInitialized || !graphData?.nodes?.length) {
-        console.log('[GraphRenderer] Skipping layout for collapsedNodes change: Parent not init or no graph data.');
-        return;
-    }
-    
-    // If user has interacted, we generally don't want to auto-reposition everything on collapse/expand.
-    // However, the expectation for collapse/expand IS a relayout.
-    // The `userInteracted` flag is more for preventing fitView on pan/zoom.
-    // For collapse/expand, we *do* want to re-calculate and re-render.
-    // The main useEffect already handles this recalculation when `collapsedNodes` changes.
-    // This separate effect might be redundant or could conflict if not managed carefully.
-
-    // Let's simplify: The main useEffect already depends on `collapsedNodes` and will
-    // trigger a full recalculation and `setIsReadyToFit(true)` (if !userInteracted).
-    // This means this separate effect might not be strictly necessary for just recalculating layout,
-    // as the main one does it. Its primary role here might be to ensure nodes *animate* to new positions.
-
-    // If the main useEffect handles the position calculation and `setNodes`,
-    // this effect could focus on ensuring `isReadyToFit` is triggered
-    // if `userInteracted` was true but now a collapse/expand should override that for fitting.
-    // However, `callbacksRef.current.toggleNode` sets `userInteracted` to false before changing `collapsedNodes`,
-    // which means the main `useEffect`'s `setIsReadyToFit(true)` path should be taken.
-
-    // Given the main useEffect correctly recalculates positions based on `collapsedNodes`
-    // and sets `isReadyToFit`, this effect can be simplified or potentially removed if it's causing issues.
-    // Let's ensure the main effect correctly handles the state for fitting.
-
-    // The main useEffect already handles the recalculation and calls setNodes.
-    // It also sets setIsReadyToFit(true) if appropriate.
-    // This effect, if it re-calls setNodes, might cause an extra render cycle.
-    // Let's comment out the setNodes part here and rely on the main useEffect triggered by `collapsedNodes` change.
-    // If animations are desired, they should be part of the `setNodes` in the main useEffect.
-    
-    // console.log('[GraphRenderer] Collapsed nodes changed. Triggering main useEffect by dependency.');
-    // No direct setNodes here; rely on main useEffect triggered by `collapsedNodes` change.
-    // If animations are desired, they should be part of the `setNodes` in the main useEffect.
-    
-    // The `style` for animation should be applied in the main useEffect when nodes are updated.
-    // Let's ensure that's happening.
-    // The main useEffect *does not* currently add a transition style.
-    // This is where this effect can be useful: to specifically add transition styling
-    // *after* `collapsedNodes` changes and *before* the main useEffect might run again,
-    // or to ensure nodes animate smoothly.
-
-    if (userInteracted && !isInitialRender.current) {
-      console.log('[GraphRenderer] Skipping automatic layout in collapsedNodes useEffect due to prior user interaction.');
-      // Even if user interacted, a collapse/expand should still re-layout.
-      // The `userInteracted` flag is set to `false` by the toggle handler *before* `collapsedNodes` changes.
-      // So, this condition might not be hit as expected after a toggle.
-    }
-
-    // Force a re-calculation and animate (if `setNodes` includes style changes)
-    // The main `useEffect` will handle the actual position calculation due to `collapsedNodes` dependency.
-    // This effect can ensure that `isReadyToFit` is true,
-    // to make sure `fitView` runs after the re-layout from collapse/expand,
-    // especially if `userInteracted` was true from other actions.
-    // Since toggle sets `userInteracted` to false, main useEffect handles `setIsReadyToFit`.
-
-    // The main useEffect already depends on `collapsedNodes`. When it changes,
-    // `calculateNodePositions` is called, and `setNodes` updates nodes with new positions.
-    // If we want animation, the `style` property should be added there.
-
-    // Let's move the animation style to the main useEffect's setNodes.
-    // This current useEffect for `collapsedNodes` might then become redundant unless it serves another purpose.
-    // For now, let's assume the main `useEffect` will handle `setNodes` correctly.
-
-    // This effect's main purpose was to call `setIsReadyToFit` after a delay.
-    // Let's retain that aspect if it's beneficial for timing the fitView after collapse/expand.
-    // The main useEffect already sets `setIsReadyToFit` (conditionally on userInteracted).
-    // The toggleNode sets userInteracted to false, so it should work.
-
-    // What this effect *could* do is force `isInitialRender.current = false` and `userInteracted = false`
-    // to ensure the fitView logic in the main effect behaves as if it's a programmatic update.
-    // This is already done by `toggleNode`.
-
-    // Conclusion: The main `useEffect` handles recalculation and `setIsReadyToFit`.
-    // This effect for `collapsedNodes` can be simplified or potentially removed if its logic is fully covered.
-    // Let's ensure the animation style is added in the main `useEffect` where `setNodes` is called.
-    // The provided code already updates `isExpanded` in `setNodes` in the main `useEffect`
-    // but does not add `style: { transition: ... }`.
-
-    // To enable animation, we should modify the `setNodes` call in the main `useEffect`
-    // to add a transition style when positions change due to `collapsedNodes`.
-    // However, `setNodes(nds => nds.map(...))` in `onNodeDragStop` and `resetLayout` *also* updates positions.
-    // A global animation style might be better, or apply it selectively.
-
-    // For now, this effect for `collapsedNodes` can be very minimal or removed
-    // if main useEffect is robust. The console log for `Scheduling fit view update` is fine.
-    // The important part is that `collapsedNodes` is a dependency of the main `useEffect`.
-
-  }, [collapsedNodes, graphData?.nodes, graphData?.links, setNodes, userInteracted, isParentInitialized]); // Added isParentInitialized
+  // REMOVED: Redundant collapsedNodes useEffect that was causing infinite loops
+  // The main useEffect already handles collapsedNodes changes and recalculates positions
+  // This separate effect was redundant and caused infinite loops with setNodes dependency
 
   console.log('[GraphRenderer] Rendering with collapsedNodes (prop):', collapsedNodes, 'isParentInitialized:', isParentInitialized);
 
@@ -1583,6 +1491,7 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
         e.preventDefault();
       }}
     >
+      
       {linkMode && linkSource && (
         <div style={{
           position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)',
@@ -1593,7 +1502,7 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
           Click on a target node to create a link
         </div>
       )}
-      <ReactFlow
+      {/* <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -1656,7 +1565,7 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
           size={1} 
           variant={BackgroundVariant.Dots}
         />
-      </ReactFlow>
+      </ReactFlow> */}
       {contextMenu && (
         <div style={{
           position: 'fixed', top: contextMenu.mouseY, left: contextMenu.mouseX,

@@ -36,11 +36,13 @@ interface CourseLessonLearningSidebarProps {
   setIsLearningSidebarFullScreen?: (isLearningSidebarFullScreen: boolean) => void;
 }
 
-function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurrentLesson, loading: propLoading, courseId = "641", hasVideo, hasCode, isLearningSidebarFullScreen, setIsLearningSidebarFullScreen }: CourseLessonLearningSidebarProps) {
+function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurrentLesson, loading: propLoading, courseId , hasVideo, hasCode, isLearningSidebarFullScreen, setIsLearningSidebarFullScreen }: CourseLessonLearningSidebarProps) {
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+
+  console.log("Current course id  in lesson sidebar", courseId);
 
   // Use prop data if available, otherwise use local state
   const displayLesson = propCurrentLesson || currentLesson;
@@ -82,11 +84,12 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
         // If no lesson is selected, try to get the first lesson
         try {
           setLoading(true);
-          const lessonsResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/courses/${courseId}/lessons/`);
+          const lessonsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${1339}/lessons/`);
+          console.log("Lessons response", lessonsResponse);
           if (lessonsResponse.ok) {
             const lessons = await lessonsResponse.json();
             if (lessons.length > 0) {
-              const lessonResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/lessons/${lessons[0].id}`);
+              const lessonResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/lessons/${lessons[0].id}`);
               if (lessonResponse.ok) {
                 const lesson = await lessonResponse.json();
                 setCurrentLesson(lesson);
@@ -94,34 +97,12 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
             }
           } else {
             // Fallback to mock data with HTML content
-            setCurrentLesson({
-              id: 1,
-              title: 'What is Python?',
-              content: '<h2>Introduction to Python</h2><p>Python is a <strong>high-level, interpreted</strong>, and general-purpose programming language that is widely used for:</p><ul><li>Web development</li><li>Data analysis</li><li>Artificial intelligence</li><li>Machine learning</li></ul><p>This lesson covers the <em>history of Python</em>, its uses, and why it\'s a great choice for beginners.</p><h3>Key Features</h3><p>Some of the key features that make Python popular include:</p><ol><li>Simple and readable syntax</li><li>Large standard library</li><li>Cross-platform compatibility</li><li>Strong community support</li></ol>',
-              topic_id: 1,
-              course_id: 641,
-              is_completed: false,
-              active: true,
-              created_at: '2025-01-01T00:00:00Z',
-              created_by: 1,
-              updated_at: '2025-01-01T00:00:00Z'
-            });
+            setCurrentLesson(null);
           }
         } catch (err) {
           console.error('Error fetching first lesson:', err);
           // Fallback to mock data with HTML content
-          setCurrentLesson({
-            id: 1,
-            title: 'What is Python?',
-            content: '<h2>Introduction to Python</h2><p>Python is a <strong>high-level, interpreted</strong>, and general-purpose programming language that is widely used for:</p><ul><li>Web development</li><li>Data analysis</li><li>Artificial intelligence</li><li>Machine learning</li></ul><p>This lesson covers the <em>history of Python</em>, its uses, and why it\'s a great choice for beginners.</p><h3>Key Features</h3><p>Some of the key features that make Python popular include:</p><ol><li>Simple and readable syntax</li><li>Large standard library</li><li>Cross-platform compatibility</li><li>Strong community support</li></ol>',
-            topic_id: 1,
-            course_id: 641,
-            is_completed: false,
-            active: true,
-            created_at: '2025-01-01T00:00:00Z',
-            created_by: 1,
-            updated_at: '2025-01-01T00:00:00Z'
-          });
+          setCurrentLesson(null);
         } finally {
           setLoading(false);
         }
@@ -131,7 +112,7 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
       try {
         setLoading(true);
         // Use the specific lesson API endpoint
-        const lessonResponse = await fetch(`https://course-viewer-mvp-backend.vercel.app/api/v1/course-learning/lessons/${selectedLessonId}`);
+        const lessonResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/lessons/${selectedLessonId}`);
         if (lessonResponse.ok) {
           const lesson = await lessonResponse.json();
           setCurrentLesson(lesson);
