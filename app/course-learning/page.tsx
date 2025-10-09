@@ -656,7 +656,7 @@ const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: num
   // Show quiz when data is loaded
   if (quizData) {
     return (
-      <div className="w-full h-full bg-white">
+      <div className="w-full min-h-full bg-white overflow-auto">
         <QuizPlayer
           quizData={quizData}
           questions={quizData.questions as any}
@@ -1216,7 +1216,7 @@ const CourseLearningPageInner = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden">
+    <div className="flex flex-col h-screen w-full ">
 
       <CourseLearningNavbar
         setIsSidebarOpen={setIsSidebarOpen}

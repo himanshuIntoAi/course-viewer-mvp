@@ -84,7 +84,7 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
         // If no lesson is selected, try to get the first lesson
         try {
           setLoading(true);
-          const lessonsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${1339}/lessons/`);
+          const lessonsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/lessons/`);
           console.log("Lessons response", lessonsResponse);
           if (lessonsResponse.ok) {
             const lessons = await lessonsResponse.json();
