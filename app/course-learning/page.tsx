@@ -13,7 +13,7 @@ import { useSearchParams } from 'next/navigation'
 import FlashCards from "./final-components/FlashCards/FlashCards"
 import MindMap from "./final-components/InteractiveMindMap/MindMap"
 import MemoryGame from "./final-components/MemoryGame/MemoryGame"
-import QuizPlayer, { QuestionType, QuizData, UserAnswers, EliminatedOptions } from "./final-components/QuizBuilder/QuizPlayer"
+import QuizPlayer, { QuestionType, type Question, QuizData, UserAnswers } from "./final-components/QuizBuilder/QuizPlayer"
 import Image from "next/image"
 interface Lesson {
   id: number;
@@ -303,7 +303,7 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
             const normalizeIndent = (s: string) => s.replace(/\t/g, '    ');
 
             for (let idx = 0; idx < rawLines.length; idx++) {
-              let line = rawLines[idx];
+              const line = rawLines[idx];
               if (!line) continue;
               // Skip mermaid header
               if (line.trim().toLowerCase() === 'mindmap') continue;
@@ -435,7 +435,6 @@ const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: num
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
-  const [eliminatedOptions, setEliminatedOptions] = useState<EliminatedOptions>({});
   const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -443,7 +442,6 @@ const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: num
   // New state for quiz selection
   const [availableQuizzes, setAvailableQuizzes] = useState<APIQuiz[]>([]);
   const [, setSelectedQuizId] = useState<number | null>(null);
-  const [showQuizSelection, setShowQuizSelection] = useState(false);
 
   // Fetch available quizzes from API for the specific topic and auto-start the first
   useEffect(() => {
@@ -480,6 +478,7 @@ const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: num
     };
 
     fetchAvailableQuizzes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, topicId]);
 
   // Fetch specific quiz data when a quiz is selected
@@ -592,7 +591,6 @@ const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: num
       };
 
       setQuizData(transformedQuizData);
-      setShowQuizSelection(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch quiz data');
     } finally {
@@ -600,21 +598,15 @@ const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: num
     }
   };
 
-  const handleQuizSelection = (quizId: number) => {
-    setSelectedQuizId(quizId);
-    fetchQuizData(quizId);
-  };
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleExitQuiz = () => {
     // Reset quiz state and go back to quiz selection
     setUserAnswers({});
     setQuizSubmitted(false);
     setCurrentQuestionIndex(0);
     setRemainingTime(null);
-    setEliminatedOptions({});
     setQuizData(null);
     setSelectedQuizId(null);
-    setShowQuizSelection(true);
   };
 
   // Show loading state
@@ -640,7 +632,6 @@ const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: num
           <button
             onClick={() => {
               setError(null);
-              setShowQuizSelection(true);
             }}
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
           >
@@ -659,8 +650,7 @@ const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: num
       <div className="w-full min-h-full bg-white overflow-auto">
         <QuizPlayer
           quizData={quizData}
-          questions={quizData.questions as any}
-          onExitQuiz={handleExitQuiz}
+          questions={quizData.questions as Question[]}
           userAnswers={userAnswers}
           setUserAnswers={setUserAnswers}
           quizSubmitted={quizSubmitted}
@@ -669,8 +659,6 @@ const QuizWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: num
           setCurrentQuestionIndex={setCurrentQuestionIndex}
           remainingTime={remainingTime}
           setRemainingTime={setRemainingTime}
-          eliminatedOptions={eliminatedOptions}
-          setEliminatedOptions={setEliminatedOptions}
         />
       </div>
     );
@@ -908,14 +896,14 @@ const CourseLearningPageInner = () => {
   };
 
   // Handle lesson selection
-  const handleLessonSelect = (lessonId: number) => {
+  const handleLessonSelect = useCallback((lessonId: number) => {
     if (hasVideo || hasEditor) {
       setIsLearningSidebarFullScreen(false);
     }
     setSelectedLessonId(lessonId);
     setActiveView('lesson');
     setSelectedComponent(null);
-  };
+  }, [hasVideo, hasEditor]);
 
 
   // Initialize courseId from URL or localStorage
@@ -1109,7 +1097,7 @@ const CourseLearningPageInner = () => {
     if (prevLesson) {
       handleLessonSelect(prevLesson.id);
     }
-  }, [prevLesson]);
+  }, [prevLesson, handleLessonSelect]);
 
   const handleGoNext = useCallback(() => {
     if (nextLesson) {
@@ -1118,7 +1106,7 @@ const CourseLearningPageInner = () => {
       // If nothing selected yet, start from the first lesson on Next
       handleLessonSelect(allLessons[0].id);
     }
-  }, [nextLesson, selectedLessonId, allLessons]);
+  }, [nextLesson, selectedLessonId, allLessons, handleLessonSelect]);
 
   const renderVideoLearningCodeComponent = () => {
     return (

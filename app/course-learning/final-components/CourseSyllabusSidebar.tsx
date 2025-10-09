@@ -105,7 +105,7 @@ interface CourseSyllabusSidebarProps {
   setActiveView?: (view: string) => void
 }
 
-function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect, onComponentSelect, courseId = "641", isLearningSidebarFullScreen , setActiveView }: CourseSyllabusSidebarProps) {
+function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSelect, courseId = "641", setActiveView }: CourseSyllabusSidebarProps) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [quizzes, setQuizzes] = useState<APIQuiz[]>([]);
@@ -117,7 +117,6 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [expandedTopic, setExpandedTopic] = useState<number | null>(null);
-  const [lessonDurations, setLessonDurations] = useState<Record<number, string>>({});
   console.log("Current course id  in syllabus sidebar", courseId);
   const loadedFor = React.useRef<string | null>(null);
   useEffect(() => {
@@ -466,7 +465,7 @@ function CourseSyllabusSidebar({ isSidebarOpen, setIsSidebarOpen, onLessonSelect
                                       <span className={`text-base text-gray-800 font-medium`}>{l.title}</span>
                                     </div>
                                     <div className="flex items-center space-x-3">
-                                      <span className={`text-sm text-gray-500`}>{lessonDurations[l.id] || l.duration || ''}</span>
+                                      <span className={`text-sm text-gray-500`}>{l.duration || ''}</span>
                                       <span className="text-lg">{l.is_completed ? '✅' : '⭕'}</span>
                                     </div>
                                   </div>

@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import ReactFlow, {
-  MiniMap,
-  Controls,
+import {
   useNodesState,
   useEdgesState,
   addEdge,
@@ -14,13 +12,8 @@ import ReactFlow, {
   NodeProps,
   Connection,
   useReactFlow,
-  OnInit,
-  ControlButton,
-  Background,
-  ConnectionMode,
-  BackgroundVariant,
 } from 'reactflow';
-import { Plus, Trash2, ChevronDown, ChevronRight, Wand2, RotateCcw} from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, Wand2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 // import '@reactflow/node-resizer/dist/style.css'; // Ensure this is commented or removed
 import 'reactflow/dist/style.css'; // Uncomment this to ensure styles are properly loaded
@@ -479,6 +472,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
 };
 
 // Custom Edge with hover effect for centered connections
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const CustomEdge: React.FC<CustomEdgeProps> = ({
   id,
   sourceX,
@@ -550,6 +544,7 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
 };
 
 // Add a new StraightEdge component for the straight line type
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const StraightEdge: React.FC<CustomEdgeProps> = ({
   id,
   sourceX,
@@ -619,10 +614,11 @@ const StraightEdge: React.FC<CustomEdgeProps> = ({
 };
 
 // Define the edge types for better readability
-const edgeTypes = {
-  custom: CustomEdge,
-  straight: StraightEdge,
-};
+// Commented out as unused - keeping for future reference
+// const edgeTypes = {
+//   custom: CustomEdge,
+//   straight: StraightEdge,
+// };
 
 // Helper functions for layout calculation
 const getChildNodes = (nodeId: string, allNodes: GraphData['nodes'], allLinks: GraphData['links']) => {
@@ -792,8 +788,10 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
   onAddChildNode, 
   onUpdateNodeLabel,
   onRequestSubtopics,
-  controlsPosition = 'bottom-right',
-  minimapPosition = 'top-right',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  controlsPosition: _controlsPosition = 'bottom-right',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  minimapPosition: _minimapPosition = 'top-right',
   onNodeSelect,
   selectedNodeId,
   selectedColor,
@@ -805,7 +803,8 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
   onNodeToggle,
   collapsedNodes,
   isParentInitialized,
-  isInPopupView,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  isInPopupView: _isInPopupView,
   canvasTheme = "dark",
   lineStyle = "solid",
   lineCurveStyle = "curved",
@@ -816,8 +815,8 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
   globalLineStyle = lineStyle;
 
   const graphData = data;
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
+  const [nodes, setNodes] = useNodesState([]);
+  const [, setEdges] = useEdgesState<Edge[]>([]);
   const reactFlowInstance = useReactFlow<NodeData, Edge>();
   const [isReadyToFit, setIsReadyToFit] = useState<boolean>(false);
   const reactFlowWrapperRef = useRef<HTMLDivElement>(null);
@@ -1124,29 +1123,32 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
     lineStyle,
     lineCurveStyle,
     lineColorMode,
-    customLineColor
+    customLineColor,
+    onNodePositionChange
   ]);
 
-  const onNodeDragStop = useCallback((event: React.MouseEvent, draggedNode: Node) => {
-    const newPosition = { ...draggedNode.position };
-    const index = nodePositionsRef.current.findIndex(n => n.id === draggedNode.id);
-    const nodeData = draggedNode.data as NodeData;
-    const pathColor = nodeData.pathColor || generateRandomColor();
-    
-    if (index >= 0) { 
-      nodePositionsRef.current[index].position = newPosition; 
-      nodePositionsRef.current[index].color = pathColor; 
-    } else { 
-      nodePositionsRef.current.push({ id: draggedNode.id, position: newPosition, color: pathColor }); 
-    }
-    
-    setNodes(nds => nds.map(n => (n.id === draggedNode.id ? { ...n, position: newPosition } : n)));
-    if (onNodePositionChange) onNodePositionChange(draggedNode.id, newPosition);
-    setUserInteracted(true); // MODIFIED: Ensure userInteracted is set to true
-    console.log(`[GraphRenderer] Node ${draggedNode.id} drag stop. userInteracted: true. Position cache updated.`);
-    return false;
-  }, [setNodes, setUserInteracted, onNodePositionChange]); // MODIFIED: Ensure setUserInteracted is in dependencies
+  // Commented out as currently unused but may be needed for future drag functionality
+  // const onNodeDragStop = useCallback((event: React.MouseEvent, draggedNode: Node) => {
+  //   const newPosition = { ...draggedNode.position };
+  //   const index = nodePositionsRef.current.findIndex(n => n.id === draggedNode.id);
+  //   const nodeData = draggedNode.data as NodeData;
+  //   const pathColor = nodeData.pathColor || generateRandomColor();
+  //   
+  //   if (index >= 0) { 
+  //     nodePositionsRef.current[index].position = newPosition; 
+  //     nodePositionsRef.current[index].color = pathColor; 
+  //   } else { 
+  //     nodePositionsRef.current.push({ id: draggedNode.id, position: newPosition, color: pathColor }); 
+  //   }
+  //   
+  //   setNodes(nds => nds.map(n => (n.id === draggedNode.id ? { ...n, position: newPosition } : n)));
+  //   if (onNodePositionChange) onNodePositionChange(draggedNode.id, newPosition);
+  //   setUserInteracted(true); // MODIFIED: Ensure userInteracted is set to true
+  //   console.log(`[GraphRenderer] Node ${draggedNode.id} drag stop. userInteracted: true. Position cache updated.`);
+  //   return false;
+  // }, [setNodes, setUserInteracted, onNodePositionChange]); // MODIFIED: Ensure setUserInteracted is in dependencies
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const resetLayout = useCallback(() => {
     if (reactFlowInstance && graphData.nodes.length > 0) {
       console.log("[GraphRenderer] Resetting layout...");
@@ -1285,13 +1287,15 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
     }
   }, [graphData, reactFlowInstance, collapsedNodes, onNodePositionChange, onRequestSubtopics, nodeColors, getDescendantsForCurrentData, setEdges, setNodes, lineStyle, lineColorMode, customLineColor, lineCurveStyle]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onMove = useCallback(() => {
     if (!userInteracted && !isInitialRender.current) {
       console.log("[GraphRenderer] User manually changed viewport");
       setUserInteracted(true);
     }
-  }, [userInteracted]);
+  }, [userInteracted, setUserInteracted]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onConnect = useCallback((params: Connection) => {
     const newEdgeColor = selectedColor || generateRandomColor();
     const type = lineCurveStyle === 'straight' ? 'straight' : 'custom'; // Use our custom straight edge
@@ -1319,8 +1323,10 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
     setEdges((eds) => addEdge({ ...params, type, animated, style: edgeStyle, data: edgeData, markerEnd }, eds));
   }, [selectedColor, setEdges, lineStyle, lineCurveStyle]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onEdgeUpdateStart = useCallback(() => {}, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onEdgeUpdate = useCallback((oldEdge: Edge, newConnection: Connection) => {
     const type = lineCurveStyle === 'straight' ? 'straight' : 'custom'; // Use our custom straight edge
     const animated = lineStyle === 'animated';
@@ -1351,6 +1357,7 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
     setEdges((els) => addEdge({ ...oldEdge, ...newConnection, type, animated, style: newEdgeStyle, data: newEdgeData, markerEnd: marker }, els.filter(e => e.id !== oldEdge.id)));
   }, [setEdges, lineCurveStyle, lineStyle]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     if (onAddNodeOnEdgeDrop) {
       const sourceNode = nodes.find(n => n.id === edge.source);
@@ -1366,6 +1373,7 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
     }
   }, [nodes, onAddNodeOnEdgeDrop]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => { 
     if (linkMode && linkSource && selectedNodeId === linkSource) {
       if (onNodeSelect) onNodeSelect(node.id); 
@@ -1374,7 +1382,10 @@ const GraphRenderer: React.FC<GraphRendererProps> = ({
     }
   }, [linkMode, linkSource, onNodeSelect, selectedNodeId]);
 
-  const onInit: OnInit = () => { console.log('[GraphRenderer] ReactFlow initialized.'); };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const onInit = () => { console.log('[GraphRenderer] ReactFlow initialized.'); };
+  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const nodeTypes = useMemo(() => ({ custom: CustomNode as React.ComponentType<NodeProps<NodeData>> }), []);
 
   useEffect(() => {
