@@ -427,7 +427,7 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
       <video
         ref={videoRef}
         poster={thumbnailUrl}
-        className="w-full h-full mt-52"
+        className="w-full h-full  bg-white"
         onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}

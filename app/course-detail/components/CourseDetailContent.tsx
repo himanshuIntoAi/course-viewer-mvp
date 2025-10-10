@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Course } from '@/services/types/course/course';
 import type {
   CourseTopic,
@@ -41,25 +42,121 @@ const CourseDetailContent: React.FC<CourseDetailContentProps> = ({ courseData, t
   // Handle loading state
   if (!courseData) {
     return (
-      <div className="max-w-4xl">
+      <div className="w-[50vw]">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="h-8 bg-gray-200 rounded w-3/4 mb-3"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-          <div className="h-32 bg-gray-200 rounded mb-8"></div>
+          {/* Breadcrumbs skeleton */}
+          <nav className="flex items-center mb-6">
+            <div className="w-4 h-4 bg-gray-200 rounded mr-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-12"></div>
+            <div className="w-4 h-4 bg-gray-200 rounded mx-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-16"></div>
+            <div className="w-4 h-4 bg-gray-200 rounded mx-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-32"></div>
+          </nav>
+
+          {/* Course Title and Subtitle skeleton */}
+          <div className="mb-8">
+            <div className="h-8 bg-gray-200 rounded w-3/4 mb-3"></div>
+            <div className="h-5 bg-gray-200 rounded w-full mb-2"></div>
+            <div className="h-5 bg-gray-200 rounded w-5/6"></div>
+          </div>
+
+          {/* Instructor and Stats skeleton */}
+          <div className="flex items-center space-x-6 mb-8">
+            <div className="h-4 bg-gray-200 rounded w-40"></div>
+            <div className="h-4 bg-gray-200 rounded w-32"></div>
+            <div className="h-4 bg-gray-200 rounded w-36"></div>
+          </div>
+
+          {/* What You'll Learn skeleton */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+            <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+              <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+            </div>
+          </div>
+
+          {/* Course Information skeleton */}
+          <div className="mb-8">
+            <div className="h-5 bg-gray-200 rounded w-40 mb-3"></div>
+            <div className="flex flex-wrap gap-2">
+              <div className="h-7 bg-gray-200 rounded w-24"></div>
+              <div className="h-7 bg-gray-200 rounded w-32"></div>
+              <div className="h-7 bg-gray-200 rounded w-28"></div>
+              <div className="h-7 bg-gray-200 rounded w-20"></div>
+            </div>
+          </div>
+
+          {/* Course Includes skeleton */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+            <div className="h-5 bg-gray-200 rounded w-40 mb-4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(5)].map((_, idx) => (
+                <div key={idx} className="flex items-center space-x-3">
+                  <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gray-200 rounded w-40"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Course Content Tabs skeleton */}
+          <div className="bg-white rounded-lg border border-gray-200">
+            {/* Tab Headers skeleton */}
+            <div className="border-b border-gray-200">
+              <div className="flex space-x-8 px-6">
+                {[...Array(4)].map((_, idx) => (
+                  <div key={idx} className="py-4">
+                    <div className="h-4 bg-gray-200 rounded w-16"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab Content skeleton */}
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="h-4 bg-gray-200 rounded w-96"></div>
+                <div className="h-4 bg-gray-200 rounded w-32"></div>
+              </div>
+
+              {/* Course Sections skeleton */}
+              <div className="space-y-2">
+                {[...Array(5)].map((_, idx) => (
+                  <div key={idx} className="rounded-lg">
+                    <div className="w-full px-4 py-3 bg-gray-200 rounded-2xl">
+                      <div className="h-5 bg-gray-300 rounded w-3/4"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Collapse button skeleton */}
+              <div className="mt-2">
+                <div className="h-12 bg-gray-200 rounded-2xl"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className="w-full">
       {/* Breadcrumbs */}
       <nav className="text-sm text-gray-500 mb-6 flex items-center">
         <Image src="/images/course-detail/homeIcon.svg" alt="Breadcrumbs" width={16} height={16} className='mr-2' />
-        <span className="hover:text-gray-700 cursor-pointer">Home</span>
+        <Link href="/" className="hover:text-gray-700 cursor-pointer">
+          Home
+        </Link>
         <Image className="mx-2" src="/images/course-detail/arrow-rightLogo.svg" alt="Right Arrow" width={16} height={16} />
-        <span className="hover:text-gray-700 cursor-pointer">Courses</span>
+        <Link href="/all-courses" className="hover:text-gray-700 cursor-pointer">
+          Courses
+        </Link>
         <Image className="mx-2" src="/images/course-detail/arrow-rightLogo.svg" alt="Right Arrow" width={16} height={16} />
         <span className="text-gray-900">{courseData.title}</span>
       </nav>

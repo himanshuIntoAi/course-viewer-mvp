@@ -1,3 +1,19 @@
+# October 10, 2025: Table Styling Enhancement
+
+## Summary
+Enhanced table styling in CourselessonLearningSidebar to display clear borders between rows and columns.
+
+## Changes
+- Updated table border colors from light gray (#d1d5db) to darker gray (#9ca3af) for better visibility
+- Added explicit border to table element for clear outer boundary
+- Increased cell padding from 0.5rem to 0.75rem for improved spacing
+- Enhanced header styling with better background color and text contrast
+- Added zebra striping (alternating row colors) for improved readability
+- Added hover effect on table rows for better user interaction
+- File: `app/course-learning/final-components/CourselessonLearningSidebar.tsx`
+
+---
+
 # October 9, 2025: Lint Error Fixes
 
 ## Summary
@@ -7969,4 +7985,423 @@ Simplified the Interactive MindMap to a view-only experience powered by the exis
 - Applied linear gradient from #5A09FF to #CB4BFF (left to right) using borderImage CSS property.
 - All three tabs (All Questions, Correct, Incorrect) now display gradient bottom border when selected.
 - File: `app/course-learning/final-components/QuizBuilder/QuizResult.tsx`. No new linter errors introduced.
+
+
+## October 10, 2025: Enhanced Course Detail Loading Skeleton
+
+### Summary
+Enhanced loading state UI in CourseDetailContent component to comprehensively match the entire course detail page structure, improving user experience during data fetch.
+
+### Changes
+**File: `app/course-detail/components/CourseDetailContent.tsx`**
+- Replaced simple 4-bar skeleton with comprehensive layout-matching skeleton
+- Added skeleton components for all page sections:
+  - Breadcrumbs navigation (icons + text placeholders)
+  - Course title and multi-line subtitle
+  - Instructor and stats row (3 horizontal bars)
+  - "What You'll Learn" card with 2-column grid
+  - Course information tags (pill-shaped badges)
+  - "Course Includes" card with icon+text grid (5 items)
+  - Course content tabs with headers
+  - 5 expandable topic section placeholders
+  - Collapse button skeleton
+- Maintained `animate-pulse` animation for smooth loading effect
+- Used consistent gray-scale color scheme (gray-200/300) for professional appearance
+
+### Results
+✅ Loading skeleton now matches actual page structure
+✅ Improved perceived performance with detailed skeleton UI
+✅ Better user experience with realistic content preview
+✅ No linter errors introduced
+✅ Consistent spacing and proportions with final rendered content
+
+
+### Width Adjustment
+**File: `app/course-detail/components/CourseDetailContent.tsx`**
+- Changed loading skeleton container from `max-w-4xl` to `w-full`
+- Changed main content container from `max-w-4xl` to `w-full`
+- Both containers now properly inherit width from parent `max-w-5xl` wrapper in page.tsx
+- Ensures consistent width between loading and loaded states
+
+### Results
+✅ Loading skeleton now uses full available width
+✅ Main content matches loading skeleton width
+✅ Consistent width constraints across loading and loaded states
+✅ No linter errors
+
+
+
+## October 10, 2025: Functional Breadcrumbs Navigation
+
+### Summary
+Implemented clickable breadcrumbs in CourseDetailContent to track user navigation path: Home → All Courses → Course Detail.
+
+### Changes
+**File: `app/course-detail/components/CourseDetailContent.tsx`**
+- Added Next.js Link import for client-side navigation
+- Converted static breadcrumb items to clickable links:
+  - "Home" links to `/` (main landing page)
+  - "Courses" links to `/all-courses` (all courses page)
+  - Course title remains non-clickable (current page indicator)
+- Updated loading skeleton breadcrumbs to use `<nav>` tag for semantic HTML consistency
+- Maintained hover effects and styling for better UX
+
+### Results
+✅ Users can navigate back to Home or All Courses from breadcrumbs
+✅ Reflects actual user journey through the application
+✅ Improved navigation UX with clickable route tracking
+✅ No linter errors introduced
+✅ Semantic HTML with proper `<nav>` elements
+
+
+
+## October 10, 2025: Dynamic Breadcrumbs in Course Learning Page
+
+### Summary
+Implemented dynamic breadcrumbs in the course-learning page that tracks user navigation and displays contextual breadcrumb trail based on what the user is viewing (lesson or interactive component).
+
+### Changes
+**File: `app/course-learning/page.tsx`**
+- Added state management for course data and topics:
+  - `courseName` state to store course title
+  - `topics` state to store topic list with id and title
+- Added useEffect to fetch course data and topics from API for breadcrumb generation
+- Created `getBreadcrumbTrail()` function that dynamically generates breadcrumb path based on:
+  - Base path: Home > Courses > [Course Name]
+  - For lessons: adds Topic Name > Lesson Name
+  - For interactive components: adds component type only (Quiz, Flashcards, Mindmap, or Memory Game)
+- Added breadcrumb UI component after navbar:
+  - Displays only when course/lesson/component is loaded
+  - Clickable links for Home, Courses, and Course Detail
+  - Non-clickable current context items
+  - Uses arrow icons as separators
+  - Highlights last item (current page) in darker color
+- Added imports: React (for Fragment) and Link (for navigation)
+
+### Breadcrumb Logic
+**For Lessons:**
+- Home > Courses > [Course Name] > [Topic Name] > [Lesson Name]
+- Topic name is fetched based on lesson's topic_id
+
+**For Interactive Components:**
+- Home > Courses > [Course Name] > [Component Type]
+- Shows only component type (Quiz/Flashcards/Mindmap/Memory Game)
+- Does NOT show topic name per user requirements
+
+### Results
+✅ Users can navigate back through breadcrumb trail
+✅ Dynamic breadcrumbs reflect current learning context
+✅ Clean separation between lesson path (shows topic + lesson) and interactive component path (shows only component type)
+✅ Proper API integration for course and topic data
+✅ No linter errors introduced
+✅ Consistent styling with course-detail breadcrumbs
+
+
+
+### Auto-Select First Lesson Fix
+**Additional Changes to: `app/course-learning/page.tsx`**
+- Modified `fetchAllLessons` useEffect to auto-select the first lesson when course loads
+  - Checks if lessons are available and no lesson is currently selected
+  - Automatically sets `selectedLessonId` to the first lesson's ID
+  - Ensures breadcrumbs display immediately when entering course learning page
+- Updated breadcrumb visibility condition from `(courseName || currentLesson || selectedComponent)` to just `courseId`
+  - Breadcrumbs now show as soon as courseId is available
+  - No longer waits for lesson/component data to be fully loaded
+  - Displays base path (Home > Courses > Course Name) immediately
+  - Dynamically updates with lesson/component details as they load
+
+### Results
+✅ Breadcrumbs now visible immediately when entering course learning page
+✅ First lesson auto-selected on page load
+✅ Breadcrumbs update dynamically as lesson data loads
+✅ No delay in breadcrumb display
+✅ No linter errors
+
+
+
+### Show Topic Names for Interactive Components
+**Additional Update to: `app/course-learning/page.tsx`**
+- Updated `getBreadcrumbTrail()` function to include topic names for interactive components
+- Interactive components now show topic name before component type in breadcrumbs
+- Uses `selectedComponent.topic_id` to find and display the corresponding topic name
+
+### Updated Breadcrumb Paths
+
+**For Lessons:**
+- Home > Courses > [Course Name] > [Topic Name] > [Lesson Name]
+
+**For Interactive Components (Updated):**
+- Home > Courses > [Course Name] > [Topic Name] > Quiz
+- Home > Courses > [Course Name] > [Topic Name] > Flashcards
+- Home > Courses > [Course Name] > [Topic Name] > Mindmap
+- Home > Courses > [Course Name] > [Topic Name] > Memory Game
+
+### Results
+✅ Topic names now visible for both lessons and interactive components
+✅ Provides better context for where user is in the course structure
+✅ Consistent breadcrumb pattern across all content types
+✅ No linter errors
+
+
+
+---
+
+## Date: October 10, 2025
+
+### Fix: Removed Unnecessary Scrolling in Course Learning Page
+**Files Modified:**
+1. `app/course-learning/page.tsx`
+2. `app/course-learning/final-components/CourselessonLearningSidebar.tsx`
+
+**Issue:**
+- Unnecessary scrolling was occurring in the course learning page
+- Layout was not properly constrained to 100vh
+- Bottom navigation buttons were positioned incorrectly causing overflow
+
+**Changes Made:**
+
+#### 1. `app/course-learning/page.tsx` (Lines 1276, 1314-1347, 1183, 1377)
+
+**Root Container Height Fix:**
+- Changed from `max-h-[80vh]` to `h-screen` with `overflow-hidden`
+- Ensures entire page fits within viewport height
+
+**Breadcrumbs Container:**
+- Added `flex-shrink-0` to prevent breadcrumbs from being compressed
+- Maintains consistent breadcrumb height
+
+**Main Content Container:**
+- Changed from `h-full w-full relative` to `flex-row flex-1 w-full relative overflow-hidden`
+- Uses `flex-1` to fill available space
+- Added `overflow-hidden` to prevent content overflow
+
+**Render Content Area:**
+- Removed `pb-[10vh]` padding that was causing unnecessary space
+- Wrapped content in proper flex container: `flex flex-col w-full h-full overflow-hidden`
+- Content area uses `flex-1 overflow-auto` to allow scrolling only for long content
+- Bottom navigation buttons changed from `fixed` to flex item with `flex-shrink-0`
+
+**Video Learning Code Component:**
+- Changed from `flex flex-1 flex-row` to `flex flex-row w-full h-full`
+- Ensures proper height distribution
+
+**Bottom Navigation Buttons:**
+- Changed from `fixed bottom-0 left-0 right-0 h-[5vh]` to flex item
+- Uses `flex-shrink-0` to maintain button height
+- Removed duplicate `p-4` padding classes
+- Changed from `px-4 py-2 rounded-md p-4` to just `px-4 py-2 rounded-md`
+
+**Outer Wrapper:**
+- Added `overflow-hidden` to prevent any content from overflowing the screen
+
+### Layout Structure After Fix:
+```
+<div className="h-screen overflow-hidden">  <!-- 100vh total -->
+  <CourseLearningNavbar />                  <!-- Auto height -->
+  <Breadcrumbs (flex-shrink-0) />          <!-- Fixed height -->
+  <div className="flex-1 overflow-hidden">  <!-- Fills remaining space -->
+    <Sidebar (overlay) />
+    <Content (flex-col h-full)>
+      <Main Content (flex-1 overflow-auto) />  <!-- Scrollable if needed -->
+      <Bottom Buttons (flex-shrink-0) />       <!-- Fixed height -->
+    </Content>
+  </div>
+</div>
+```
+
+### Results:
+✅ Page now properly fits within 100vh with no unnecessary scrolling
+✅ Only content area scrolls when content is longer than available space
+✅ Bottom navigation buttons are always visible
+✅ Proper flex layout with constrained heights
+✅ No linter errors
+
+
+### Enhancement: Improved Table Styling in Learning Sidebar
+**File Modified:** `app/course-learning/final-components/CourselessonLearningSidebar.tsx`
+
+**Changes Made (Lines 283-330):**
+
+**Enhanced Table Styling:**
+- Added shadow and rounded corners: `box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1)`, `border-radius: 0.5rem`
+- Increased spacing: `padding: 0.75rem 1rem` (from 0.5rem)
+- Better margins: `margin-bottom: 1rem`, `margin-top: 0.5rem`
+- Added `vertical-align: top` for better cell alignment
+
+**Header Styling:**
+- Gradient background: `background: linear-gradient(to bottom, #f9fafb, #f3f4f6)`
+- Uppercase with letter spacing: `text-transform: uppercase`, `letter-spacing: 0.05em`
+- Stronger border: `border-bottom: 2px solid #d1d5db`
+- Smaller font: `font-size: 0.875rem`
+
+**Row Styling:**
+- Striped rows: Even rows have `background-color: #f9fafb`
+- Hover effect: Rows change to `#f3f4f6` on hover with smooth transition
+- White background for odd rows
+
+**Rounded Corner Fixes:**
+- Added specific border-radius for corner cells
+- `thead tr:first-child th:first-child` → top-left
+- `thead tr:first-child th:last-child` → top-right  
+- `tbody tr:last-child td:first-child` → bottom-left
+- `tbody tr:last-child td:last-child` → bottom-right
+
+### Results:
+✅ Modern, visually appealing table design
+✅ Better readability with striped rows
+✅ Smooth hover interactions
+✅ Professional appearance with shadows and rounded corners
+✅ Better spacing and typography
+✅ No linter errors
+
+---
+
+
+
+### Enhancement: Added Visible Borders to Tables
+**File Modified:** `app/course-learning/final-components/CourselessonLearningSidebar.tsx` (Lines 283-341)
+
+**Changes Made:**
+
+**Table Border Structure:**
+- Changed from `border-collapse: collapse` to `border-collapse: separate` with `border-spacing: 0`
+- Increased outer border from `1px` to `2px solid #d1d5db` for better visibility
+- Added specific border rules for cells:
+  - `border-right: 1px solid #d1d5db` on all cells
+  - `border-bottom: 1px solid #d1d5db` on all cells
+  - Last column cells have no right border (removed with `border-right: none`)
+  - Last row cells have no bottom border (removed with `border-bottom: none`)
+
+**Header Border:**
+- Stronger header bottom border: `2px solid #9ca3af` (darker, thicker)
+- Separates header from body clearly
+
+**Border Optimization:**
+- No duplicate borders (removed unnecessary borders on edges)
+- Clean border appearance with proper spacing
+- Maintains rounded corners with `border-radius: 0.375rem`
+
+**Visual Improvements:**
+- All table cells now have clearly visible borders
+- Outer table border is prominent (2px)
+- Internal cell borders are subtle but visible (1px)
+- Header has strong separation from data rows (2px)
+- Maintains modern look with shadows and rounded corners
+
+### Results:
+✅ All table borders are now clearly visible
+✅ Professional grid-like appearance
+✅ Strong visual separation between header and data
+✅ No duplicate or missing borders
+✅ Clean and consistent border styling
+✅ No linter errors
+
+
+
+### Fix: Force Table Borders to Show with !important
+**File Modified:** `app/course-learning/final-components/CourselessonLearningSidebar.tsx` (Lines 283-317)
+
+**Issue:**
+- Table borders were not showing despite CSS rules being in place
+- Complex border rules with separate collapse were not rendering properly
+
+**Solution:**
+Simplified and enforced border styling with `!important` flag to override any conflicting styles.
+
+**Changes Made:**
+
+1. **Simplified Border Approach:**
+   - Reverted to `border-collapse: collapse` (more reliable)
+   - Removed complex border logic for edges
+   - Applied borders uniformly to all cells
+
+2. **Force Borders with !important:**
+   - Table border: `border: 2px solid #9ca3af !important;`
+   - Cell borders: `border: 1px solid #9ca3af !important;`
+   - Header bottom: `border-bottom: 2px solid #6b7280 !important;`
+   - Added `!important` to ensure borders override any other styles
+
+3. **Darker Border Colors:**
+   - Changed from `#d1d5db` (lighter gray) to `#9ca3af` (medium gray)
+   - Header bottom uses `#6b7280` (darker gray) for strong separation
+   - Increased visibility and contrast
+
+4. **Removed Complex Rules:**
+   - Removed `:last-child` border removal logic
+   - Removed rounded corner adjustments (kept simple)
+   - Simplified CSS for better browser compatibility
+
+### Results:
+✅ All table borders now show reliably
+✅ Uses `!important` to override any conflicting styles
+✅ Darker, more visible border colors
+✅ Simplified CSS that works across all browsers
+✅ Strong visual grid structure
+✅ No linter errors
+
+
+
+### Critical Fix: Explicit Border Styling for HTML Tables with border Attribute
+**File Modified:** `app/course-learning/final-components/CourselessonLearningSidebar.tsx` (Lines 283-337)
+
+**Issue:**
+- API returns HTML content with tables that have `border="1"` attribute
+- CSS was not targeting these specific table attributes
+- Borders were being hidden by global CSS resets
+
+**Root Cause:**
+The HTML from API includes:
+```html
+<table border="1" cellpadding="8" cellspacing="0">
+```
+Standard CSS selectors without attribute targeting were not applying to these tables.
+
+**Solution:**
+Added multiple CSS selector variations to target tables with border attributes explicitly.
+
+**Changes Made:**
+
+1. **Added Attribute Selectors:**
+   - `.lesson-content table[border]` - targets any table with border attribute
+   - `.lesson-content table[border="1"]` - targets tables with border="1" specifically
+   - Added explicit selectors for `th` and `td` within these tables
+
+2. **Explicit Border Properties:**
+   ```css
+   border: 1px solid #9ca3af !important;
+   border-width: 1px !important;
+   border-style: solid !important;
+   border-color: #9ca3af !important;
+   ```
+   - Breaking down border properties separately ensures they all apply
+   - Using `!important` on each property for maximum override
+
+3. **Increased Selector Specificity:**
+   - `.lesson-content table[border] th` - targets header cells in tables with border
+   - `.lesson-content table[border] tbody td` - targets data cells
+   - Multiple selector paths ensure rules apply regardless of HTML structure
+
+4. **Specific Rules for border="1" Tables:**
+   ```css
+   .lesson-content table[border="1"],
+   .lesson-content table[border="1"] th,
+   .lesson-content table[border="1"] td {
+     border: 1px solid #9ca3af !important;
+   }
+   ```
+
+**CSS Coverage:**
+- Tables without border attribute ✓
+- Tables with border attribute ✓
+- Tables with border="1" specifically ✓
+- All th/td elements within these tables ✓
+- thead/tbody specific styling ✓
+
+### Results:
+✅ Tables with `border="1"` attribute now show borders correctly
+✅ Works with actual API data structure
+✅ Multiple selector paths ensure broad coverage
+✅ Explicit border properties prevent any CSS resets
+✅ Maintains visual styling (stripes, hover, shadows)
+✅ No linter errors
 

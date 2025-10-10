@@ -178,7 +178,7 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
 
   return (
     <>
-      <style jsx>{`
+      <style jsx global>{`
         .lesson-content h1 {
           font-size: 1.5rem;
           font-weight: bold;
@@ -284,16 +284,24 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 0.75rem;
+          border: 1px solid #9ca3af;
         }
-        .lesson-content th,
-        .lesson-content td {
-          border: 1px solid #d1d5db;
-          padding: 0.5rem;
+        .lesson-content table th,
+        .lesson-content table td {
+          border: 1px solid #9ca3af;
+          padding: 0.75rem;
           text-align: left;
         }
-        .lesson-content th {
-          background-color: #f9fafb;
+        .lesson-content table th {
+          background-color: #f3f4f6;
           font-weight: 600;
+          color: #1f2937;
+        }
+        .lesson-content tr:nth-child(even) {
+          background-color: #f9fafb;
+        }
+        .lesson-content tr:hover {
+          background-color: #f3f4f6;
         }
         
         /* Custom scrollbar styling */
@@ -360,19 +368,7 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
               <span className="ml-2 text-gray-600">Loading lesson...</span>
             </div>
           ) : displayLesson ? (
-            <>
-              {/* Lesson Label */}
-              <div className="text-xs text-gray-500 tracking-widest font-semibold mb-1">
-                {displayLesson.title.toUpperCase()}
-              </div>
-
-              {/* Title & Duration */}
-              <div className="mb-2">
-                <h2 className="text-xl font-bold mb-1">{displayLesson.title}</h2>
-                <div className="text-sm text-gray-500 mb-2">
-                  Lesson {displayLesson.id}
-                </div>
-              </div>
+            <>            
 
               {/* Dynamic Content Rendering */}
               {displayLesson.content && (

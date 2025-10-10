@@ -7,8 +7,9 @@ import CourseLessonLearningSidebar from "./final-components/CourselessonLearning
 import CourseEditor from "./final-components/CourseCodeEditor"
 import CourseVideoPlayer from "./final-components/CourseVideoPlayer"
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react"
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 // Import interactive components
 import FlashCards from "./final-components/FlashCards/FlashCards"
 import MindMap from "./final-components/InteractiveMindMap/MindMap"
@@ -823,6 +824,10 @@ const CourseLearningPageInner = () => {
   const [courseId, setCourseId] = useState<string>("");
   const [isLearningSidebarFullScreen, setIsLearningSidebarFullScreen] = useState<boolean | null>(null);
   const searchParams = useSearchParams();
+  
+  // State for breadcrumbs
+  const [courseName, setCourseName] = useState<string>("");
+  const [topics, setTopics] = useState<Array<{ id: number; title: string }>>([]);
 
 
   // Percentage-based layout state for seamless resizing (syllabus is now overlay)
@@ -838,6 +843,34 @@ const CourseLearningPageInner = () => {
   // Availability flags for video and editor
   const hasVideo = !!(currentLesson && (currentLesson.video_path || currentLesson.video_source || currentLesson.video_filename));
   const hasEditor = !!(currentLesson && ((currentLesson.code || currentLesson.course_code) && (currentLesson.code_language || currentLesson.course_code_language)));
+
+  // Fetch course data and topics for breadcrumbs
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      if (!courseId) return;
+
+      try {
+        const [courseResponse, topicsResponse] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/topics/`)
+        ]);
+
+        if (courseResponse.ok) {
+          const course = await courseResponse.json();
+          setCourseName(course.title || "Course");
+        }
+
+        if (topicsResponse.ok) {
+          const topicsData = await topicsResponse.json();
+          setTopics(topicsData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch course data:", error);
+      }
+    };
+
+    fetchCourseData();
+  }, [courseId]);
 
   // Fetch lesson data when selectedLessonId changes
   useEffect(() => {
@@ -931,6 +964,11 @@ const CourseLearningPageInner = () => {
         if (response.ok) {
           const lessons: APILesson[] = await response.json();
           setAllLessons(lessons || []);
+          
+          // Auto-select first lesson if none is selected
+          if (lessons && lessons.length > 0 && !selectedLessonId) {
+            setSelectedLessonId(lessons[0].id);
+          }
         } else {
           setAllLessons([]);
         }
@@ -939,7 +977,7 @@ const CourseLearningPageInner = () => {
       }
     };
     fetchAllLessons();
-  }, [courseId]);
+  }, [courseId, selectedLessonId]);
 
   // Video props based on current lesson
   const videoProps = useMemo(() => ({
@@ -1108,10 +1146,41 @@ const CourseLearningPageInner = () => {
     }
   }, [nextLesson, selectedLessonId, allLessons, handleLessonSelect]);
 
+  // Generate breadcrumb trail based on current state
+  const getBreadcrumbTrail = () => {
+    const trail = [
+      { label: 'Home', href: '/' },
+      { label: 'Courses', href: '/all-courses' },
+      { label: courseName || 'Course', href: `/course-detail?courseId=${courseId}` }
+    ];
+
+    if (activeView === 'lesson' && currentLesson) {
+      // Find topic name for the current lesson
+      const topic = topics.find(t => t.id === currentLesson.topic_id);
+      if (topic) {
+        trail.push({ label: topic.title, href: '#' });
+      }
+      trail.push({ label: currentLesson.title, href: '#' });
+    } else if (activeView === 'InteractiveComponent' && selectedComponent) {
+      // For interactive components, show topic name and component type
+      const topic = topics.find(t => t.id === selectedComponent.topic_id);
+      if (topic) {
+        trail.push({ label: topic.title, href: '#' });
+      }
+      const componentLabel = selectedComponent.type === 'mindmap' ? 'Mindmap' :
+                            selectedComponent.type === 'flashcards' ? 'Flashcards' :
+                            selectedComponent.type === 'memorygame' ? 'Memory Game' :
+                            selectedComponent.type === 'quiz' ? 'Quiz' : 'Interactive';
+      trail.push({ label: componentLabel, href: '#' });
+    }
+
+    return trail;
+  };
+
   const renderVideoLearningCodeComponent = () => {
     return (
       <>
-        <div className={`flex flex-1 flex-row min-w-0 overflow-hidden ${isLearningSidebarFullScreen && 'z-[50]'}`}
+        <div className={`flex flex-row w-full h-full min-w-0 overflow-hidden ${isLearningSidebarFullScreen && 'z-[50]'}`}
         >
           {/* Lesson Learning Sidebar */}
           <div
@@ -1136,7 +1205,7 @@ const CourseLearningPageInner = () => {
           {/* Resize handle for lesson sidebar */}
           {(hasVideo || hasEditor) && (
             <div
-              className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors duration-200 relative z-10 flex-shrink-0"
+              className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors duration-200 relative flex-shrink-0"
               onMouseDown={() => handleMouseDown('lesson')}
             >
               <div className="absolute inset-0 flex items-center justify-center">
@@ -1164,7 +1233,7 @@ const CourseLearningPageInner = () => {
             <>
               {/* Resize handle for code editor */}
               <div
-                className={`w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors duration-200 relative z-10 flex-shrink-0 `}
+                className={`w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors duration-200 relative flex-shrink-0 `}
                 onMouseDown={() => handleMouseDown('editor')}
               >
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -1204,15 +1273,47 @@ const CourseLearningPageInner = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full ">
+    <div className="flex flex-col h-screen w-full overflow-hidden">
 
       <CourseLearningNavbar
         setIsSidebarOpen={setIsSidebarOpen}
       />
-
+      
+      {/* Breadcrumbs */}
+      {courseId && (
+        <div className="bg-white border-b border-gray-200 px-8 py-3 flex-shrink-0">
+          <nav className="text-sm text-gray-500 flex items-center">
+            {getBreadcrumbTrail().map((crumb, index) => (
+              <React.Fragment key={index}>
+                {index > 0 && (
+                  <Image 
+                    className="mx-2" 
+                    src="/images/course-detail/arrow-rightLogo.svg" 
+                    alt="Right Arrow" 
+                    width={16} 
+                    height={16} 
+                  />
+                )}
+                {crumb.href !== '#' ? (
+                  <Link 
+                    href={crumb.href} 
+                    className="hover:text-gray-700 cursor-pointer"
+                  >
+                    {crumb.label}
+                  </Link>
+                ) : (
+                  <span className={index === getBreadcrumbTrail().length - 1 ? "text-gray-900 font-medium" : ""}>
+                    {crumb.label}
+                  </span>
+                )}
+              </React.Fragment>
+            ))}
+          </nav>
+        </div>
+      )}
       <div
         ref={containerRef}
-        className="flex flex-row h-full w-full  relative"
+        className="flex flex-row flex-1 w-full relative overflow-hidden"
       >
         {/* Syllabus Sidebar - Now as an overlay */}
         <div
@@ -1235,19 +1336,21 @@ const CourseLearningPageInner = () => {
           />
         </div>
         {/*   Render Content based on User Selection */}
-        <div className="w-full h-[95vh] pb-[10vh]">
-          {
-            activeView === 'lesson' && renderVideoLearningCodeComponent()
-          }
-          {
-            activeView === 'InteractiveComponent' && memoizedInteractiveComponent
-          }
+        <div className="flex flex-col w-full h-full overflow-hidden">
+          <div className="flex-1 overflow-auto">
+            {
+              activeView === 'lesson' && renderVideoLearningCodeComponent()
+            }
+            {
+              activeView === 'InteractiveComponent' && memoizedInteractiveComponent
+            }
+          </div>
 
-          <div className="fixed bottom-0 left-0 right-0 h-[5vh] flex flex-row items-center justify-between bg-gray-300 p-6 z-[100]" >
+          <div className="flex flex-row items-center justify-between bg-gray-300 px-6 py-3 flex-shrink-0 z-[100]" >
             <button
               onClick={handleGoPrev}
               disabled={!prevLesson}
-              className={`flex items-center justify-center gap-2 bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] text-white px-4 py-2 rounded-md p-4 ${!prevLesson ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`flex items-center justify-center gap-2 bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] text-white px-4 py-2 rounded-md ${!prevLesson ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Image src="/lessThenIcon.svg" alt="Previous" width={20} height={20} />
               <span className="text-sm font-medium">{prevLesson ? `Back: ${prevLesson.title}` : 'Back'}</span>
@@ -1255,16 +1358,13 @@ const CourseLearningPageInner = () => {
             <button
               onClick={handleGoNext}
               disabled={!nextLesson && allLessons.length === 0}
-              className={`flex items-center justify-center gap-2 bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] text-white px-4 py-2 rounded-md p-4 ${(!nextLesson && allLessons.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`flex items-center justify-center gap-2 bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] text-white px-4 py-2 rounded-md ${(!nextLesson && allLessons.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <span className="text-sm font-medium">{nextLesson ? `Next: ${nextLesson.title}` : (selectedLessonId ? 'Next' : 'Start')}</span>
               <Image src="/greaterThenIcon.svg" alt="Next" width={20} height={20} />
             </button>
           </div>
         </div>
-
-
-        {/* Main content area - Always takes full width when syllabus is closed */}
 
       </div>
 
@@ -1274,7 +1374,7 @@ const CourseLearningPageInner = () => {
 
 export default function CourseLearningPage() {
   return (
-    <div className="flex flex-col h-screen w-full">
+    <div className="flex flex-col h-screen w-full overflow-hidden">
       <Suspense fallback={<div className="min-h-screen" />}> 
         <CourseLearningPageInner />
       </Suspense>

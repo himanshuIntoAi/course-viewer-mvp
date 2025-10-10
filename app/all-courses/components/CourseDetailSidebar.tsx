@@ -48,7 +48,7 @@ const CourseDetailSidebar = () => {
           >
             <Image className="" src="/images/course-detail/careerToolslogo.svg" alt="Career Tools" width={20} height={20} />
             <span>Career Tools</span>
-           
+
           </a>
         </nav>
       </div>
