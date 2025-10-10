@@ -1261,8 +1261,12 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
     lineStyle,
     lineCurveStyle,
     lineColorMode,
-    customLineColor
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    customLineColor,
+    readOnly,
+    localLineStyle,
+    localLineCurveStyle,
+    localLineColorMode,
+    localCustomLineColor
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1400,7 +1404,7 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
       setEdges(rfEdges);
       setIsReadyToFit(true);
     }
-  }, [graphData, reactFlowInstance, collapsedNodes, onNodePositionChange, onRequestSubtopics, nodeColors, getDescendantsForCurrentData, setEdges, setNodes, localLineStyle, localLineCurveStyle, localLineColorMode, localCustomLineColor]);
+  }, [graphData, reactFlowInstance, collapsedNodes, onNodePositionChange, onRequestSubtopics, nodeColors, getDescendantsForCurrentData, setEdges, setNodes, lineStyle, lineCurveStyle, lineColorMode, customLineColor, readOnly]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onMove = useCallback(() => {

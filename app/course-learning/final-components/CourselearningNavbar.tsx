@@ -1,18 +1,13 @@
 import Image from "next/image";
-import { useState } from "react";
 
 interface CourseLearningNavbarProps {
   setIsSidebarOpen: (isSidebarOpen: boolean) => void,
-  courseId?: string,
-  onCourseIdChange?: (courseId: string) => void
+  courseId?: string
 }
 
 function CourseLearningNavbar({ 
-  setIsSidebarOpen, 
-  courseId = "641",
-  onCourseIdChange 
+  setIsSidebarOpen
 }: CourseLearningNavbarProps) {
-  const [inputCourseId, setInputCourseId] = useState(courseId);
 
   
   return (

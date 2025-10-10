@@ -64,7 +64,7 @@ const CourseDetailSidebar = () => {
             className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors ${isOpenTab === 'chatHistory' ? 'bg-gray-200 text-black font-bold' : ''}"
             onClick={() => setIsOpenTab('chatHistory')}
           >
-            {/* <Image className="" src="/images/course-detail/chatHistorylogo.svg" alt="Chat History" width={20} height={20} /> */}
+            {/* <Image className="" src="/images/course-detail/chatHistoryLogo.svg" alt="Chat History" width={20} height={20} /> */}
             <span>Chat History</span>
           </a>
           <a
@@ -72,7 +72,7 @@ const CourseDetailSidebar = () => {
             className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors ${isOpenTab === 'marketplace' ? 'bg-gray-200 text-black font-bold' : ''}"
             onClick={() => setIsOpenTab('marketplace')}
           >
-            {/* <Image className="" src="/images/course-detail/marketplacelogo.svg" alt="Marketplace" width={20} height={20} /> */}
+            {/* <Image className="" src="/images/course-detail/marketplaceLogo.svg" alt="Marketplace" width={20} height={20} /> */}
             <span>Marketplace</span>
           </a>
           <a
@@ -80,7 +80,7 @@ const CourseDetailSidebar = () => {
             className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors ${isOpenTab === 'library' ? 'bg-gray-200 text-black font-bold' : ''}"
             onClick={() => setIsOpenTab('library')}
           >
-            {/* <Image className="" src="/images/course-detail/librarylogo.svg" alt="Library" width={20} height={20} /> */}
+            {/* <Image className="" src="/images/course-detail/libraryLogo.svg" alt="Library" width={20} height={20} /> */}
             <span>Library</span>
           </a>
           <a
@@ -88,7 +88,7 @@ const CourseDetailSidebar = () => {
             className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors ${isOpenTab === 'projects' ? 'bg-gray-200 text-black font-bold' : ''}"
             onClick={() => setIsOpenTab('projects')}
           >
-            {/* <Image className="" src="/images/course-detail/projectslogo.svg" alt="Projects" width={20} height={20} /> */}
+            {/* <Image className="" src="/images/course-detail/projectsLogo.svg" alt="Projects" width={20} height={20} /> */}
             <span>Projects</span>
           </a>
           <a
