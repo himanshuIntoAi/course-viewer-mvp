@@ -130,7 +130,6 @@ export const MatchingQuestionQuizMode: React.FC<{
 interface QuizPlayerProps {
   quizData: QuizData;
   questions: Question[];
-  onExitQuiz: () => void;
   userAnswers: UserAnswers;
   setUserAnswers: React.Dispatch<React.SetStateAction<UserAnswers>>;
   quizSubmitted: boolean;
@@ -139,14 +138,11 @@ interface QuizPlayerProps {
   setCurrentQuestionIndex: React.Dispatch<React.SetStateAction<number>>;
   remainingTime: number | null;
   setRemainingTime: React.Dispatch<React.SetStateAction<number | null>>;
-  eliminatedOptions: EliminatedOptions;
-  setEliminatedOptions: React.Dispatch<React.SetStateAction<EliminatedOptions>>;
 }
 
 const QuizPlayer: React.FC<QuizPlayerProps> = ({
   quizData,
   questions,
-  onExitQuiz,
   userAnswers,
   setUserAnswers,
   quizSubmitted,
@@ -155,8 +151,6 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   setCurrentQuestionIndex,
   remainingTime,
   setRemainingTime,
-  eliminatedOptions,
-  setEliminatedOptions
 }) => {
   // Remove internal state for lifted variables
   // const [userAnswers, setUserAnswers] = useState<UserAnswers>({}); // Removed
@@ -168,12 +162,12 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const resultsContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const formatTime = (totalSeconds: number | null): string => {
+  const formatTime = useCallback((totalSeconds: number | null): string => {
     if (totalSeconds === null || totalSeconds < 0) return '--:--';
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
   const submitQuiz = useCallback(() => {
     if (timerRef.current) {
@@ -247,28 +241,29 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   };
 
   // Handler for Eliminating Options (using props)
-  const handleEliminateOption = (questionId: string, optionIndex: number) => {
-    // Use prop setter with functional update
-    setEliminatedOptions((prev: EliminatedOptions) => {
-      const currentEliminated = prev[questionId] || [];
-      if (currentEliminated.includes(optionIndex)) {
-        // Remove option
-        return {
-          ...prev,
-          [questionId]: currentEliminated.filter((index: number) => index !== optionIndex)
-        };
-      } else {
-        // Add option
-        return {
-          ...prev,
-          [questionId]: [...currentEliminated, optionIndex]
-        };
-      }
-    });
-  };
+  // Commented out as it's not currently used
+  // const handleEliminateOption = (questionId: string, optionIndex: number) => {
+  //   // Use prop setter with functional update
+  //   setEliminatedOptions((prev: EliminatedOptions) => {
+  //     const currentEliminated = prev[questionId] || [];
+  //     if (currentEliminated.includes(optionIndex)) {
+  //       // Remove option
+  //       return {
+  //         ...prev,
+  //         [questionId]: currentEliminated.filter((index: number) => index !== optionIndex)
+  //       };
+  //     } else {
+  //       // Add option
+  //       return {
+  //         ...prev,
+  //         [questionId]: [...currentEliminated, optionIndex]
+  //       };
+  //     }
+  //   });
+  // };
 
   // Check if answer is correct (uses userAnswers prop)
-  const isAnswerCorrect = (question: Question): boolean | undefined => {
+  const isAnswerCorrect = useCallback((question: Question): boolean | undefined => {
     if (!userAnswers[question.id]) return undefined; // Undefined for unanswered
 
     const userAnswerValue = userAnswers[question.id].value; // Read from prop
@@ -326,7 +321,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
         // const _exhaustiveCheck: never = question.type; // TypeScript confirms this is never
         return false; // Should not be reached
     }
-  };
+  }, [userAnswers]);
 
   // Calculate user score (uses userAnswers prop)
   const calculateScore = () => {

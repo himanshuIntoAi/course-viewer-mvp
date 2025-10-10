@@ -2,6 +2,43 @@
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
 
+// Define types for QuizResults
+interface QuizQuestion {
+  id: number;
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  chosenIndex: number;
+  explanation: string;
+}
+
+interface QuizAttempt {
+  id: number;
+  start: string;
+  completed: string;
+  score: string;
+  action: string;
+}
+
+interface QuizStats {
+  recentScoreLabel: string;
+  recentScore: string;
+  correct: number;
+  incorrect: number;
+  totalTime: string;
+  accuracy: string;
+}
+
+interface QuizResultsData {
+  title: string;
+  scoreRaw: number;
+  scoreMax: number;
+  bannerNote: string;
+  stats: QuizStats;
+  attempts: QuizAttempt[];
+  questions: QuizQuestion[];
+}
+
 // Add fadeIn animation
 const styles = `
   @keyframes fadeIn {
@@ -18,7 +55,7 @@ const styles = `
 
 
 
-const StatPill = ({ icon, label, value }: { icon: string; label: string; value: any }) => (
+const StatPill = ({ icon, label, value }: { icon: string; label: string; value: string | number }) => (
     <div className="flex items-center gap-3 bg-white">
         <Image src={icon} alt={label} width={20} height={20} />
         <div className=" flex items-center gap-2 leading-tight">
@@ -28,22 +65,23 @@ const StatPill = ({ icon, label, value }: { icon: string; label: string; value: 
     </div>
 );
 
-const Badge = ({ children, tone = "slate" }: { children: React.ReactNode; tone?: string }) => (
-    <span
-        className={
-            `inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ` +
-            (tone === "green"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : tone === "purple"
-                    ? "border-violet-200 bg-violet-50 text-violet-700"
-                    : tone === "red"
-                        ? "border-rose-200 bg-rose-50 text-rose-700"
-                        : "border-slate-200 bg-slate-50 text-slate-700")
-        }
-    >
-        {children}
-    </span>
-);
+// Commented out unused Badge component
+// const Badge = ({ children, tone = "slate" }: { children: React.ReactNode; tone?: string }) => (
+//     <span
+//         className={
+//             `inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ` +
+//             (tone === "green"
+//                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+//                 : tone === "purple"
+//                     ? "border-violet-200 bg-violet-50 text-violet-700"
+//                     : tone === "red"
+//                         ? "border-rose-200 bg-rose-50 text-rose-700"
+//                         : "border-slate-200 bg-slate-50 text-slate-700")
+//         }
+//     >
+//         {children}
+//     </span>
+// );
 
 // Option line with emoji markers
 const OptionLine = ({ text, state, isUserSelected }: { text: string; state: string; isUserSelected: boolean }) => {
@@ -77,7 +115,7 @@ const OptionLine = ({ text, state, isUserSelected }: { text: string; state: stri
 };
 
 
-export default function QuizResults({ data }: { data: any }) {
+export default function QuizResults({ data }: { data: QuizResultsData }) {
     const [activeTab, setActiveTab] = useState("all"); // 'all' | 'correct' | 'incorrect'
     const [openIds, setOpenIds] = useState(() => new Set());
 
@@ -91,23 +129,17 @@ export default function QuizResults({ data }: { data: any }) {
     const openToggle = (id: number) =>
         setOpenIds((prev) => {
             const next = new Set(prev);
-            next.has(id) ? next.delete(id) : next.add(id);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
             return next;
         });
 
-    const totals = useMemo(() => {
-        let correct = 0;
-        let wrong = 0;
-        data.questions.forEach((q: any) => {
-            if (q.chosenIndex === q.correctIndex) correct++;
-            else wrong++;
-        });
-        return { correct, wrong, all: data.questions.length };
-    }, [data.questions]);
-
     const filtered = useMemo(() => {
-        if (activeTab === "correct") return data.questions.filter((q: any) => q.chosenIndex === q.correctIndex);
-        if (activeTab === "incorrect") return data.questions.filter((q: any) => q.chosenIndex !== q.correctIndex);
+        if (activeTab === "correct") return data.questions.filter((q: QuizQuestion) => q.chosenIndex === q.correctIndex);
+        if (activeTab === "incorrect") return data.questions.filter((q: QuizQuestion) => q.chosenIndex !== q.correctIndex);
         return data.questions;
     }, [activeTab, data.questions]);
 
@@ -167,7 +199,7 @@ export default function QuizResults({ data }: { data: any }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                            {data.attempts.map((a: any, idx: number) => (
+                            {data.attempts.map((a: QuizAttempt, idx: number) => (
                                 <tr key={a.id} className="hover:bg-slate-50">
                                     <td className="px-4 py-3">{idx + 1}</td>
                                     <td className="px-4 py-3">{a.start}</td>
@@ -234,9 +266,8 @@ export default function QuizResults({ data }: { data: any }) {
 
                 {/* Accordion list */}
                 <div key={activeTab} className="space-y-3" style={{ animation: 'fadeIn 0.3s ease-in' }}>
-                    {filtered.map((q: any, idx: number) => {
+                    {filtered.map((q: QuizQuestion, idx: number) => {
                         const isOpen = openIds.has(q.id);
-                        const isCorrect = q.chosenIndex === q.correctIndex;
                         return (
                             <div key={q.id} className="overflow-hidden bg-white border border-slate-200">
                                 {/* Header */}
@@ -255,7 +286,7 @@ export default function QuizResults({ data }: { data: any }) {
                                 {/* Body */}
                                 {isOpen && (
                                     <div className="space-y-3 bg-white p-4">
-                                        {q.options.map((opt: any, i: number) => {
+                                        {q.options.map((opt: string, i: number) => {
                                             const isUserSelected = i === q.chosenIndex;
                                             const state =
                                                 i === q.correctIndex

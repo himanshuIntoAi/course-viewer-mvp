@@ -37,10 +37,9 @@ interface FlashCardsProps {
 function RenderPlayingCards({ cards }: { cards: FlashCardType[] }) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [completedCards, setCompletedCards] = useState<Set<number>>(new Set());
 
   // Use the passed cards data or fallback to mock data
@@ -71,7 +70,11 @@ function RenderPlayingCards({ cards }: { cards: FlashCardType[] }) {
   const progressPercentage = totalCards > 0 ? ((currentCardIndex + 1) / totalCards) * 100 : 0;
 
   const completeCard = () => {
-    setCompletedCards((prev) => new Set([...prev, currentCardIndex]));
+    setCompletedCards((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(currentCardIndex);
+      return newSet;
+    });
     if (currentCardIndex < totalCards - 1) {
       setCurrentCardIndex((prev) => prev + 1);
       setIsFlipped(false);

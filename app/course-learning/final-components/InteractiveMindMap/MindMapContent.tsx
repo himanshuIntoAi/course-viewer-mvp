@@ -107,7 +107,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
         setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
     }
     return () => { componentMountedRef.current = false; };
-  }, []); // Remove isCoreDataReady dependency to prevent infinite loop
+  }, [isCoreDataReady]); // Add isCoreDataReady dependency
 
 
 
@@ -134,7 +134,7 @@ const MindMapContent: React.FC<MindMapContentProps> = ({
       }
       return prev;
     });
-  }, []); // Remove setData dependency to prevent infinite loops
+  }, [setData]); // Add setData dependency
 
   const isLoading = false;
 

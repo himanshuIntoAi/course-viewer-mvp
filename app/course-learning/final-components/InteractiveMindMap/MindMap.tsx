@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { ReactFlowProvider } from 'reactflow';
 import MindMapContent from './MindMapContent'; // Import the new MindMapContent component
 import './MindMap.css';

@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import ReactFlow, {
-  MiniMap,
-  Controls,
+import {
   useNodesState,
   useEdgesState,
   addEdge,
@@ -14,13 +12,8 @@ import ReactFlow, {
   NodeProps,
   Connection,
   useReactFlow,
-  OnInit,
-  ControlButton,
-  Background,
-  ConnectionMode,
-  BackgroundVariant,
 } from 'reactflow';
-import { Plus, Trash2, ChevronRight, ChevronDown, Wand2, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, ChevronDown, Wand2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 // import '@reactflow/node-resizer/dist/style.css'; // Ensure this is commented or removed
 import 'reactflow/dist/style.css';
@@ -138,7 +131,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     // Disable inline edit in view-only usage by checking for a flag on data
-    if ((data as any).readOnly) return;
+    if ((data as NodeData & { readOnly?: boolean }).readOnly) return;
     setIsEditing(true);
     setEditValue(data.label);
   };
@@ -371,7 +364,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
               }
             </button>
           )}
-          {!((data as any).readOnly) && (
+          {!((data as NodeData & { readOnly?: boolean }).readOnly) && (
           <button
             title="Add Child"
             onClick={() => data.onAddChild(id)}
@@ -396,7 +389,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
           </button>
           )}
 
-          {data.onRequestSubtopics && !((data as any).readOnly) && (
+          {data.onRequestSubtopics && !((data as NodeData & { readOnly?: boolean }).readOnly) && (
             <button
               title="Generate Subtopics with AI"
               onClick={(e) => {
@@ -425,7 +418,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, id }) => {
             </button>
           )}
 
-          {!isRootNode && !((data as any).readOnly) && (
+          {!isRootNode && !((data as NodeData & { readOnly?: boolean }).readOnly) && (
             <button
               title="Delete Node"
               onClick={() => data.onDelete(id)}
@@ -613,6 +606,7 @@ const StraightEdge: React.FC<CustomEdgeProps> = ({
 };
 
 // Define the edge types for better readability
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const edgeTypes = {
   custom: CustomEdge,
   straight: StraightEdge,
@@ -924,7 +918,9 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
   onAddChildNode,
   onUpdateNodeLabel,
   onRequestSubtopics,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   controlsPosition = 'bottom-right',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   minimapPosition = 'top-right',
   onNodeSelect,
   selectedNodeId,
@@ -937,6 +933,7 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
   onNodeToggle,
   collapsedNodes,
   isParentInitialized,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isInPopupView,
   canvasTheme = "dark",
   lineStyle = "solid",
@@ -977,8 +974,8 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
   globalLineStyle = localLineStyle;
 
   const graphData = data;
-  const [nodes, setNodes, onNodesChange] = useNodesState<NodeData>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<{ pathColor: string; style?: React.CSSProperties; }>[]>([]);
+  const [nodes, setNodes] = useNodesState<NodeData>([]);
+  const [, setEdges] = useEdgesState<Edge<{ pathColor: string; style?: React.CSSProperties; }>[]>([]);
   const reactFlowInstance = useReactFlow<NodeData, Edge<{ pathColor: string; style?: React.CSSProperties; }>>();
   const [isReadyToFit, setIsReadyToFit] = useState(false);
   const reactFlowWrapperRef = useRef<HTMLDivElement>(null);
@@ -1163,7 +1160,7 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
             pathColor,
             onRequestSubtopics: onRequestSubtopics ? () => onRequestSubtopics(node.id) : undefined,
             // mark node as read-only so CustomNode hides edit UI
-            ...(readOnly ? { readOnly: true as any } : {})
+            ...(readOnly ? { readOnly: true as boolean } : {})
           }
         });
         newPositionCache.push({ id: node.id, position, color: pathColor });
@@ -1265,8 +1262,10 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
     lineCurveStyle,
     lineColorMode,
     customLineColor
-  ] as unknown as any[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onNodeDragStop = useCallback((event: React.MouseEvent, draggedNode: Node) => {
     if (readOnly) return false;
     const newPosition = { ...draggedNode.position };
@@ -1279,6 +1278,7 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
     setUserInteracted(true); return false;
   }, [setNodes, setUserInteracted, onNodePositionChange, readOnly]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const resetLayout = useCallback(() => {
     if (reactFlowInstance && graphData.nodes.length > 0) {
       console.log("[GraphRendererLR] Resetting layout...");
@@ -1317,7 +1317,7 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
             childCount: childNodes.length,
             pathColor,
             onRequestSubtopics: onRequestSubtopics ? (id: string) => onRequestSubtopics(id) : undefined,
-            ...(readOnly ? { readOnly: true as any } : {})
+            ...(readOnly ? { readOnly: true as boolean } : {})
           },
         };
       }).filter(node => {
@@ -1402,13 +1402,15 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
     }
   }, [graphData, reactFlowInstance, collapsedNodes, onNodePositionChange, onRequestSubtopics, nodeColors, getDescendantsForCurrentData, setEdges, setNodes, localLineStyle, localLineCurveStyle, localLineColorMode, localCustomLineColor]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onMove = useCallback(() => {
     if (!userInteracted && !isInitialRender.current) {
       console.log("[GraphRendererLR] User manually changed viewport");
       setUserInteracted(true);
     }
-  }, [userInteracted]);
+  }, [userInteracted, setUserInteracted]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onConnect = useCallback((params: Connection) => {
     if (readOnly) return;
     const newEdgeColor = selectedColor || generateRandomColor();
@@ -1444,6 +1446,7 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
     }, eds));
   }, [selectedColor, setEdges, localLineStyle, localLineCurveStyle, readOnly]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onEdgeUpdate = useCallback((oldEdge: Edge, newConnection: Connection) => {
     if (readOnly) return;
     const edgeType = localLineCurveStyle === 'straight' ? 'straight' : 'custom';
@@ -1483,6 +1486,7 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
     }, els.filter(e => e.id !== oldEdge.id)));
   }, [setEdges, localLineCurveStyle, localLineStyle, readOnly]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     if (readOnly) return;
     if (onAddNodeOnEdgeDrop) {
@@ -1499,6 +1503,7 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
     }
   }, [nodes, onAddNodeOnEdgeDrop, readOnly]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     if (linkMode && linkSource && selectedNodeId === linkSource) {
       if (onNodeSelect) onNodeSelect(node.id);
@@ -1507,7 +1512,10 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
     }
   }, [linkMode, linkSource, onNodeSelect, selectedNodeId]);
 
-  const onInit: OnInit = () => { console.log('[GraphRendererLR] ReactFlow initialized.'); };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const onInit = () => { console.log('[GraphRendererLR] ReactFlow initialized.'); };
+  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const nodeTypes = useMemo(() => ({ custom: CustomNode as React.ComponentType<NodeProps<NodeData>> }), []);
 
   useEffect(() => {
