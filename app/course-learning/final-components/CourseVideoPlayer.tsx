@@ -402,7 +402,7 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full bg-black"
+      className="relative flex items-center justify-center w-full h-full bg-black"
       onMouseMove={handleMouseMove}
       onMouseLeave={() => {
         if (isPlaying) {
@@ -427,7 +427,7 @@ const CourseVideoPlayer: React.FC<CourseVideoPlayerProps> = ({
       <video
         ref={videoRef}
         poster={thumbnailUrl}
-        className="w-full h-full"
+        className="w-full h-full mt-52"
         onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}

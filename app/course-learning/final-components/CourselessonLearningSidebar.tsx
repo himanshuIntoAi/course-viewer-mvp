@@ -36,7 +36,7 @@ interface CourseLessonLearningSidebarProps {
   setIsLearningSidebarFullScreen?: (isLearningSidebarFullScreen: boolean) => void;
 }
 
-function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurrentLesson, loading: propLoading, courseId , hasVideo, hasCode, isLearningSidebarFullScreen, setIsLearningSidebarFullScreen }: CourseLessonLearningSidebarProps) {
+function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurrentLesson, loading: propLoading, courseId, hasVideo, hasCode, isLearningSidebarFullScreen, setIsLearningSidebarFullScreen }: CourseLessonLearningSidebarProps) {
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +60,7 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
   //   const handleKeyDown = (event: KeyboardEvent) => {
   //     if (event.key === 'Escape' && isLearningSidebarFullScreen) {
   //       setIsLearningSidebarFullScreen(false);
-       
+
   //     }
   //   };
 
@@ -73,7 +73,7 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
   useEffect(() => {
     if (!hasVideo || !hasCode) {
       setIsLearningSidebarFullScreen?.(true);
-     
+
     }
   }, [hasVideo, hasCode, setIsLearningSidebarFullScreen]);
 
@@ -339,24 +339,16 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
             )}
           </div>
           <div className="flex items-center gap-2">
-            {isLearningSidebarFullScreen && (
+           
+            {hasVideo && hasCode && (
               <button
                 className="p-2 rounded hover:bg-gray-200 transition-colors duration-200"
                 onClick={toggleSidebarWidth}
-                title="Exit full screen"
+                title={isLearningSidebarFullScreen ? "Exit full screen" : "Enter full screen"}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
-                </svg>
+                <Image src="/images/resize-icon.svg" alt="Resize sidebar" width={20} height={40} />
               </button>
             )}
-            <button
-              className="p-2 rounded hover:bg-gray-200 transition-colors duration-200"
-              onClick={toggleSidebarWidth}
-              title={isLearningSidebarFullScreen ? "Exit full screen" : "Enter full screen"}
-            >
-              <Image src="/images/resize-icon.svg" alt="Resize sidebar" width={20} height={40} />
-            </button>
           </div>
         </div>
 

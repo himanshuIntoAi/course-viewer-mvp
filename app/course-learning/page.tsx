@@ -1148,7 +1148,7 @@ const CourseLearningPageInner = () => {
           {/* Video Player */}
           {hasVideo && (
             <div
-              className={`flex-shrink-0 overflow-hidden ${isLearningSidebarFullScreen && 'z-[-10]'} min-h-[500px]`}
+              className={` overflow-hidden flex items-center justify-center ${isLearningSidebarFullScreen && 'z-[-10]'} `}
               style={{
                 width: hasEditor ? `${videoWidthPercent}%` : `${100 - lessonSidebarWidthPercent}%`,
                 minWidth: '250px',

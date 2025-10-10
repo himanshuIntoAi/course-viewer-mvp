@@ -14,13 +14,7 @@ function CourseLearningNavbar({
 }: CourseLearningNavbarProps) {
   const [inputCourseId, setInputCourseId] = useState(courseId);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (onCourseIdChange) {
-      onCourseIdChange(inputCourseId);
-    }
-  };
-
+  
   return (
     <nav className="w-full flex items-center justify-between px-8 py-4 bg-white sticky top-0 z-10">
       <div className="flex items-center gap-8">
@@ -40,21 +34,7 @@ function CourseLearningNavbar({
       </div>
       <div className="flex items-center gap-6">
         {/* Course ID Input for Testing */}
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={inputCourseId}
-            onChange={(e) => setInputCourseId(e.target.value)}
-            placeholder="Course ID"
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <button
-            type="submit"
-            className="px-3 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Load Course
-          </button>
-        </form>
+        
         
         <ul className="flex items-center gap-6 text-base font-medium">
           <li>Get Unstuck</li>
