@@ -15,36 +15,34 @@ const CourseDetailHeader = ({ onSearchChange, searchQuery = "" }: CourseDetailHe
       <div className="flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center space-x-2">
-       <Image src="/images/course-detail/cloudOuLogo.png" alt="CloudOU Logo" width={200} height={40} className='w-50 h-10' />
+          <Image src="/images/course-detail/cloudOuLogo.png" alt="CloudOU Logo" width={200} height={40} className='w-50 h-10' />
         </div>
 
         {/* Search Bar */}
-        <div className="flex-1 max-w-2xl mx-8">
-          <div className="relative flex border justify-between bg-white items-center p-1 border-gray-300 rounded-lg ">
-            <div className='flex' >
-            <Image src={"/images/course-catalog/search-icon.svg"} className='bg-white rounded-lg' width={40} height={10} alt='' />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={localSearchQuery}
-              onChange={(e) => {
-                setLocalSearchQuery(e.target.value);
-                onSearchChange?.(e.target.value);
-              }}
-              className="w-[70%] pl-2 rounded-lg pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-
+       
+          <div className="flex border min-w-[35vw] justify-between min-w-2xl bg-white items-center p-1 border-gray-300 rounded-lg ">
+            <div className='flex min-w-2xl' >
+              <Image src={"/images/course-catalog/search-icon.svg"} className='bg-white rounded-lg' width={40} height={10} alt='' />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={localSearchQuery}
+                onChange={(e) => {
+                  setLocalSearchQuery(e.target.value);
+                  onSearchChange?.(e.target.value);
+                }}
+                className="w-[30vw] pl-2 rounded-lg pr-4 py-2 focus:outline-none "
+              />
             </div>
             <p className='text-gray-500' >Ctrl + K</p>
           </div>
-        </div>
-
+       
         {/* Right Side */}
         <div className="flex items-center space-x-6">
           <button className="px-4 py-2 text-gray-700 hover:text-blue-600 transition-colors shadow-sm border border-gray-300 rounded-md text-sm">
             Dashboard
           </button>
-          
+
           <button className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors">
             <Image src="/images/course-catalog/bell-icon.svg" alt="Notification Bell" width={40} height={24} className='border-2 border-gray-300 rounded-full p-1' />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
