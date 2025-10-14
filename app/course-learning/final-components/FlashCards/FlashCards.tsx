@@ -436,7 +436,7 @@ function Card({ card }: { card: FlashCardType; index: number }) {
         {/* Top bar */}
         <div className="w-full flex items-center justify-between  text-white px-6 md:px-8 py-3">
           <div className="flex items-center gap-2">
-            <Image src="/flashcard/flashcardIcon4.svg" alt='question icon' width={30} height={30} />
+            <Image src="/flashcard/flashCardIcon4.svg" alt='question icon' width={30} height={30} />
             <span className="text-sm md:text-base font-medium">Question</span>
           </div>
         </div>
