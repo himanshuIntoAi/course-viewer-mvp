@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 interface CourseLearningNavbarProps {
   setIsSidebarOpen: (isSidebarOpen: boolean) => void,
@@ -15,7 +16,9 @@ function CourseLearningNavbar({
       <div className="flex items-center gap-8">
         <Image src="/images/cloud-ou-logo-2.svg" alt="CloudOU Logo" width={120} height={40} />
         <ul className="flex items-center gap-6 text-base font-medium">
+          <Link href="/">
           <li className="hover:text-blue-600 cursor-pointer transition-colors duration-200">My Home</li>
+          </Link>
           <li 
             onClick={() => {
               console.log('Syllabus button clicked, opening sidebar');

@@ -496,10 +496,6 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
                                       <span className={`text-sm font-medium w-10 text-right text-gray-600`}>{numberLabel}</span>
                                       <span className={`text-base font-medium ${isSelected ? 'bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] bg-clip-text text-transparent font-semibold' : 'text-gray-800'}`}>{l.title}</span>
                                     </div>
-                                    <div className="flex items-center space-x-3">
-                                      <span className={`text-sm ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>{l.duration || ''}</span>
-                                      <span className={`text-lg ${isSelected ? 'text-white' : ''}`}>{l.is_completed ? '✅' : '⭕'}</span>
-                                    </div>
                                   </div>
                                 );
                               }

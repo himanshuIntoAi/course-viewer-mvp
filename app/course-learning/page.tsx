@@ -12,7 +12,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 // Import interactive components
 import FlashCards from "./final-components/FlashCards/FlashCards"
-import MindMap from "./final-components/InteractiveMindMap/MindMap"
+import SimpleMindMap from "./final-components/InteractiveMindMap/SimpleMindMap"
 import MemoryGame from "./final-components/MemoryGame/MemoryGame"
 import QuizPlayer, { QuestionType, type Question, QuizData, UserAnswers } from "./final-components/QuizBuilder/QuizPlayer"
 import Image from "next/image"
@@ -286,57 +286,131 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
 
         const mindmaps = await mindmapsResponse.json();
 
-        // Find mindmap that matches the topic ID; fallback to first available if none
-        let selectedMindmap = mindmaps.find((mindmap: APIMindmap) => mindmap.topic_id === topicId);
-        if (!selectedMindmap && Array.isArray(mindmaps) && mindmaps.length > 0) {
-          selectedMindmap = mindmaps[0];
+        console.log('[MindMap] All mindmaps for course:', mindmaps);
+        console.log('[MindMap] Looking for topic ID:', topicId);
+
+        // Find mindmap that matches the topic ID (don't fallback to first available)
+        const selectedMindmap = mindmaps.find((mindmap: APIMindmap) => mindmap.topic_id === topicId);
+        
+        if (!selectedMindmap) {
+          console.log('[MindMap] No mindmap found for topic ID:', topicId);
+          setMindmapData(null);
+          setLoading(false);
+          return; // Exit early if no matching mindmap
         }
+
+        console.log('[MindMap] Found matching mindmap:', selectedMindmap);
 
         if (selectedMindmap) {
 
           // Parse Mermaid data to extract nodes and links
           const parseMermaidToMindMapData = (mermaidText: string): MindMapData => {
+            console.log('[MindMap Parser] Starting to parse mermaid text:', mermaidText);
+            
             const rawLines = mermaidText.split('\n');
             const nodes: MindMapData['nodes'] = [];
             const links: MindMapData['links'] = [];
             let nodeIdCounter = 1;
             const levelStack: string[] = [];
-
+            
+            // Track actual indentation levels to handle dynamic spacing
+            const indentLevels: number[] = [];
+            let firstNodeIndent: number | null = null; // Track the root node's indentation
+            
             const normalizeIndent = (s: string) => s.replace(/\t/g, '    ');
+            
+            // Helper to determine indent level based on actual spacing
+            const getIndentLevel = (indentLength: number, isFirstNode: boolean): number => {
+              // First node is always the root (level 0)
+              if (isFirstNode) {
+                firstNodeIndent = indentLength;
+                return 0;
+              }
+              
+              // Calculate relative indentation from the root
+              const relativeIndent = indentLength - (firstNodeIndent || 0);
+              
+              if (relativeIndent <= 0) return 0; // Same or less indent than root = root level
+              
+              // Find the closest matching indent level or create a new one
+              const existingIndex = indentLevels.indexOf(relativeIndent);
+              if (existingIndex !== -1) {
+                return existingIndex + 1; // +1 because root is level 0
+              }
+              
+              // Find where this indent fits in the hierarchy
+              let level = 0;
+              for (let i = 0; i < indentLevels.length; i++) {
+                if (relativeIndent > indentLevels[i]) {
+                  level = i + 1;
+                } else {
+                  break;
+                }
+              }
+              
+              // Add new indent level if it's deeper than existing
+              if (relativeIndent > (indentLevels[indentLevels.length - 1] || 0)) {
+                indentLevels.push(relativeIndent);
+                level = indentLevels.length;
+              }
+              
+              return level;
+            };
+
+            let nodeCount = 0;
 
             for (let idx = 0; idx < rawLines.length; idx++) {
               const line = rawLines[idx];
               if (!line) continue;
+              
               // Skip mermaid header
-              if (line.trim().toLowerCase() === 'mindmap') continue;
+              const trimmedLine = line.trim().toLowerCase();
+              if (trimmedLine === 'mindmap' || trimmedLine === '') continue;
 
               const normalized = normalizeIndent(line);
               const indentMatch = normalized.match(/^(\s*)/);
               const indentLength = indentMatch ? indentMatch[1].length : 0;
-              const indentLevel = Math.floor(indentLength / 4);
+              const isFirstNode = nodeCount === 0;
+              const indentLevel = getIndentLevel(indentLength, isFirstNode);
 
               // Extract node name from trimmed content
               let content = normalized.trim();
-              // Handle root((Title)) or root(Title)
-              const rootMatch = content.match(/^root\s*\(\(?([^\)]+)\)?\)?/i);
+              
+              // Handle root((Title)) or root(Title) - improved regex
+              const rootMatch = content.match(/^root\s*\(+\s*([^)]+?)\s*\)+/i);
               if (rootMatch && rootMatch[1]) {
                 content = rootMatch[1].trim();
               }
+              
               const nodeName = content;
-              if (!nodeName) continue;
+              if (!nodeName || nodeName.toLowerCase() === 'mindmap') continue;
+
+              console.log(`[MindMap Parser] Line ${idx}: "${line}" -> Indent: ${indentLength}, Level: ${indentLevel}, Name: "${nodeName}"`);
 
               // Assign ids: ensure first node becomes id "1"
               const nodeId = String(nodeIdCounter++);
-              nodes.push({ id: nodeId, name: nodeName, group: Math.max(1, indentLevel + 1), level: indentLevel });
+              nodes.push({ 
+                id: nodeId, 
+                name: nodeName, 
+                group: Math.max(1, indentLevel + 1), 
+                level: indentLevel 
+              });
 
               // Parent link for children
               if (indentLevel > 0) {
                 let parentId: string | null = null;
+                // Find the most recent parent at the previous level
                 for (let i = indentLevel - 1; i >= 0; i--) {
-                  if (levelStack[i]) { parentId = levelStack[i]; break; }
+                  if (levelStack[i]) { 
+                    parentId = levelStack[i]; 
+                    break; 
+                  }
                 }
                 if (parentId) {
                   links.push({ source: parentId, target: nodeId });
+                  console.log(`[MindMap Parser] Added link: ${parentId} -> ${nodeId}`);
+                } else {
+                  console.warn(`[MindMap Parser] No parent found for node ${nodeId} at level ${indentLevel}`);
                 }
               }
 
@@ -345,30 +419,53 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
               levelStack[indentLevel] = nodeId;
               // Clear deeper levels
               for (let i = indentLevel + 1; i < levelStack.length; i++) levelStack[i] = '';
+              
+              nodeCount++;
             }
 
-            // Ensure the very first node has id "1" (already true), and there is at least one node
-            if (nodes.length > 0 && nodes[0].id !== '1') {
-              // Reindex only if somehow first id is not "1"
-              nodes[0].id = '1';
-              // Update links that reference old id
-              links.forEach(l => { if (l.source === nodes[1]?.id) l.source = '1'; if (l.target === nodes[1]?.id) l.target = '1'; });
+            console.log('[MindMap Parser] Final nodes:', nodes);
+            console.log('[MindMap Parser] Final links:', links);
+
+            // Ensure the very first node has id "1" and is at level 0
+            if (nodes.length > 0) {
+              if (nodes[0].id !== '1') {
+                const oldId = nodes[0].id;
+                nodes[0].id = '1';
+                // Update links that reference old id
+                links.forEach(l => { 
+                  if (l.source === oldId) l.source = '1'; 
+                  if (l.target === oldId) l.target = '1'; 
+                });
+              }
+              // Ensure root is at level 0
+              if (nodes[0].level !== 0) {
+                console.warn(`[MindMap Parser] Root node was not at level 0 (was ${nodes[0].level}), fixing...`);
+                nodes[0].level = 0;
+                nodes[0].group = 1;
+              }
             }
 
             return { nodes, links };
           };
 
           try {
+            console.log('[MindMap] Parsing mindmap for topic:', topic, 'topicId:', topicId);
+            console.log('[MindMap] Raw mermaid data:', selectedMindmap.mindmap_mermaid);
+            
             const transformedData = parseMermaidToMindMapData(selectedMindmap.mindmap_mermaid);
 
             // Validate the transformed data
             if (transformedData.nodes.length === 0) {
+              console.error('[MindMap] No nodes found in parsed data');
               throw new Error('No nodes found in mindmap data');
             }
 
+            console.log('[MindMap] Successfully parsed mindmap:', transformedData);
             setMindmapData(transformedData);
-          } catch {
-            throw new Error('Failed to parse mindmap data');
+          } catch (parseError) {
+            console.error('[MindMap] Failed to parse mindmap:', parseError);
+            console.error('[MindMap] Raw mermaid text:', selectedMindmap.mindmap_mermaid);
+            throw new Error('Failed to parse mindmap data: ' + (parseError instanceof Error ? parseError.message : 'Unknown error'));
           }
         } else {
           // No mindmaps available for course
@@ -400,11 +497,21 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
   // Show error state
   if (error) {
     return (
-      <div className="w-full h-full bg-white flex items-center justify-center">
-        <div className="text-center">
+      <div className="w-full h-full bg-white flex items-center justify-center p-8">
+        <div className="text-center max-w-2xl">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h3 className="text-xl font-semibold text-red-600 mb-2">Error Loading Mindmap</h3>
           <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -412,20 +519,22 @@ const MindMapWithAPI = ({ topic, topicId, courseId }: { topic: string; topicId: 
 
   // Show mindmap when data is loaded
   if (mindmapData) {
+    console.log('[MindMap] Rendering SimpleMindMap with data:', mindmapData);
     return (
       <div className="w-full h-full">
-        <MindMap initialData={mindmapData} />
+        <SimpleMindMap data={mindmapData} />
       </div>
     );
   }
 
-  // Fallback (should not reach here)
+  // No mindmap available for this topic
   return (
-    <div className="w-full h-full bg-white flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-gray-500 text-6xl mb-4">❓</div>
-        <h3 className="text-xl font-semibold text-gray-600 mb-2">No Mindmap Available</h3>
-        <p className="text-gray-500">Please try again later.</p>
+    <div className="w-full h-full bg-white flex items-center justify-center p-8">
+      <div className="text-center max-w-2xl">
+        <div className="text-gray-400 text-6xl mb-4">🗺️</div>
+        <h3 className="text-xl font-semibold text-gray-700 mb-2">No Mindmap Available</h3>
+        <p className="text-gray-500 mb-2">There is no mindmap available for this topic yet.</p>
+        <p className="text-sm text-gray-400">Topic: {topic} (ID: {topicId})</p>
       </div>
     </div>
   );
