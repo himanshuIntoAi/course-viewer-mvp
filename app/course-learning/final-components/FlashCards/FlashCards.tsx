@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 
 const getRandomGradient = () => {
@@ -88,13 +88,13 @@ function RenderPlayingCards({ cards, topic }: { cards: FlashCardType[]; topic?: 
       setIsFlipped(false);
     }
   };
-  const getRandomCardIndex = () => {
+  const getRandomCardIndex = useCallback(() => {
     let randomIndex;
     do {
       randomIndex = Math.floor(Math.random() * totalCards);
     } while (randomIndex === currentCardIndex && totalCards > 1);
     return randomIndex;
-  };
+  }, [totalCards, currentCardIndex]);
 
   const nextCard = () => {
     if (isShuffleMode) {
@@ -195,7 +195,7 @@ function RenderPlayingCards({ cards, topic }: { cards: FlashCardType[]; topic?: 
     }, 3000);
 
     return () => clearInterval(timer);
-  }, [isPlaying, isShuffleMode, currentCardIndex, totalCards]);
+  }, [isPlaying, isShuffleMode, currentCardIndex, totalCards, getRandomCardIndex]);
 
   // Handle body scroll lock when modal is open
   useEffect(() => {

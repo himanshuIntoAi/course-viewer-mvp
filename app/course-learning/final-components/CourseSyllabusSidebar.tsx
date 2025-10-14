@@ -422,7 +422,9 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
                             memorygames: memoryGames.filter((mg: APIMemoryGame) => mg.topic_id === topic.id).length,
                           };
                           onTopicSelect(topic, counts);
-                          setActiveView && setActiveView('topic');
+                          if (setActiveView) {
+                            setActiveView('topic');
+                          }
                         }
                       }}
                     >
@@ -477,11 +479,19 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
                                     className={`flex items-center rounded-lg justify-between px-6 py-3 cursor-pointer transition-colors bg-white hover:bg-gray-50`}
                                     onClick={() => {
                                       setSelectedItem({ kind: 'lesson', id: String(l.id) });
-                                      setActiveView && setActiveView('lesson');
-                                      onLessonSelect && onLessonSelect(l.id);
+                                      if (setActiveView) {
+                                        setActiveView('lesson');
+                                      }
+                                      if (onLessonSelect) {
+                                        onLessonSelect(l.id);
+                                      }
                                     }}
                                   >
-                                    <div className="flex items-center space-x-2" onClick={() => setActiveView && setActiveView('lesson')}>
+                                    <div className="flex items-center space-x-2" onClick={() => {
+                                      if (setActiveView) {
+                                        setActiveView('lesson');
+                                      }
+                                    }}>
                                       {renderLeftIcon('lesson')}
                                       <span className={`text-sm font-medium w-10 text-right text-gray-600`}>{numberLabel}</span>
                                       <span className={`text-base font-medium ${isSelected ? 'bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] bg-clip-text text-transparent font-semibold' : 'text-gray-800'}`}>{l.title}</span>

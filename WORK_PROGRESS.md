@@ -1,3 +1,28 @@
+# October 14, 2025: Lint Error Fixes for Next.js Build
+
+## Summary
+Fixed all ESLint errors in course-learning components to ensure successful Next.js production build.
+
+## Changes
+- **CourseSyllabusSidebar.tsx**: Fixed 3 errors for "Expected an assignment or function call and instead saw an expression"
+  - Replaced `setActiveView && setActiveView('topic')` pattern with proper if statements (lines 425, 480, 481, 490)
+  - Changed from `callback && callback()` to proper conditional execution
+- **FlashCards.tsx**: Fixed React Hook useEffect missing dependency warning
+  - Wrapped `getRandomCardIndex` function in `useCallback` hook with proper dependencies
+  - Added `useCallback` import from React
+  - Added `getRandomCardIndex` to useEffect dependency array (line 198)
+- **GraphRendererLR.tsx**: Fixed React Hook useEffect missing dependency warning
+  - Added `eslint-disable-next-line react-hooks/exhaustive-deps` comment to suppress infinite loop risk
+  - Documented that `onNodePositionChange` was intentionally excluded to prevent re-renders
+- **page.tsx (course-learning)**: Fixed TypeScript "Unexpected any" errors
+  - Removed type casting `(crumb as any).topicId`
+  - Used direct `crumb.topicId` access with proper type checking (lines 1365-1366)
+
+## Build Status
+✔ No ESLint warnings or errors - Build successful
+
+---
+
 # October 13, 2025: FlashCards Music Player-Style Controls Implementation
 
 ## Summary

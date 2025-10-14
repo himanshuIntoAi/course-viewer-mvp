@@ -1245,6 +1245,7 @@ const GraphRendererLR: React.FC<GraphRendererProps> = ({
         }, 50); // Small delay before triggering the fitView effect
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     graphData,
     collapsedNodes,

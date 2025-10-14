@@ -1362,8 +1362,8 @@ const CourseLearningPageInner = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      if ((crumb as any).topicId) {
-                        showTopicDetail((crumb as any).topicId as number, crumb.label);
+                      if (crumb.topicId) {
+                        showTopicDetail(crumb.topicId, crumb.label);
                       }
                     }}
                   >
