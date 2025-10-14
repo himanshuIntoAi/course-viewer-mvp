@@ -103,9 +103,10 @@ interface CourseSyllabusSidebarProps {
   courseId?: string
   isLearningSidebarFullScreen?: boolean
   setActiveView?: (view: string) => void
+  onTopicSelect?: (topic: Topic, counts: { lessons: number; quizzes: number; flashcards: number; mindmaps: number; memorygames?: number }) => void
 }
 
-function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSelect, courseId = "641", setActiveView }: CourseSyllabusSidebarProps) {
+function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSelect, courseId = "641", setActiveView, onTopicSelect }: CourseSyllabusSidebarProps) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [quizzes, setQuizzes] = useState<APIQuiz[]>([]);
@@ -117,6 +118,7 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [expandedTopic, setExpandedTopic] = useState<number | null>(null);
+  const [selectedItem, setSelectedItem] = useState<{ kind: 'lesson' | 'quiz' | 'flashcards' | 'mindmap' | 'memorygame'; id: string } | null>(null);
   console.log("Current course id  in syllabus sidebar", courseId);
   const loadedFor = React.useRef<string | null>(null);
   useEffect(() => {
@@ -191,8 +193,9 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
     const topicMindmaps = mindmaps.filter((m: APIMindmap) => m.topic_id === topic.id);
     topicMindmaps.forEach(m => combined.push({ kind: 'mindmap', data: m, label: 'Mind Map' }));
 
-    const topicMemoryGames = memoryGames.filter((mg: APIMemoryGame) => mg.topic_id === topic.id);
-    topicMemoryGames.forEach(mg => combined.push({ kind: 'memorygame', data: mg, label: mg.description || 'Memory Game' }));
+    // TEMP HIDE MEMORY GAME FROM SIDEBAR
+    // const topicMemoryGames = memoryGames.filter((mg: APIMemoryGame) => mg.topic_id === topic.id);
+    // topicMemoryGames.forEach(mg => combined.push({ kind: 'memorygame', data: mg, label: mg.description || 'Memory Game' }));
 
     const topicFlashcards = flashcards.filter((f: APIFlashcard) => f.topic_id === topic.id);
     if (topicFlashcards.length > 0) {
@@ -319,7 +322,7 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
                 onClick={clearSearch}
               />
             )}
-            <Image src="/images/filter-icon.png" alt="Search" width={40} height={20} className="" />
+            <Image src="/images/filter-icon.png" alt="Search" width={40} height={20} className="cursor-pointer" />
           </div>
         </div>
 
@@ -328,7 +331,7 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveFilter("all")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "all"
+              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${activeFilter === "all"
                 ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
                 : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
@@ -338,7 +341,7 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
             </button>
             <button
               onClick={() => setActiveFilter("lessons")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "lessons"
+              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${activeFilter === "lessons"
                 ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
                 : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
@@ -348,7 +351,7 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
             </button>
             <button
               onClick={() => setActiveFilter("quiz")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "quiz"
+              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${activeFilter === "quiz"
                 ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
                 : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
@@ -359,7 +362,7 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
             </button>
             <button
               onClick={() => setActiveFilter("mindmap")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "mindmap"
+              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${activeFilter === "mindmap"
                 ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
                 : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
@@ -369,7 +372,7 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
             </button>
             <button
               onClick={() => setActiveFilter("flashcards")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === "flashcards"
+              className={`flex items-center gap-2 px-3 py-2 rounded-[3px] text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${activeFilter === "flashcards"
                 ? "text-white bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] shadow"
                 : "bg-[#EBE1FF] text-[#5A09FF] hover:bg-[#E3D8FF]"
                 }`}
@@ -407,14 +410,28 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
                     {/* Module Header */}
                     <div
                       className={`flex items-center justify-between p-0 cursor-pointer ${isExpanded ? 'w-[95%] mx-auto rounded-lg' : ''}`}
-                      onClick={() => setExpandedTopic(isExpanded ? null : topic.id)}
+                      onClick={() => {
+                        const nextExpanded = isExpanded ? null : topic.id;
+                        setExpandedTopic(nextExpanded);
+                        if (!isExpanded && onTopicSelect) {
+                          const counts = {
+                            lessons: lessons.filter(lesson => lesson.topic_id === topic.id).length,
+                            quizzes: quizzes.filter((q: APIQuiz) => q.topic_id === topic.id).length,
+                            flashcards: flashcards.filter((f: APIFlashcard) => f.topic_id === topic.id).length,
+                            mindmaps: mindmaps.filter((m: APIMindmap) => m.topic_id === topic.id).length,
+                            memorygames: memoryGames.filter((mg: APIMemoryGame) => mg.topic_id === topic.id).length,
+                          };
+                          onTopicSelect(topic, counts);
+                          setActiveView && setActiveView('topic');
+                        }
+                      }}
                     >
                       {/* Gradient bar header when expanded, light bar when collapsed */}
-                      <div className={`w-full px-4 py-3 flex items-center justify-between z-[1000] ${isExpanded ? 'bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] text-white' : 'bg-gray-50 text-gray-800 rounded-t-lg'}`}>
+                      <div className={`w-full px-4 py-3 flex items-center justify-between z-[1000] rounded-md ${isExpanded ? 'bg-[linear-gradient(90deg,_#5A09FF_0%,_#CB4BFF_100.64%)] text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-t-lg'} transition-colors`}>
                         <div className="flex items-center space-x-3 flex-row">
-                          <span className={`text-base font-semibold ${isExpanded ? 'text-white' : 'text-gray-700'}`}>{topic.topic_order}.</span>
+                          <span className={`text-sm font-semibold ${isExpanded ? 'text-white' : 'text-gray-700'}`}>{topic.topic_order}.</span>
                           <div className="flex flex-row justify-between w-full" >
-                            <h3 className={`font-semibold ${isExpanded ? 'text-white' : 'text-gray-900'}`}>{topic.title}</h3>
+                            <h3 className={`text-sm font-semibold ${isExpanded ? 'text-white' : 'text-gray-900'}`}>{topic.title}</h3>
 
                           </div>
                         </div>
@@ -453,20 +470,25 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
                               const numberLabel = `${topic.topic_order}.${index + 1}`;
                               if (entry.kind === 'lesson') {
                                 const l = entry.data as Lesson;
+                                const isSelected = selectedItem?.kind === 'lesson' && selectedItem?.id === String(l.id);
                                 return (
                                   <div
                                     key={`lesson_${l.id}`}
-                                    className={`flex items-center rounded-lg justify-between px-6 py-3 bg-white`}
-                                    onClick={() => onLessonSelect && onLessonSelect(l.id)}
+                                    className={`flex items-center rounded-lg justify-between px-6 py-3 cursor-pointer transition-colors bg-white hover:bg-gray-50`}
+                                    onClick={() => {
+                                      setSelectedItem({ kind: 'lesson', id: String(l.id) });
+                                      setActiveView && setActiveView('lesson');
+                                      onLessonSelect && onLessonSelect(l.id);
+                                    }}
                                   >
                                     <div className="flex items-center space-x-2" onClick={() => setActiveView && setActiveView('lesson')}>
                                       {renderLeftIcon('lesson')}
-                                      <span className="text-sm font-medium text-gray-600 w-10 text-right">{numberLabel}</span>
-                                      <span className={`text-base text-gray-800 font-medium`}>{l.title}</span>
+                                      <span className={`text-sm font-medium w-10 text-right text-gray-600`}>{numberLabel}</span>
+                                      <span className={`text-base font-medium ${isSelected ? 'bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] bg-clip-text text-transparent font-semibold' : 'text-gray-800'}`}>{l.title}</span>
                                     </div>
                                     <div className="flex items-center space-x-3">
-                                      <span className={`text-sm text-gray-500`}>{l.duration || ''}</span>
-                                      <span className="text-lg">{l.is_completed ? '✅' : '⭕'}</span>
+                                      <span className={`text-sm ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>{l.duration || ''}</span>
+                                      <span className={`text-lg ${isSelected ? 'text-white' : ''}`}>{l.is_completed ? '✅' : '⭕'}</span>
                                     </div>
                                   </div>
                                 );
@@ -474,19 +496,19 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
 
                               if (entry.kind === 'quiz') {
                                 const q = entry.data as APIQuiz;
+                                const isSelected = selectedItem?.kind === 'quiz' && selectedItem?.id === String(q.id);
                                 return (
                                   <div
                                     key={`quiz_${q.id}`}
-                                    className="px-6 py-3 bg-white cursor-pointer rounded-lg"
+                                    className={`px-6 py-3 cursor-pointer rounded-lg transition-colors bg-white hover:bg-gray-50`}
                                     onClick={() => {
-                                      if (onComponentSelect) {
-                                        onComponentSelect({ id: String(q.id), type: 'quiz', title: 'Quiz', topic_id: q.topic_id });
-                                      }
+                                      setSelectedItem({ kind: 'quiz', id: String(q.id) });
+                                      if (onComponentSelect) onComponentSelect({ id: String(q.id), type: 'quiz', title: 'Quiz', topic_id: q.topic_id });
                                     }}
                                   >
                                     <div className="flex items-center space-x-2">
                                       {renderLeftIcon('quiz')}
-                                      <span className="text-base text-gray-800 font-medium">Quiz</span>
+                                      <span className={`text-base font-medium ${isSelected ? 'bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] bg-clip-text text-transparent font-semibold' : 'text-gray-800'}`}>Quiz</span>
                                     </div>
                                   </div>
                                 );
@@ -494,60 +516,61 @@ function CourseSyllabusSidebar({ setIsSidebarOpen, onLessonSelect, onComponentSe
 
                               if (entry.kind === 'mindmap') {
                                 const m = entry.data as APIMindmap;
+                                const isSelected = selectedItem?.kind === 'mindmap' && selectedItem?.id === String(m.id);
                                 return (
                                   <div
                                     key={`mindmap_${m.id}`}
-                                    className="px-6 py-3 bg-white cursor-pointer rounded-lg"
+                                    className={`px-6 py-3 cursor-pointer rounded-lg transition-colors bg-white hover:bg-gray-50`}
                                     onClick={() => {
-                                      if (onComponentSelect) {
-                                        onComponentSelect({ id: String(m.id), type: 'mindmap', title: 'Mind Map', topic_id: m.topic_id });
-                                      }
+                                      setSelectedItem({ kind: 'mindmap', id: String(m.id) });
+                                      if (onComponentSelect) onComponentSelect({ id: String(m.id), type: 'mindmap', title: 'Mind Map', topic_id: m.topic_id });
                                     }}
                                   >
                                     <div className="flex items-center space-x-2">
                                       {renderLeftIcon('mindmap')}
-                                      <span className="text-base text-gray-800 font-medium">Mind Map</span>
+                                      <span className={`text-base font-medium ${isSelected ? 'bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] bg-clip-text text-transparent font-semibold' : 'text-gray-800'}`}>Mind Map</span>
                                     </div>
                                   </div>
                                 );
                               }
 
-                              if (entry.kind === 'memorygame') {
-                                const mg = entry.data as APIMemoryGame;
-                                return (
-                                  <div
-                                    key={`memorygame_${mg.id}`}
-                                    className="px-6 py-3 bg-white cursor-pointer rounded-lg"
-                                    onClick={() => {
-                                      if (onComponentSelect) {
-                                        onComponentSelect({ id: String(mg.id), type: 'memorygame', title: 'Memory Game', topic_id: mg.topic_id });
-                                      }
-                                    }}
-                                  >
-                                    <div className="flex items-center space-x-2">
-                                      {renderLeftIcon('memorygame')}
-                                      <span className="text-base text-gray-800 font-medium">Memory Game</span>
-                                    </div>
-                                  </div>
-                                );
-                              }
+                              // TEMP HIDE MEMORY GAME FROM SIDEBAR
+                              // if (entry.kind === 'memorygame') {
+                              //   const mg = entry.data as APIMemoryGame;
+                              //   const isSelected = selectedItem?.kind === 'memorygame' && selectedItem?.id === String(mg.id);
+                              //   return (
+                              //     <div
+                              //       key={`memorygame_${mg.id}`}
+                              //       className={`px-6 py-3 cursor-pointer rounded-lg transition-colors ${isSelected ? 'bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] text-white' : 'bg-white hover:bg-gray-50'}`}
+                              //       onClick={() => {
+                              //         setSelectedItem({ kind: 'memorygame', id: String(mg.id) });
+                              //         if (onComponentSelect) onComponentSelect({ id: String(mg.id), type: 'memorygame', title: 'Memory Game', topic_id: mg.topic_id });
+                              //       }}
+                              //     >
+                              //       <div className="flex items-center space-x-2">
+                              //         {renderLeftIcon('memorygame')}
+                              //         <span className={`text-base font-medium ${isSelected ? 'text-white' : 'text-gray-800'}`}>Memory Game</span>
+                              //       </div>
+                              //     </div>
+                              //   );
+                              // }
 
                               // flashcards grouped as single item per topic
                               if (entry.kind === 'flashcards') {
                                 const fc = entry.data as APIFlashcard;
+                                const isSelected = selectedItem?.kind === 'flashcards' && selectedItem?.id === `flashcards_topic_${fc.topic_id}`;
                                 return (
                                   <div
                                     key={`flashcards_topic_${fc.topic_id}`}
-                                    className="px-6 py-3 bg-white cursor-pointer rounded-lg"
+                                    className={`px-6 py-3 cursor-pointer rounded-lg transition-colors bg-white hover:bg-gray-50`}
                                     onClick={() => {
-                                      if (onComponentSelect) {
-                                        onComponentSelect({ id: `flashcards_topic_${fc.topic_id}`, type: 'flashcards', title: 'Flashcards', topic_id: fc.topic_id });
-                                      }
+                                      setSelectedItem({ kind: 'flashcards', id: `flashcards_topic_${fc.topic_id}` });
+                                      if (onComponentSelect) onComponentSelect({ id: `flashcards_topic_${fc.topic_id}`, type: 'flashcards', title: 'Flashcards', topic_id: fc.topic_id });
                                     }}
                                   >
                                     <div className="flex items-center space-x-2">
                                       {renderLeftIcon('flashcards')}
-                                      <span className="text-base text-gray-800 font-medium">Flashcards</span>
+                                      <span className={`text-base font-medium ${isSelected ? 'bg-gradient-to-r from-[#5A09FF] to-[#CB4BFF] bg-clip-text text-transparent font-semibold' : 'text-gray-800'}`}>Flashcards</span>
                                     </div>
                                   </div>
                                 );

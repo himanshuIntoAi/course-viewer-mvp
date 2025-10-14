@@ -16,6 +16,7 @@ import MindMap from "./final-components/InteractiveMindMap/MindMap"
 import MemoryGame from "./final-components/MemoryGame/MemoryGame"
 import QuizPlayer, { QuestionType, type Question, QuizData, UserAnswers } from "./final-components/QuizBuilder/QuizPlayer"
 import Image from "next/image"
+import TopicDetail, { TopicSummary } from "./final-components/TopicDetail"
 interface Lesson {
   id: number;
   title: string;
@@ -819,7 +820,7 @@ const CourseLearningPageInner = () => {
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [allLessons, setAllLessons] = useState<APILesson[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeView, setActiveView] = useState<'lesson' | 'InteractiveComponent'>('lesson');
+  const [activeView, setActiveView] = useState<'lesson' | 'InteractiveComponent' | 'topic'>('lesson');
   const [selectedComponent, setSelectedComponent] = useState<InteractiveComponent | null>(null);
   const [courseId, setCourseId] = useState<string>("");
   const [isLearningSidebarFullScreen, setIsLearningSidebarFullScreen] = useState<boolean | null>(null);
@@ -828,6 +829,8 @@ const CourseLearningPageInner = () => {
   // State for breadcrumbs
   const [courseName, setCourseName] = useState<string>("");
   const [topics, setTopics] = useState<Array<{ id: number; title: string }>>([]);
+  const [selectedTopic, setSelectedTopic] = useState<TopicSummary | null>(null);
+  const [topicCountsMap, setTopicCountsMap] = useState<Record<number, TopicSummary['counts']>>({});
 
 
   // Percentage-based layout state for seamless resizing (syllabus is now overlay)
@@ -917,13 +920,13 @@ const CourseLearningPageInner = () => {
       selectedComponent.id === component.id &&
       selectedComponent.type === component.type
     ) {
-      setIsSidebarOpen(false); // just close sidebar
+      // setIsSidebarOpen(false); // just close sidebar
       return;
     }
 
     setSelectedComponent(component);
     setActiveView('InteractiveComponent');
-    setIsSidebarOpen(false);
+    // setIsSidebarOpen(false);
     // Hide lesson sidebar when component is selected for full screen experience
     // setIsLearningSidebarFullScreen(true);
   };
@@ -1146,9 +1149,59 @@ const CourseLearningPageInner = () => {
     }
   }, [nextLesson, selectedLessonId, allLessons, handleLessonSelect]);
 
+  // Helper to show Topic Detail from a topic id
+  const showTopicDetail = useCallback(async (topicId: number, title: string) => {
+    if (!courseId) return;
+    // Instant render using cached counts if available
+    const cached = topicCountsMap[topicId];
+    if (cached) {
+      setSelectedTopic({ id: topicId, title, counts: cached });
+      setSelectedComponent(null);
+      setActiveView('topic');
+    } else {
+      // Show instantly with zeros while refreshing in background
+      setSelectedTopic({ id: topicId, title, counts: { lessons: 0, quizzes: 0, flashcards: 0, mindmaps: 0 } });
+      setSelectedComponent(null);
+      setActiveView('topic');
+    }
+
+    // Refresh counts in background
+    try {
+      const [lessonsRes, quizzesRes, flashcardsRes, mindmapsRes, memoryGamesRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/lessons/`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/quizzes/`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/flashcards/`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/mindmaps/`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/course-learning/courses/${courseId}/memory-games/`)
+      ]);
+
+      const [lessons, quizzes, flashcards, mindmaps, memorygames] = await Promise.all([
+        lessonsRes.ok ? lessonsRes.json() : [],
+        quizzesRes.ok ? quizzesRes.json() : [],
+        flashcardsRes.ok ? flashcardsRes.json() : [],
+        mindmapsRes.ok ? mindmapsRes.json() : [],
+        memoryGamesRes.ok ? memoryGamesRes.json() : []
+      ]);
+
+      const counts = {
+        lessons: (lessons || []).filter((l: { topic_id: number }) => l.topic_id === topicId).length,
+        quizzes: (quizzes || []).filter((q: { topic_id: number }) => q.topic_id === topicId).length,
+        flashcards: (flashcards || []).filter((f: { topic_id: number }) => f.topic_id === topicId).length,
+        mindmaps: (mindmaps || []).filter((m: { topic_id: number }) => m.topic_id === topicId).length,
+        memorygames: (memorygames || []).filter((mg: { topic_id: number }) => mg.topic_id === topicId).length
+      } as TopicSummary['counts'];
+
+      setTopicCountsMap(prev => ({ ...prev, [topicId]: counts }));
+      setSelectedTopic(prev => prev && prev.id === topicId ? { ...prev, counts } : prev);
+    } catch {
+      // ignore background errors
+    }
+  }, [courseId, topicCountsMap]);
+
   // Generate breadcrumb trail based on current state
-  const getBreadcrumbTrail = () => {
-    const trail = [
+  type BreadcrumbItem = { label: string; href: string; topicId?: number };
+  const getBreadcrumbTrail = (): BreadcrumbItem[] => {
+    const trail: BreadcrumbItem[] = [
       { label: 'Home', href: '/' },
       { label: 'Courses', href: '/all-courses' },
       { label: courseName || 'Course', href: `/course-detail?courseId=${courseId}` }
@@ -1158,20 +1211,22 @@ const CourseLearningPageInner = () => {
       // Find topic name for the current lesson
       const topic = topics.find(t => t.id === currentLesson.topic_id);
       if (topic) {
-        trail.push({ label: topic.title, href: '#' });
+        trail.push({ label: topic.title, href: '#', topicId: topic.id });
       }
       trail.push({ label: currentLesson.title, href: '#' });
     } else if (activeView === 'InteractiveComponent' && selectedComponent) {
       // For interactive components, show topic name and component type
       const topic = topics.find(t => t.id === selectedComponent.topic_id);
       if (topic) {
-        trail.push({ label: topic.title, href: '#' });
+        trail.push({ label: topic.title, href: '#', topicId: topic.id });
       }
       const componentLabel = selectedComponent.type === 'mindmap' ? 'Mindmap' :
                             selectedComponent.type === 'flashcards' ? 'Flashcards' :
                             selectedComponent.type === 'memorygame' ? 'Memory Game' :
                             selectedComponent.type === 'quiz' ? 'Quiz' : 'Interactive';
       trail.push({ label: componentLabel, href: '#' });
+    } else if (activeView === 'topic' && selectedTopic) {
+      trail.push({ label: selectedTopic.title, href: '#' });
     }
 
     return trail;
@@ -1302,7 +1357,16 @@ const CourseLearningPageInner = () => {
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span className={index === getBreadcrumbTrail().length - 1 ? "text-gray-900 font-medium" : ""}>
+                  <span
+                    className={`${index === getBreadcrumbTrail().length - 1 ? "text-gray-900 font-medium" : "hover:text-gray-700 cursor-pointer"}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if ((crumb as any).topicId) {
+                        showTopicDetail((crumb as any).topicId as number, crumb.label);
+                      }
+                    }}
+                  >
                     {crumb.label}
                   </span>
                 )}
@@ -1331,8 +1395,25 @@ const CourseLearningPageInner = () => {
             onLessonSelect={handleLessonSelect}
             onComponentSelect={handleComponentSelect}
             courseId={courseId}
-            setActiveView={(view: string) => setActiveView(view === 'InteractiveComponent' ? 'InteractiveComponent' : 'lesson')}
+            setActiveView={(view: string) => setActiveView(view === 'InteractiveComponent' ? 'InteractiveComponent' : (view === 'topic' ? 'topic' : 'lesson'))}
             isLearningSidebarFullScreen={isLearningSidebarFullScreen ?? undefined}
+            onTopicSelect={(topic, counts) => {
+              const summary: TopicSummary = {
+                id: topic.id,
+                title: topic.title,
+                counts: {
+                  lessons: counts.lessons,
+                  quizzes: counts.quizzes,
+                  flashcards: counts.flashcards,
+                  mindmaps: counts.mindmaps,
+                  memorygames: counts.memorygames,
+                },
+              };
+              setTopicCountsMap(prev => ({ ...prev, [topic.id]: summary.counts }));
+              setSelectedTopic(summary);
+              setSelectedComponent(null);
+              setSelectedLessonId(undefined);
+            }}
           />
         </div>
         {/*   Render Content based on User Selection */}
@@ -1343,6 +1424,11 @@ const CourseLearningPageInner = () => {
             }
             {
               activeView === 'InteractiveComponent' && memoizedInteractiveComponent
+            }
+            {
+              activeView === 'topic' && selectedTopic && (
+                <TopicDetail topic={selectedTopic} />
+              )
             }
           </div>
 

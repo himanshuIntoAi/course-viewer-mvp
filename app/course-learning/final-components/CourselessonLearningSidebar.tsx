@@ -80,6 +80,10 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
 
   useEffect(() => {
     const fetchLessonData = async () => {
+      // Guard: wait for a valid courseId before attempting any fetches
+      if (!courseId) {
+        return;
+      }
       if (!selectedLessonId) {
         // If no lesson is selected, try to get the first lesson
         try {
@@ -101,6 +105,7 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
           }
         } catch (err) {
           console.error('Error fetching first lesson:', err);
+          setError(err instanceof Error ? err.message : 'Failed to fetch');
           // Fallback to mock data with HTML content
           setCurrentLesson(null);
         } finally {
@@ -134,6 +139,7 @@ function CourseLessonLearningSidebar({ selectedLessonId, currentLesson: propCurr
         }
       } catch (err) {
         console.error('Error fetching lesson:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch');
         // Fallback to mock data with HTML content
         setCurrentLesson({
           id: selectedLessonId,
