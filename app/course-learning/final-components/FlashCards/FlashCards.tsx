@@ -457,9 +457,9 @@ function Card({ card }: { card: FlashCardType; index: number }) {
              */}
             <Image src="/flashcard/flashcardIcon1.svg" alt='mark icon' width={30} height={30} />
 
-            <Image src="/flashcard/flashcardIcon2.svg" alt='link icon' width={30} height={30} />
+            <Image src="/flashcard/flashCardIcon2.svg" alt='link icon' width={30} height={30} />
 
-            <Image src="/flashcard/flashcardIcon3.svg" alt='save icon' width={30} height={30} />
+            <Image src="/flashcard/flashCardIcon3.svg" alt='save icon' width={30} height={30} />
           </div>
         </div>
       </div>
